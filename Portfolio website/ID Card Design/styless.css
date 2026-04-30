@@ -1,0 +1,90 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+body{
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fad0c4);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+/* CARD */
+.card{
+    width:300px;
+    padding:30px 20px;
+    border-radius:24px;
+    background:white;
+    text-align:center;
+    box-shadow:0 20px 40px rgba(0,0,0,0.08);
+    transition:0.3s;
+}
+
+.card:hover{
+    transform: translateY(-6px);
+}
+
+/* PROFILE */
+.profile{
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    object-fit:cover;
+    margin-bottom:15px;
+}
+
+/* NAME */
+.name{
+    font-size:20px;
+    font-weight:600;
+    color:#1d1d1f;
+}
+
+.role{
+    font-size:14px;
+    color:#6e6e73;
+    margin-top:4px;
+}
+
+/* DIVIDER */
+.line{
+    height:1px;
+    background:#e5e5ea;
+    margin:20px 0;
+}
+
+/* INFO */
+.info{
+    display:flex;
+    justify-content:space-between;
+    padding:0 10px;
+}
+
+.info span{
+    font-size:11px;
+    color:#8e8e93;
+}
+
+.info p{
+    font-size:14px;
+    font-weight:500;
+    color:#1d1d1f;
+}
+
+/* QR */
+.qr{
+    margin:20px 0;
+}
+
+.qr img{
+    width:90px;
+    opacity:0.9;
+}
+
+/* FOOTER */
+.footer{
+    font-size:11px;
+    color:#8e8e93;
+}
