@@ -13,17 +13,17 @@ html{
 }
 
 body{
-  background:black;
-  color:white;
+  background:#dbeafe;
+  color:#0f172a;
   font-family:Inter, sans-serif;
   overflow-x:hidden;
 }
 
 ::-webkit-scrollbar{
-  width:8px;
+  width:10px;
 }
 
 ::-webkit-scrollbar-thumb{
-  background:#22d3ee;
+  background:#38bdf8;
   border-radius:999px;
 }
