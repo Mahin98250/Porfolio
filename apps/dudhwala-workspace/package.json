@@ -1,0 +1,9 @@
+{
+  "name": "@mahin/dudhwala",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd ../dudhwala && node scripts/validate-site.mjs",
+    "test": "cd ../dudhwala && node scripts/test-security-contracts.mjs && node scripts/test-legal-contracts.mjs && node scripts/test-service-worker.mjs"
+  }
+}

@@ -1,0 +1,3 @@
+[submodule "apps/dudhwala"]
+	path = apps/dudhwala
+	url = https://github.com/Mahin98250/Dudh-Wallah.git
