@@ -31,20 +31,38 @@ export function MotionEnhancements() {
     const pointerMove = (event: PointerEvent) => {
       root.style.setProperty("--pointer-x", event.clientX + "px");
       root.style.setProperty("--pointer-y", event.clientY + "px");
-      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>(".featured-card,.content-card,.project-row,.brand-logo-card");
+      const element = event.target as HTMLElement | null;
+      const target = element?.closest<HTMLElement>(".featured-card,.content-card,.project-row,.brand-logo-card");
+      const magneticButton = element?.closest<HTMLElement>(".button");
       document.querySelectorAll<HTMLElement>(".is-pointer-card").forEach((card) => {
         if (card !== target) card.classList.remove("is-pointer-card");
       });
-      if (!target) return;
-      target.classList.add("is-pointer-card");
-      const rect = target.getBoundingClientRect();
-      target.style.setProperty("--card-x", (event.clientX - rect.left) + "px");
-      target.style.setProperty("--card-y", (event.clientY - rect.top) + "px");
-      if (finePointer && !reduceMotion) {
-        const nx = (event.clientX - rect.left) / rect.width - 0.5;
-        const ny = (event.clientY - rect.top) / rect.height - 0.5;
-        target.style.setProperty("--tilt-x", (-ny * 4).toFixed(2) + "deg");
-        target.style.setProperty("--tilt-y", (nx * 5).toFixed(2) + "deg");
+      if (target) {
+        target.classList.add("is-pointer-card");
+        const rect = target.getBoundingClientRect();
+        target.style.setProperty("--card-x", (event.clientX - rect.left) + "px");
+        target.style.setProperty("--card-y", (event.clientY - rect.top) + "px");
+        if (finePointer && !reduceMotion) {
+          const nx = (event.clientX - rect.left) / rect.width - 0.5;
+          const ny = (event.clientY - rect.top) / rect.height - 0.5;
+          target.style.setProperty("--tilt-x", (-ny * 3.5).toFixed(2) + "deg");
+          target.style.setProperty("--tilt-y", (nx * 4.5).toFixed(2) + "deg");
+        }
+      }
+      document.querySelectorAll<HTMLElement>(".is-magnetic").forEach((button) => {
+        if (button !== magneticButton) {
+          button.style.setProperty("--magnet-x", "0px");
+          button.style.setProperty("--magnet-y", "0px");
+          button.classList.remove("is-magnetic");
+        }
+      });
+      if (magneticButton && finePointer && !reduceMotion) {
+        const rect = magneticButton.getBoundingClientRect();
+        const dx = (event.clientX - rect.left - rect.width / 2) / rect.width;
+        const dy = (event.clientY - rect.top - rect.height / 2) / rect.height;
+        magneticButton.classList.add("is-magnetic");
+        magneticButton.style.setProperty("--magnet-x", (dx * 7).toFixed(1) + "px");
+        magneticButton.style.setProperty("--magnet-y", (dy * 5).toFixed(1) + "px");
       }
     };
     if (finePointer) window.addEventListener("pointermove", pointerMove, { passive: true });
@@ -81,6 +99,11 @@ export function MotionEnhancements() {
       document.querySelectorAll<HTMLElement>(".is-pointer-card").forEach((card) => {
         card.style.setProperty("--tilt-x", "0deg");
         card.style.setProperty("--tilt-y", "0deg");
+      });
+      document.querySelectorAll<HTMLElement>(".is-magnetic").forEach((button) => {
+        button.style.setProperty("--magnet-x", "0px");
+        button.style.setProperty("--magnet-y", "0px");
+        button.classList.remove("is-magnetic");
       });
     };
     window.addEventListener("blur", resetTilt);
