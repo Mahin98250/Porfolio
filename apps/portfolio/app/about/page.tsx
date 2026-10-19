@@ -1,0 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "About" };
+export default function AboutPage() {
+  return <><header className="page-hero"><span className="eyebrow">01 / THE PERSON BEHIND THE CODE</span><h1>Early in the journey.<br /><span className="gradient-text">Serious about the craft.</span></h1><p>I’m Mahin Patel, a student programmer in Ahmedabad, India. I learn by making things, finding the rough edges and improving them with every iteration.</p></header><section className="content-grid"><article className="content-card glass"><span className="eyebrow">THE APPROACH</span><h2>Build to understand.</h2><p>Projects help me connect programming fundamentals with practical problems. I value clear interfaces, honest documentation, debugging and steady improvement over exaggerated claims.</p></article><article className="content-card glass"><span className="eyebrow">THE DIRECTION</span><h2>Software meets the real world.</h2><p>My long-term interest is robotics and automation, supported by strong foundations in software, mathematics, AI and systems thinking.</p></article></section></>;
+}
