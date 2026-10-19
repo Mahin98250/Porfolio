@@ -41,8 +41,10 @@ jobs:
         run: npm run build
       - name: Build Next.js App Router portfolio
         run: npm run build --workspace=@mahin/portfolio-next
-      - name: Typecheck shared marketplace contracts
-        run: npm run typecheck:shared
+      - name: Lint workspace packages
+        run: npm run lint:workspace
+      - name: Typecheck workspace packages
+        run: npm run typecheck
 
   browser-regression:
     name: Playwright route regression
