@@ -184,7 +184,7 @@ jobs:
       - name: Include Doodhwala marketplace
         env:
           PORTFOLIO_BASE_PATH: "/Porfolio"
-        run: node scripts/prepare-doodhwala-pages.mjs
+        run: node scripts/prepare-doodhwala-pages.mjs && node scripts/verify-pages-export.mjs
       - name: Ensure GitHub Pages serves Next.js assets
         run: printf 'GitHub Pages static export; Jekyll processing disabled.\n' > apps/portfolio/out/.nojekyll
       - name: Configure GitHub Pages
