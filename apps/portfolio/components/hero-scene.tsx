@@ -9,8 +9,8 @@ function GlassCore() {
   const mesh = useRef<Mesh>(null);
   useFrame((state, delta) => {
     if (!mesh.current) return;
-    mesh.current.rotation.x += delta * 0.12;
-    mesh.current.rotation.y += delta * 0.18;
+    mesh.current.rotation.x += delta * (0.12 + state.pointer.y * 0.035);
+    mesh.current.rotation.y += delta * (0.18 + state.pointer.x * 0.05);
     mesh.current.position.y = Math.sin(state.clock.elapsedTime * 0.65) * 0.08;
   });
 

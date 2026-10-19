@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { MotionEnhancements } from "./motion-enhancements";
 
 const links = [
   { href: "/", label: "Home" },
@@ -20,6 +21,7 @@ export function SiteShell({ children }: Readonly<{ children: ReactNode }>) {
 
   return (
     <div className="site-root">
+      <MotionEnhancements />
       <div className="ambient ambient-a" aria-hidden="true" />
       <div className="ambient ambient-b" aria-hidden="true" />
       <header className="topbar glass">
