@@ -113,18 +113,9 @@ export const delR = async (table, id) => {
   lsSet(table, lsGet(table).filter((item) => item.id !== id));
 };
 
-const defaultUser = {
-  id: 'u0',
-  name: 'Admin',
-  phone: '9265628247',
-  email: 'admin@lg.app',
-  pass: 'SapanRohera82',
-  role: 'admin',
-  status: 'active',
-};
-
 const SEED = {
-  users: [defaultUser],
+  // User accounts must be provisioned through the approved authentication flow.
+  // Never seed a shared administrator account or a plaintext password.
   students: [],
   teachers: [],
   attendance: [],
