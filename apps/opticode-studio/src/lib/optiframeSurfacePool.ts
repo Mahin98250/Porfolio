@@ -1,0 +1,205 @@
+import type { OptiFrameDensity } from './optiframe';
+import type { OptiLaneCount } from './optiframeLanes';
+
+type SurfaceJob = {
+  id: number;
+  generation: number;
+  key: string;
+  baseSequence: number;
+  total: number;
+  laneCount: OptiLaneCount;
+  densityBits: OptiFrameDensity;
+  payloads: ArrayBuffer[];
+};
+
+type SurfaceResponse = {
+  id: number;
+  key: string;
+  width?: number;
+  height?: number;
+  bitmap?: ImageBitmap;
+  error?: string;
+};
+
+type SurfaceWorkerSlot = {
+  worker: Worker;
+  busy: boolean;
+  failed: boolean;
+};
+
+export class OptiFrameSurfacePool {
+  private readonly workers: SurfaceWorkerSlot[] = [];
+  private readonly queue: SurfaceJob[] = [];
+  private readonly pending = new Map<number, { job: SurfaceJob; workerIndex: number }>();
+  private readonly ready = new Map<string, ImageBitmap>();
+  private nextId = 1;
+  private generation = 0;
+
+  constructor(
+    size = (() => {
+      const cpu = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2;
+      const touchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0;
+      return touchDevice ? 1 : Math.min(2, Math.max(1, cpu - 1));
+    })(),
+    enabled = typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined',
+  ) {
+    if (!enabled) return;
+
+    const count = Math.max(0, Math.min(2, Math.floor(size)));
+    for (let index = 0; index < count; index += 1) {
+      try {
+        const worker = new Worker(
+          new URL('../workers/optiframeSurface.worker.ts', import.meta.url),
+          { type: 'module' },
+        );
+        const slot: SurfaceWorkerSlot = { worker, busy: false, failed: false };
+        worker.onmessage = (event: MessageEvent<SurfaceResponse>) => {
+          const pending = this.pending.get(event.data.id);
+          if (!pending) return;
+          this.pending.delete(event.data.id);
+          slot.busy = false;
+          const job = pending.job;
+
+          if (event.data.bitmap) {
+            if (job.generation === this.generation) {
+              const previous = this.ready.get(job.key);
+              previous?.close();
+              this.ready.set(job.key, event.data.bitmap);
+            } else {
+              event.data.bitmap.close();
+            }
+          }
+
+          this.dispatch();
+        };
+        worker.onerror = () => {
+          slot.failed = true;
+          slot.busy = false;
+          worker.terminate();
+
+          // The payload buffers were transferred to the failed worker and are
+          // no longer owned by this pool. Drop those jobs so has(key) cannot
+          // permanently report a phantom in-flight surface.
+          for (const [jobId, pending] of this.pending) {
+            if (pending.workerIndex === index) this.pending.delete(jobId);
+          }
+          this.dispatch();
+        };
+        this.workers.push(slot);
+      } catch {
+        // Main-thread rendering remains the fallback when workers are blocked.
+      }
+    }
+  }
+
+  get capacity() {
+    return this.workers.filter(slot => !slot.failed).length;
+  }
+
+  get busyCount() {
+    return this.workers.filter(slot => !slot.failed && slot.busy).length;
+  }
+
+  get queuedCount() {
+    return this.queue.length;
+  }
+
+  request(
+    key: string,
+    baseSequence: number,
+    total: number,
+    laneCount: OptiLaneCount,
+    payloads: readonly Uint8Array[],
+    densityBits: OptiFrameDensity = 2,
+    transferPayloadOwnership = false,
+  ) {
+    if (this.capacity === 0 || payloads.length !== laneCount) return false;
+    if (this.ready.has(key) || [...this.pending.values()].some(pending => pending.job.key === key) || this.queue.some(job => job.key === key)) {
+      return false;
+    }
+
+    const job: SurfaceJob = {
+      id: this.nextId++,
+      generation: this.generation,
+      key,
+      baseSequence,
+      total,
+      laneCount,
+      densityBits,
+      payloads: payloads.map(payload => {
+        // Only an owned ArrayBuffer can be transferred. SharedArrayBuffer is
+        // intentionally copied so the worker transport always receives a
+        // Transferable with a stable ArrayBuffer type.
+        if (
+          transferPayloadOwnership &&
+          payload.buffer instanceof ArrayBuffer &&
+          payload.byteOffset === 0 &&
+          payload.byteLength === payload.buffer.byteLength
+        ) {
+          return payload.buffer;
+        }
+        const copy = new Uint8Array(payload.byteLength);
+        copy.set(payload);
+        return copy.buffer;
+      }),
+    };
+    this.queue.push(job);
+    this.dispatch();
+    return true;
+  }
+
+  take(key: string) {
+    const bitmap = this.ready.get(key) ?? null;
+    if (bitmap) this.ready.delete(key);
+    return bitmap;
+  }
+
+  has(key: string) {
+    if (this.ready.has(key)) return true;
+    if ([...this.pending.values()].some(pending => pending.job.key === key)) return true;
+    return this.queue.some(job => job.key === key);
+  }
+
+  clear() {
+    this.generation += 1;
+    for (const bitmap of this.ready.values()) bitmap.close();
+    this.ready.clear();
+    this.queue.length = 0;
+  }
+
+  terminate() {
+    this.clear();
+    for (const slot of this.workers) slot.worker.terminate();
+    this.workers.length = 0;
+    this.pending.clear();
+  }
+
+  private dispatch() {
+    for (const slot of this.workers) {
+      if (slot.failed || slot.busy) continue;
+      const job = this.queue.shift();
+      if (!job) return;
+
+      slot.busy = true;
+      this.pending.set(job.id, { job, workerIndex: this.workers.indexOf(slot) });
+
+      try {
+        slot.worker.postMessage(
+          {
+            id: job.id,
+            key: job.key,
+            baseSequence: job.baseSequence,
+            total: job.total,
+            laneCount: job.laneCount,
+            densityBits: job.densityBits,
+            payloads: job.payloads,
+          },
+          job.payloads,
+        );
+      } catch {
+        this.pending.delete(job.id);
+        slot.busy = false;
+      }
+    }
+  }
+}

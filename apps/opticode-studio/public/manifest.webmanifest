@@ -1,0 +1,23 @@
+{
+  "name": "OptiCode Studio — QR · Barcode · Optical Transfer",
+  "short_name": "OptiCode",
+  "description": "An all-in-one, private QR, barcode, scanner and offline optical file-transfer workspace.",
+  "id": "/OptiCode-Studio/",
+  "start_url": "/OptiCode-Studio/",
+  "scope": "/OptiCode-Studio/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait-primary",
+  "theme_color": "#101426",
+  "background_color": "#050712",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {"src": "/OptiCode-Studio/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable"},
+    {"src": "/OptiCode-Studio/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Scan QR & Barcode", "short_name": "Scan", "url": "/OptiCode-Studio/#/scanner", "icons": [{"src": "/OptiCode-Studio/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml"}]},
+    {"name": "Create QR", "short_name": "Create", "url": "/OptiCode-Studio/#/generator", "icons": [{"src": "/OptiCode-Studio/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml"}]},
+    {"name": "Optical Transfer", "short_name": "Transfer", "url": "/OptiCode-Studio/#/transfer", "icons": [{"src": "/OptiCode-Studio/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml"}]}
+  ]
+}
