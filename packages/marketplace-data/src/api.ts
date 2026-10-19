@@ -117,7 +117,7 @@ export function createMarketplaceApi(options: ApiClientOptions) {
       return {
         ok: true,
         data: parsed.data,
-        ...(safeRequestId(payload) ? { requestId: safeRequestId(payload) } : {}),
+        ...(payloadRequestId === undefined ? {} : { requestId: payloadRequestId }),
       };
     } catch {
       const timedOut = controller.signal.aborted;
