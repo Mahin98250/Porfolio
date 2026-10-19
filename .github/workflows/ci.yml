@@ -45,6 +45,8 @@ jobs:
         run: npm run lint:workspace
       - name: Typecheck workspace packages
         run: npm run typecheck
+      - name: Run shared package unit tests
+        run: npm test
 
   browser-regression:
     name: Playwright route regression
