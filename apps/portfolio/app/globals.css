@@ -56,7 +56,7 @@ h1,h2,h3,p{margin-top:0}h1{font-size:clamp(54px,7.1vw,98px);line-height:.98;lett
 html{scroll-padding-top:100px}
 body{background-attachment:fixed}
 .site-root::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.17;background-image:radial-gradient(rgba(198,220,255,.42) .6px,transparent .6px);background-size:28px 28px;mask-image:linear-gradient(to bottom,black,transparent 80%)}
-.scroll-progress{position:fixed;top:0;left:0;z-index:60;height:2px;width:calc(var(--scroll-progress)*100%);background:linear-gradient(90deg,#7fe7df,#a9d4ff,#b7a2ff);box-shadow:0 0 16px #9ecbff8a;pointer-events:none}
+.scroll-progress{position:fixed;top:0;left:0;z-index:60;height:2px;width:100%;transform:scaleX(var(--scroll-progress));transform-origin:left center;background:linear-gradient(90deg,#7fe7df,#a9d4ff,#b7a2ff);box-shadow:0 0 16px #9ecbff8a;pointer-events:none;will-change:transform}
 .motion-glow{position:fixed;z-index:-1;left:var(--pointer-x);top:var(--pointer-y);width:320px;height:320px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#8cbcff12,transparent 70%);pointer-events:none;opacity:0;transition:opacity .4s ease}
 @media(hover:hover) and (pointer:fine){body:has(.motion-glow:hover) .motion-glow{opacity:1}}
 [data-reveal]{opacity:0;transform:translate3d(0,28px,0) scale(.985);transition:opacity .75s cubic-bezier(.2,.7,.2,1),transform .75s cubic-bezier(.2,.7,.2,1);transition-delay:var(--reveal-delay,0ms);will-change:opacity,transform}
