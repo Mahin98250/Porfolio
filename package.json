@@ -13,7 +13,11 @@
     "preview": "vite preview",
     "build:workspace": "turbo run build",
     "lint:workspace": "turbo run lint",
-    "typecheck:shared": "npm run typecheck --workspace=@mahin/marketplace-data"
+    "typecheck:shared": "npm run typecheck --workspace=@mahin/marketplace-data",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -33,6 +37,9 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "turbo": "^2.5.0",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "eslint": "^9.25.0",
+    "prettier": "^3.5.3",
+    "@mahin/eslint-config": "*"
   }
 }
