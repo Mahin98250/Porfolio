@@ -99,6 +99,7 @@ export function createMarketplaceApi(options: ApiClientOptions) {
         };
       }
 
+      const payloadRequestId = safeRequestId(payload);
       if (!response.ok) return mapApiError(payload, response.status);
 
       const parsed = schema.safeParse(payload);
@@ -108,7 +109,7 @@ export function createMarketplaceApi(options: ApiClientOptions) {
           error: {
             code: "INVALID_RESPONSE",
             message: "The service response changed unexpectedly. Please retry later.",
-            ...(safeRequestId(payload) ? { requestId: safeRequestId(payload) } : {}),
+            ...(payloadRequestId === undefined ? {} : { requestId: payloadRequestId }),
           },
         };
       }
