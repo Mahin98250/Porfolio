@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function ErrorPage({
   reset,
 }: {
@@ -10,7 +12,8 @@ export default function ErrorPage({
     <section className="error-state" role="alert">
       <span className="eyebrow">A TEMPORARY INTERRUPTION</span>
       <h1 style={{ fontSize: "clamp(40px, 7vw, 68px)" }}>
-        Let’s get<br />
+        Let’s get
+        <br />
         <span className="gradient-text">back on track.</span>
       </h1>
       <p className="hero-description">
@@ -20,9 +23,9 @@ export default function ErrorPage({
         <button className="button button-primary" type="button" onClick={reset}>
           Try again <span aria-hidden="true">↻</span>
         </button>
-        <a className="button button-glass" href="/">
+        <Link className="button button-glass" href="/">
           Back home <span aria-hidden="true">↗</span>
-        </a>
+        </Link>
       </div>
     </section>
   );

@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
-@tailwind base;@tailwind components;@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.js";
 :root{font-family:Manrope,system-ui,sans-serif;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;--mono:'DM Mono',monospace;--ease:cubic-bezier(.2,.75,.2,1)}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:92px}body{margin:0;min-width:320px}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit}a{color:inherit;text-decoration:none}button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}::selection{background:#8ce8e1;color:#07111c}
 .portfolio{--bg:#07111e;--surface:#0c1a2b;--surface2:#10243a;--text:#edf5ff;--muted:#93a8c2;--line:rgba(162,195,230,.15);--accent:#8bc9ff;--accent2:#8ff0df;--violet:#a995ff;min-height:100vh;background:var(--bg);color:var(--text);position:relative;isolation:isolate;overflow:hidden;transition:background .3s,color .3s}.portfolio.theme-light{--bg:#f4f8fc;--surface:#fff;--surface2:#eaf2fb;--text:#11243a;--muted:#5d7188;--line:rgba(28,66,107,.14);--accent:#176bd6;--accent2:#008e86;--violet:#7252d8}

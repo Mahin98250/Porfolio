@@ -18,7 +18,7 @@ jobs:
   build-and-typecheck:
     name: Production builds and strict typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -99,7 +99,7 @@ jobs:
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Audit production dependency tree
         run: npm audit --omit=dev --audit-level=high
-      - name: Audit complete dependency tree with documented no-fix exception
+      - name: Audit complete dependency tree
         run: |
           npm audit --json > npm-audit.json || true
           node scripts/check-audit.mjs npm-audit.json
@@ -122,12 +122,5 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Print canonical Prettier output (temporary diagnostic)
-        run: |
-          npx --yes prettier@3.5.3 --write turbo.json packages/marketplace-data/package.json apps/portfolio/package.json
-          echo '===== TURBO JSON ====='
-          cat turbo.json
-          echo '===== MARKETPLACE PACKAGE JSON ====='
-          cat packages/marketplace-data/package.json
-          echo '===== PORTFOLIO PACKAGE JSON ====='
-          cat apps/portfolio/package.json
+      - name: Verify JSON formatting
+        run: npx --yes prettier@3.5.3 --check turbo.json tsconfig.base.json packages/marketplace-data/package.json packages/marketplace-data/tsconfig.json apps/portfolio/package.json apps/portfolio/tsconfig.json
