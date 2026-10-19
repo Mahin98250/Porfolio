@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import "./globals.css";
 import { SiteShell } from "../components/site-shell";
 
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
   colorScheme: "dark light",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
       <body>
