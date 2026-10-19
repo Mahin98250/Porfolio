@@ -7,15 +7,10 @@
     "tsconfig.base.json",
     ".npmrc"
   ],
-  "globalEnv": [
-    "NODE_ENV",
-    "CI"
-  ],
+  "globalEnv": ["NODE_ENV", "CI"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "outputs": [
         "dist/**",
         "out/**",
@@ -25,31 +20,12 @@
         "coverage/**"
       ]
     },
-    "lint": {
-      "dependsOn": [
-        "^lint"
-      ],
-      "outputs": []
-    },
-    "typecheck": {
-      "dependsOn": [
-        "^typecheck"
-      ],
-      "outputs": []
-    },
+    "lint": { "dependsOn": ["^lint"], "outputs": [] },
+    "typecheck": { "dependsOn": ["^typecheck"], "outputs": [] },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "coverage/**",
-        "playwright-report/**",
-        "test-results/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**", "playwright-report/**", "test-results/**"]
     },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    }
+    "dev": { "cache": false, "persistent": true }
   }
 }
