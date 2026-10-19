@@ -11,13 +11,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**",
-        "build/**",
-        "coverage/**"
-      ]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/**", "coverage/**"]
     },
     "lint": {
       "dependsOn": ["^lint"],
@@ -28,12 +22,8 @@
       "outputs": []
     },
     "test": {
-      "dependsOn": ["^build",
-      "outputs": [
-        "coverage/**",
-        "playwright-report/**",
-        "test-results/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**", "playwright-report/**", "test-results/**"]
     },
     "dev": {
       "cache": false,
