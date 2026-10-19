@@ -25,13 +25,13 @@ export default function HomePage() {
             <Link className="button button-primary" href="/projects">Explore selected work <span aria-hidden="true">↗</span></Link>
             <a className="button button-glass" href="https://github.com/Mahin98250" target="_blank" rel="noreferrer">View GitHub profile <span aria-hidden="true">↗</span></a>
           </div>
-          <div className="hero-meta"><span>⌁ Ahmedabad, India</span><span>✳ Projects over promises</span></div>
+          <div className="hero-meta"><span>Ahmedabad, India</span><span>Projects over promises</span></div>
         </div>
         <HeroScene />
         <div className="hero-bottomline"><span>01 / A WORK IN PROGRESS</span><span>SCROLL TO EXPLORE ↓</span></div>
       </section>
       <section className="intro-strip glass">
-        <span>PROGRAMMING</span><b>✳</b><span>PRODUCT THINKING</span><b>✳</b><span>AI & EMERGING TECH</span><b>✳</b><span>ROBOTICS / AUTOMATION</span>
+        <span>PROGRAMMING</span><span className="strip-divider" aria-hidden="true">/</span><span>PRODUCT THINKING</span><span className="strip-divider" aria-hidden="true">/</span><span>AI & EMERGING TECH</span><span className="strip-divider" aria-hidden="true">/</span><span>ROBOTICS / AUTOMATION</span>
       </section>
       <section className="section-block">
         <div className="section-heading">
