@@ -18,7 +18,7 @@ function GlassCore() {
     <Float speed={1.2} rotationIntensity={0.28} floatIntensity={0.5}>
       <mesh ref={mesh} scale={1.45}>
         <icosahedronGeometry args={[1, 5]} />
-        <MeshDistortMaterial color="#9acbff" roughness={0.12} metalness={0.55} transmission={0.78} thickness={1.4} ior={1.25} distort={0.22} speed={1.4} />
+        <MeshDistortMaterial color="#9acbff" roughness={0.12} metalness={0.55} transparent opacity={0.78} distort={0.22} speed={1.4} />
       </mesh>
     </Float>
   );
