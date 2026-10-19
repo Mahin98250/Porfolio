@@ -26,7 +26,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+      - name: Cache npm and Turbo data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            .turbo
+          key: ${{ runner.os }}-npm-turbo-${{ hashFiles('**/package.json', 'turbo.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-turbo-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build deployed portfolio
@@ -69,6 +77,13 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Cache npm audit dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-audit-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-audit-
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Audit production dependency tree
