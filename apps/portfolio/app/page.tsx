@@ -7,9 +7,9 @@ const HeroScene = dynamic(() => import("../components/hero-scene").then((module)
 });
 
 const featured = [
-  { number: "01", title: "OptiCode Studio", category: "Optical transfer", href: "https://github.com/Mahin98250/OptiCode-Studio", text: "Exploring QR-based optical file transfer, frame reconstruction and offline-first workflows." },
-  { number: "02", title: "Learner’s Guide", category: "Learning platform", href: "https://github.com/Mahin98250/Final-Learner-s-Guide", text: "A student-focused learning experience for organizing study resources and workflows." },
-  { number: "03", title: "DudhWala", category: "Local marketplace", href: "https://github.com/Mahin98250/Dudh-Wallah", text: "A marketplace concept connecting customers with independent local milk sellers." },
+  { number: "01", slug: "opticode-studio", title: "OptiCode Studio", category: "Optical transfer", href: "https://github.com/Mahin98250/OptiCode-Studio", text: "Exploring QR-based optical file transfer, frame reconstruction and offline-first workflows." },
+  { number: "02", slug: "learners-guide", title: "Learner’s Guide", category: "Learning platform", href: "https://github.com/Mahin98250/Final-Learner-s-Guide", text: "A student-focused learning experience for organizing study resources and workflows." },
+  { number: "03", slug: "dudhwala", title: "DudhWala", category: "Local marketplace", href: "https://github.com/Mahin98250/Dudh-Wallah", text: "A marketplace concept connecting customers with independent local milk sellers." },
 ];
 
 export default function HomePage() {
@@ -47,7 +47,7 @@ export default function HomePage() {
               <span className="eyebrow">{project.category}</span>
               <h3>{project.title}</h3>
               <p>{project.text}</p>
-              <a className="text-link" href={project.href} target="_blank" rel="noreferrer">Inspect source <span aria-hidden="true">↗</span></a>
+              <div className="project-card-links"><Link className="text-link" href={`/projects/${project.slug}`}>Project overview <span aria-hidden="true">↗</span></Link><a className="text-link" href={project.href} target="_blank" rel="noreferrer">Source <span aria-hidden="true">↗</span></a></div>
             </article>
           ))}
         </div>
