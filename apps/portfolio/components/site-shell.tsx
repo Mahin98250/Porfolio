@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
@@ -13,7 +14,7 @@ const links = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function SiteShell({ children }: Readonly<{ children: React.ReactNode }>) {
+export function SiteShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
