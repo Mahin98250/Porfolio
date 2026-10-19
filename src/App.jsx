@@ -129,7 +129,7 @@ export default function App() {
 
             <motion.div className="hero-visual" initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .8, delay: .12 }}>
               <div className="visual-orbit orbit-one" /><div className="visual-orbit orbit-two" />
-              <div className="visual-glow" />
+              <div className="visual-glow" /><div className="hero-3d-stage" aria-hidden="true"><div className="hero-3d-ring ring-a" /><div className="hero-3d-ring ring-b" /><div className="hero-cube"><span className="cube-face cube-front">M<span>.</span></span><span className="cube-face cube-back">BUILD</span><span className="cube-face cube-right">IDEAS</span><span className="cube-face cube-left">CREATE</span><span className="cube-face cube-top">LEARN</span><span className="cube-face cube-bottom">REPEAT</span></div><span className="hero-3d-label label-top">DIGITAL / SYSTEMS</span><span className="hero-3d-label label-bottom">ROTATE · EXPLORE · BUILD</span></div>
               <div className="visual-card">
                 <div className="visual-card-top"><span className="window-dots"><i /><i /><i /></span><span>MAHIN / BUILD LOG</span><FiCommand /></div>
                 <div className="visual-monogram">M<span>.</span></div>
