@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "exports": "./index.js",
-  "dependencies": {
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "devDependencies": {
     "@eslint/js": "^9.25.0",
     "eslint-config-next": "^15.3.0",
     "typescript-eslint": "^8.30.0",
     "@eslint/eslintrc": "^3.3.1"
-  },
-  "peerDependencies": {
-    "eslint": "^9.0.0"
   }
 }

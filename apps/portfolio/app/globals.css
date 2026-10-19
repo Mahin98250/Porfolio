@@ -41,3 +41,12 @@ h1,h2,h3,p{margin-top:0}h1{font-size:clamp(54px,7.1vw,98px);line-height:.98;lett
 .brand-logo-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:0 0 22px}.brand-logo-card{display:flex;align-items:center;justify-content:center;gap:11px;padding:17px 12px;border-radius:17px;color:#dceaff;font-size:11px;font-weight:700}.brand-logo-card svg{width:21px;height:21px;flex:0 0 auto;color:#b9d5ff}.brand-logo-card:hover{border-color:#b9d5ff55;transform:translateY(-3px)}@media(max-width:700px){.brand-logo-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.brand-logo-card{flex-direction:column;gap:7px;padding:14px 5px;font-size:10px}}
 
 .project-card-links{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.project-card-links .text-link{font-size:11px}.strip-divider{color:#8293b2;font:11px var(--mono)}
+
+.hero-scene{background:radial-gradient(circle at 48% 48%,rgba(156,202,255,.2),transparent 28%),radial-gradient(circle at 56% 58%,rgba(140,123,255,.14),transparent 47%)}
+.error-state{max-width:720px;margin:90px auto 120px;padding:clamp(28px,5vw,58px);border-radius:28px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 24px 90px rgba(0,0,0,.18);backdrop-filter:blur(24px) saturate(145%);text-align:left}
+.loading-page{padding:clamp(36px,7vw,84px) 0;min-height:65vh;display:grid;align-content:center;gap:18px}
+.loading-line{height:14px;max-width:340px;border-radius:99px;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(169,212,255,.18),rgba(255,255,255,.05));background-size:200% 100%;animation:loading-shimmer 1.7s ease-in-out infinite}
+.loading-heading{height:64px;max-width:600px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(169,212,255,.16),rgba(255,255,255,.05));background-size:200% 100%;animation:loading-shimmer 1.7s ease-in-out infinite}
+.loading-copy{height:16px;max-width:530px;border-radius:99px;background:rgba(255,255,255,.065)}
+@keyframes loading-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media(prefers-reduced-motion:reduce){.loading-line,.loading-heading{animation:none;background-size:100%}}
