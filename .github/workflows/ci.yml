@@ -16,9 +16,9 @@ concurrency:
 
 jobs:
   build-and-typecheck:
-    name: Production build and strict typecheck
+    name: Production builds and strict typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,10 +36,31 @@ jobs:
       - name: Typecheck shared marketplace contracts
         run: npm run typecheck:shared
 
+  browser-regression:
+    name: Playwright route regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build Next.js app for browser tests
+        run: npm run build --workspace=@mahin/portfolio-next
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser regression tests
+        run: npm run test:e2e --workspace=@mahin/portfolio-next
+
   dependency-audit:
     name: Dependency vulnerability audit
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,5 +88,4 @@ jobs:
         with:
           node-version: 20
       - name: Verify JSON formatting
-        run: npx --yes prettier@3.5.3 --check turbo.json tsconfig.base.json packages/marketplace-data/package.json packages/marketplace-data/tsconfig.json
-
+        run: npx --yes prettier@3.5.3 --check turbo.json tsconfig.base.json packages/marketplace-data/package.json packages/marketplace-data/tsconfig.json apps/portfolio/package.json apps/portfolio/tsconfig.json
