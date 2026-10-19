@@ -1,10 +1,6 @@
-import dynamic from "next/dynamic";
 import Link from "next/link";
 
-const HeroScene = dynamic(() => import("../components/hero-scene").then((module) => module.HeroScene), {
-  ssr: false,
-  loading: () => <div className="hero-scene scene-fallback" aria-hidden="true" />,
-});
+import { HeroSceneLoader } from "../components/hero-scene-loader";
 
 const featured = [
   { number: "01", slug: "opticode-studio", title: "OptiCode Studio", category: "Optical transfer", href: "https://github.com/Mahin98250/OptiCode-Studio", text: "Exploring QR-based optical file transfer, frame reconstruction and offline-first workflows." },
@@ -27,7 +23,7 @@ export default function HomePage() {
           </div>
           <div className="hero-meta"><span>Ahmedabad, India</span><span>Projects over promises</span></div>
         </div>
-        <HeroScene />
+        <HeroSceneLoader />
         <div className="hero-bottomline"><span>01 / A WORK IN PROGRESS</span><span>SCROLL TO EXPLORE ↓</span></div>
       </section>
       <section className="intro-strip glass">
