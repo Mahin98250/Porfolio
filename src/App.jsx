@@ -1,232 +1,34 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  FiArrowDownRight, FiArrowUpRight, FiGithub, FiExternalLink, FiMenu,
-  FiX, FiSun, FiMoon, FiCode, FiCpu, FiLayers, FiZap, FiMail,
-  FiMapPin, FiCheckCircle, FiCommand, FiGlobe, FiSmartphone
-} from 'react-icons/fi';
-
-const projects = [
-  {
-    name: 'OptiCode Studio',
-    category: 'Engineering',
-    number: '01',
-    description: 'An experimental optical file-transfer experience exploring QR-based data transport, frame reassembly and offline-first workflows.',
-    stack: ['JavaScript', 'Web APIs', 'Optical transfer'],
-    href: 'https://github.com/Mahin98250/OptiCode-Studio',
-    accent: 'violet',
-    icon: FiZap,
-  },
-  {
-    name: 'Learner’s Guide',
-    category: 'Web apps',
-    number: '02',
-    description: 'A student-focused learning platform concept designed to make study material and everyday learning workflows easier to navigate.',
-    stack: ['React', 'TypeScript', 'Tailwind CSS'],
-    href: 'https://github.com/Mahin98250/Final-Learner-s-Guide',
-    accent: 'blue',
-    icon: FiLayers,
-  },
-  {
-    name: 'DudhWala',
-    category: 'Web apps',
-    number: '03',
-    description: 'A local milk marketplace concept connecting customers with independent sellers through dedicated customer and seller experiences.',
-    stack: ['Web development', 'Marketplace UX'],
-    href: 'https://github.com/Mahin98250/Dudh-Wallah',
-    accent: 'mint',
-    icon: FiGlobe,
-  },
-  {
-    name: 'VelocityType',
-    category: 'Web apps',
-    number: '04',
-    description: 'A typing-practice experience focused on speed, accuracy, progress tracking and a polished, distraction-light interface.',
-    stack: ['HTML', 'CSS', 'JavaScript'],
-    href: 'https://github.com/Mahin98250/Velocitytype',
-    accent: 'orange',
-    icon: FiCode,
-  },
-  {
-    name: 'Weather Status',
-    category: 'Tools',
-    number: '05',
-    description: 'A weather interface experiment built to present useful conditions in a clear, responsive layout.',
-    stack: ['JavaScript', 'Weather API', 'Responsive UI'],
-    href: 'https://github.com/Mahin98250/Weather-Status',
-    accent: 'blue',
-    icon: FiSmartphone,
-  },
-  {
-    name: 'OR Generator',
-    category: 'Tools',
-    number: '06',
-    description: 'A QR-code generation and scanning project exploring practical browser-based utilities.',
-    stack: ['JavaScript', 'QR codes', 'Web APIs'],
-    href: 'https://github.com/Mahin98250/OR-Generator',
-    accent: 'violet',
-    icon: FiCommand,
-  },
-];
-
-const capabilities = [
-  { title: 'Frontend development', detail: 'Responsive interfaces, reusable UI and thoughtful interaction design.', icon: FiCode, tags: ['HTML', 'CSS', 'JavaScript', 'React'] },
-  { title: 'AI & emerging tech', detail: 'Exploring AI-assisted workflows and the foundations of intelligent systems.', icon: FiCpu, tags: ['AI exploration', 'Python learning', 'Problem solving'] },
-  { title: 'Product thinking', detail: 'Turning a rough idea into a clear, usable experience through iteration.', icon: FiLayers, tags: ['UX thinking', 'Prototyping', 'Accessibility'] },
-];
-
-const filters = ['All', 'Engineering', 'Web apps', 'Tools'];
-
-function SectionHeading({ eyebrow, title, description, light = false }) {
-  return <div className={'section-heading' + (light ? ' section-heading-light' : '')}>
-    <span className="eyebrow">{eyebrow}</span>
-    <h2>{title}</h2>
-    {description && <p>{description}</p>}
-  </div>;
-}
-
-export default function App() {
-  const [theme, setTheme] = useState('light');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [filter, setFilter] = useState('All');
-  const visibleProjects = useMemo(() => filter === 'All' ? projects : projects.filter(p => p.category === filter), [filter]);
-  const dark = theme === 'dark';
-
-  const closeMenu = () => setMenuOpen(false);
-  const navItems = [['About', '#about'], ['Capabilities', '#capabilities'], ['Projects', '#projects'], ['Journey', '#journey'], ['Contact', '#contact']];
-
-  return (
-    <div className={'portfolio ' + (dark ? 'theme-dark' : 'theme-light')}>
-      <div className="top-progress" aria-hidden="true" />
-      <header className="site-header">
-        <nav className="nav-shell" aria-label="Main navigation">
-          <a className="brand" href="#home" onClick={closeMenu} aria-label="Mahin Patel home"><span className="brand-mark">M<span>.</span></span><span className="brand-name">MAHIN PATEL</span></a>
-          <div className={'nav-links' + (menuOpen ? ' nav-links-open' : '')}>
-            {navItems.map(([label, href]) => <a key={label} href={href} onClick={closeMenu}>{label}</a>)}
-            <a className="nav-contact" href="#contact" onClick={closeMenu}>Let’s talk <FiArrowUpRight /></a>
-          </div>
-          <div className="nav-actions">
-            <button className="icon-button theme-toggle" onClick={() => setTheme(dark ? 'light' : 'dark')} aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'} title="Toggle theme">{dark ? <FiSun /> : <FiMoon />}</button>
-            <button className="icon-button menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'}>{menuOpen ? <FiX /> : <FiMenu />}</button>
-          </div>
-        </nav>
-      </header>
-
-      <main>
-        <section className="hero section-wrap" id="home">
-          <div className="hero-grid">
-            <motion.div className="hero-copy" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7, ease: 'easeOut' }}>
-              <div className="availability"><span className="status-dot" /> CURIOUS BUILDER · OPEN TO LEARNING</div>
-              <p className="hero-kicker">DESIGNING AND BUILDING FOR WHAT’S NEXT</p>
-              <h1>Ideas into <span>useful</span><br />digital experiences.</h1>
-              <p className="hero-description">I’m Mahin Patel — a student developer exploring software, AI and thoughtful product design. I build projects to learn by doing, solve real problems and make technology feel simpler.</p>
-              <div className="hero-actions">
-                <a className="button button-primary" href="#projects">Explore my work <FiArrowUpRight /></a>
-                <a className="button button-secondary" href="#contact">Get in touch <FiArrowDownRight /></a>
-              </div>
-              <div className="hero-proof"><span><FiCheckCircle /> Built through hands-on projects</span><span><FiMapPin /> Ahmedabad, India</span></div>
-            </motion.div>
-
-            <motion.div className="hero-visual" initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .8, delay: .12 }}>
-              <div className="visual-orbit orbit-one" /><div className="visual-orbit orbit-two" />
-              <div className="visual-glow" /><div className="hero-3d-stage" aria-hidden="true"><div className="hero-3d-ring ring-a" /><div className="hero-3d-ring ring-b" /><div className="hero-cube"><span className="cube-face cube-front">M<span>.</span></span><span className="cube-face cube-back">BUILD</span><span className="cube-face cube-right">IDEAS</span><span className="cube-face cube-left">CREATE</span><span className="cube-face cube-top">LEARN</span><span className="cube-face cube-bottom">REPEAT</span></div><span className="hero-3d-label label-top">DIGITAL / SYSTEMS</span><span className="hero-3d-label label-bottom">ROTATE · EXPLORE · BUILD</span></div>
-              <div className="visual-card">
-                <div className="visual-card-top"><span className="window-dots"><i /><i /><i /></span><span>MAHIN / BUILD LOG</span><FiCommand /></div>
-                <div className="visual-monogram">M<span>.</span></div>
-                <div className="visual-caption"><span className="caption-label">CURRENT MODE</span><strong>Learn. Build. Improve.</strong><span className="caption-sub">Curiosity, turned into code.</span></div>
-                <div className="visual-card-bottom"><span><i className="tiny-status" /> AVAILABLE TO EXPLORE</span><span>v.2026</span></div>
-              </div>
-              <div className="floating-chip chip-code"><FiCode /><span><b>Build</b><small>with purpose</small></span></div>
-              <div className="floating-chip chip-ai"><FiCpu /><span><b>Explore</b><small>emerging tech</small></span></div>
-              <div className="visual-index">01 — PORTFOLIO / IN PROGRESS</div>
-            </motion.div>
-          </div>
-          <a href="#about" className="scroll-cue"><span className="scroll-line" /> SCROLL TO DISCOVER <FiArrowDownRight /></a>
-        </section>
-
-        <section className="intro-strip" id="about">
-          <div className="section-wrap intro-inner">
-            <span className="eyebrow">A LITTLE ABOUT ME</span>
-            <p>I’m building my foundation in software engineering one project at a time — with a growing interest in <span>robotics, automation, AI</span> and the interfaces that make complex technology easier to use.</p>
-            <a className="text-link" href="https://github.com/Mahin98250" target="_blank" rel="noreferrer">A look at my GitHub <FiArrowUpRight /></a>
-          </div>
-        </section>
-
-        <section className="section-wrap capabilities-section" id="capabilities">
-          <SectionHeading eyebrow="WHAT I’M EXPLORING" title={<>Skills in progress.<br /><span>Built through practice.</span></>} description="A practical foundation shaped by experimentation, iteration and a willingness to learn." />
-          <div className="capability-grid">
-            {capabilities.map((item, i) => {
-              const Icon = item.icon;
-              return <motion.article className="capability-card" key={item.title} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ delay: i * .08, duration: .45 }}>
-                <div className="capability-top"><span className="capability-icon"><Icon /></span><span className="card-number">0{i + 1}</span></div>
-                <h3>{item.title}</h3><p>{item.detail}</p>
-                <div className="tag-list">{item.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
-              </motion.article>;
-            })}
-          </div>
-        </section>
-
-        <section className="projects-section" id="projects">
-          <div className="section-wrap">
-            <div className="projects-head">
-              <SectionHeading eyebrow="SELECTED WORK" title={<>Projects with a<br /><span>purpose to explore.</span></>} description="A selection of experiments and product concepts. Each one is a chance to learn, test ideas and improve." />
-              <a className="text-link all-projects" href="https://github.com/Mahin98250?tab=repositories" target="_blank" rel="noreferrer">All repositories <FiArrowUpRight /></a>
-            </div>
-            <div className="filter-row" role="group" aria-label="Filter projects">
-              {filters.map(f => <button key={f} className={'filter-button' + (filter === f ? ' active' : '')} onClick={() => setFilter(f)} aria-pressed={filter === f}>{f}</button>)}
-              <span className="project-count">{String(visibleProjects.length).padStart(2, '0')} PROJECTS</span>
-            </div>
-            <motion.div layout className="project-grid">
-              {visibleProjects.map(project => {
-                const Icon = project.icon;
-                return <motion.article layout key={project.name} className={'project-card accent-' + project.accent} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .3 }}>
-                  <div className="project-art">
-                    <div className="project-art-grid" />
-                    <div className="project-art-top"><span>PROJECT / {project.number}</span><span className="project-art-category">{project.category}</span></div>
-                    <div className="project-symbol"><Icon /></div>
-                    <span className="project-art-bottom">MAHIN PATEL <span>↗</span></span>
-                  </div>
-                  <div className="project-content">
-                    <div className="project-title-row"><h3>{project.name}</h3><a href={project.href} target="_blank" rel="noreferrer" aria-label={'View ' + project.name + ' repository'} className="project-link"><FiArrowUpRight /></a></div>
-                    <p>{project.description}</p>
-                    <div className="tag-list">{project.stack.map(tag => <span key={tag}>{tag}</span>)}</div>
-                    <a className="project-repo-link" href={project.href} target="_blank" rel="noreferrer">Explore repository <FiExternalLink /></a>
-                  </div>
-                </motion.article>;
-              })}
-            </motion.div>
-            <p className="projects-note">Project descriptions are concise summaries of the concepts and repositories; feature maturity and live deployments may vary.</p>
-          </div>
-        </section>
-
-        <section className="journey-section section-wrap" id="journey">
-          <div className="journey-intro"><SectionHeading eyebrow="THE JOURNEY" title={<>A long-term mindset.<br /><span>One step at a time.</span></>} description="I’m early in my journey, so I focus on building fundamentals, shipping small projects and learning from what doesn’t work." /></div>
-          <div className="journey-list">
-            <article className="journey-item"><span className="journey-marker">01</span><div><span className="journey-label">FOUNDATION</span><h3>Learn the fundamentals</h3><p>Strengthen programming, web development, mathematics and problem-solving through consistent practice.</p></div><span className="journey-state">IN PROGRESS</span></article>
-            <article className="journey-item"><span className="journey-marker">02</span><div><span className="journey-label">BUILD</span><h3>Turn concepts into projects</h3><p>Make useful tools and prototypes, document decisions and improve based on real testing.</p></div><span className="journey-state">ONGOING</span></article>
-            <article className="journey-item"><span className="journey-marker">03</span><div><span className="journey-label">LONG-TERM DIRECTION</span><h3>Robotics, automation and AI</h3><p>Gradually connect software skills with intelligent systems, hardware and automation.</p></div><span className="journey-state">EXPLORING</span></article>
-          </div>
-        </section>
-
-        <section className="contact-section" id="contact">
-          <div className="section-wrap contact-inner">
-            <div className="contact-orb" />
-            <span className="eyebrow">HAVE AN IDEA?</span>
-            <h2>Good things start<br />with a <span>conversation.</span></h2>
-            <p>Want to discuss a project, share feedback or connect over technology? I’d be glad to hear from you.</p>
-            <div className="contact-actions">
-              <a className="button button-primary" href="https://github.com/Mahin98250" target="_blank" rel="noreferrer"><FiGithub /> Connect on GitHub <FiArrowUpRight /></a>
-              <a className="button button-secondary" href="https://www.instagram.com/mahin_patel2/" target="_blank" rel="noreferrer"><FiMail /> Instagram <FiArrowUpRight /></a>
-            </div>
-            <span className="contact-footnote">No invented contact details. Reach out through the profiles linked above.</span>
-          </div>
-        </section>
-      </main>
-
-      <footer className="site-footer">
-        <div className="section-wrap footer-inner"><a className="brand" href="#home"><span className="brand-mark">M<span>.</span></span><span className="brand-name">MAHIN PATEL</span></a><span>Designed with curiosity. Built through practice.</span><a href="#home" className="back-top">BACK TO TOP ↑</a></div>
-        <div className="section-wrap footer-bottom"><span>© {new Date().getFullYear()} Mahin Patel</span><span>SOFTWARE · AI · WHAT’S NEXT</span><a href="https://github.com/Mahin98250" target="_blank" rel="noreferrer">GITHUB <FiArrowUpRight /></a></div>
-      </footer>
-    </div>
-  );
+import { FiArrowUpRight,FiArrowDownRight,FiGithub,FiExternalLink,FiMenu,FiX,FiSun,FiMoon,FiCode,FiCpu,FiLayers,FiZap,FiMail,FiMapPin,FiCheckCircle,FiCommand,FiGlobe,FiSmartphone,FiTerminal } from 'react-icons/fi';
+const projects=[
+{name:'OptiCode Studio',category:'Engineering',number:'01',description:'An experimental optical file-transfer project exploring QR-based data transport, frame reassembly and offline-first workflows.',stack:['JavaScript','Web APIs','Optical transfer'],href:'https://github.com/Mahin98250/OptiCode-Studio',accent:'violet',icon:FiZap},
+{name:'Learner’s Guide',category:'Web apps',number:'02',description:'A student-focused learning platform concept designed to make study material and everyday learning workflows easier to navigate.',stack:['React','TypeScript','Tailwind CSS'],href:'https://github.com/Mahin98250/Final-Learner-s-Guide',accent:'blue',icon:FiLayers},
+{name:'DudhWala',category:'Web apps',number:'03',description:'A local milk marketplace concept connecting customers with independent sellers through dedicated experiences.',stack:['Marketplace','Product UX'],href:'https://github.com/Mahin98250/Dudh-Wallah',accent:'mint',icon:FiGlobe},
+{name:'VelocityType',category:'Web apps',number:'04',description:'A typing-practice experience focused on speed, accuracy, progress tracking and a distraction-light interface.',stack:['HTML','CSS','JavaScript'],href:'https://github.com/Mahin98250/Velocitytype',accent:'orange',icon:FiCode},
+{name:'Weather Status',category:'Tools',number:'05',description:'A weather interface experiment presenting useful conditions in a clear, responsive layout.',stack:['JavaScript','Weather API'],href:'https://github.com/Mahin98250/Weather-Status',accent:'blue',icon:FiSmartphone},
+{name:'QR Generator',category:'Tools',number:'06',description:'A browser-based QR generation and scanning utility exploring practical everyday workflows.',stack:['JavaScript','QR codes'],href:'https://github.com/Mahin98250?tab=repositories',accent:'violet',icon:FiCommand}];
+const capabilities=[
+{title:'Programming & interfaces',detail:'Building responsive interfaces, useful tools and clear user experiences.',icon:FiCode,tags:['HTML','CSS','JavaScript','React']},
+{title:'Systems & experimentation',detail:'Learning by building prototypes, testing ideas and improving what breaks.',icon:FiTerminal,tags:['Problem solving','Web APIs','Debugging']},
+{title:'AI, robotics & automation',detail:'A long-term direction: connect software foundations with intelligent systems.',icon:FiCpu,tags:['Python learning','AI exploration','Robotics']}];
+const filters=['All','Engineering','Web apps','Tools'];
+function Heading({eyebrow,title,description}){return <div className="section-heading"><span className="eyebrow">{eyebrow}</span><h2>{title}</h2>{description&&<p>{description}</p>}</div>}
+export default function App(){
+const [theme,setTheme]=useState('dark'),[menuOpen,setMenuOpen]=useState(false),[filter,setFilter]=useState('All');
+const visibleProjects=useMemo(()=>filter==='All'?projects:projects.filter(p=>p.category===filter),[filter]),dark=theme==='dark',closeMenu=()=>setMenuOpen(false);
+const nav=[['About','#about'],['Skills','#capabilities'],['Work','#projects'],['Journey','#journey'],['Contact','#contact']];
+return <div className={'portfolio '+(dark?'theme-dark':'theme-light')}><div className="ambient ambient-one"/><div className="ambient ambient-two"/>
+<header className="site-header"><nav className="nav-shell" aria-label="Main navigation"><a className="brand" href="#home" onClick={closeMenu} aria-label="Mahin Patel home"><span className="brand-mark">M<span>.</span></span><span className="brand-name">MAHIN <b>PATEL</b><small>PROGRAMMER / BUILDER</small></span></a><div className={'nav-links'+(menuOpen?' nav-links-open':'')}>{nav.map(([label,href])=><a key={label} href={href} onClick={closeMenu}>{label}</a>)}<a className="nav-contact" href="#contact" onClick={closeMenu}>Let’s connect <FiArrowUpRight/></a></div><div className="nav-actions"><button className="icon-button theme-toggle" onClick={()=>setTheme(dark?'light':'dark')} aria-label={dark?'Switch to light theme':'Switch to dark theme'}>{dark?<FiSun/>:<FiMoon/>}</button><button className="icon-button menu-toggle" onClick={()=>setMenuOpen(!menuOpen)} aria-label={menuOpen?'Close menu':'Open menu'}>{menuOpen?<FiX/>:<FiMenu/>}</button></div></nav></header>
+<main><section className="hero section-wrap" id="home"><div className="hero-grid"><motion.div className="hero-copy" initial={{opacity:0,y:24}} animate={{opacity:1,y:0}} transition={{duration:.7}}><div className="availability"><span className="status-dot"/> STUDENT PROGRAMMER · BUILDING IN PUBLIC</div><p className="hero-kicker">CODE IS HOW I EXPLORE THE WORLD</p><h1>Curiosity,<br/>compiled into<br/><span className="gradient-text">real things.</span></h1><p className="hero-description">I’m Mahin Patel — a student programmer who learns by building. I turn ideas into websites, tools and experiments, while growing toward software engineering, AI, robotics and automation.</p><div className="hero-actions"><a className="button button-primary" href="#projects">Explore selected work <FiArrowUpRight/></a><a className="button button-secondary" href="https://github.com/Mahin98250" target="_blank" rel="noreferrer"><FiGithub/> GitHub profile</a></div><div className="hero-proof"><span><FiCheckCircle/> Projects over promises</span><span><FiMapPin/> Ahmedabad, India</span></div></motion.div>
+<motion.div className="hero-visual" initial={{opacity:0,scale:.95}} animate={{opacity:1,scale:1}} transition={{duration:.9,delay:.1}} aria-label="Decorative 3D programmer workspace"><div className="scene-grid"/><div className="scene-orbit orbit-one"/><div className="scene-orbit orbit-two"/><div className="scene-orbit orbit-three"/><div className="scene-cube" aria-hidden="true"><i/><i/><i/><i/><i/><i/><b>&lt;/&gt;</b></div>
+<div className="scene-panel panel-main"><div className="panel-top"><span className="window-dots"><i/><i/><i/></span><span>MAHIN / WORKSPACE</span><FiCommand/></div><div className="terminal-lines"><p><span>01</span> <i>const</i> mindset = <b>'keep building'</b>;</p><p><span>02</span> <i>while</i> (curious) {'{'}</p><p><span>03</span> &nbsp;&nbsp;learn();</p><p><span>04</span> &nbsp;&nbsp;build();</p><p><span>05</span> &nbsp;&nbsp;improve();</p><p><span>06</span> {'}'}</p><div className="terminal-cursor"/></div><div className="panel-foot"><span><i className="tiny-status"/> SYSTEM ONLINE</span><span>BUILD 0.26</span></div></div>
+<div className="scene-panel panel-float panel-stats"><span className="eyebrow">CURRENT FOCUS</span><strong>01 <small>/ learn</small></strong><div className="mini-bars">{Array.from({length:12},(_,i)=><i key={i}/>)}</div><span className="muted-small">Consistent progress beats hype.</span></div><div className="scene-panel panel-float panel-chip"><span className="chip-icon"><FiCpu/></span><span><b>Future direction</b><small>AI · robotics · automation</small></span></div><div className="scene-caption">CSS 3D · GPU-ACCELERATED TRANSFORMS</div></motion.div></div><a href="#about" className="scroll-cue"><span className="scroll-line"/> SCROLL TO EXPLORE <FiArrowDownRight/></a></section>
+<section className="ticker" aria-label="Areas of interest"><div className="section-wrap ticker-inner"><span>PROGRAMMING</span><i>✳</i><span>PRODUCT THINKING</span><i>✳</i><span>AI & EMERGING TECH</span><i>✳</i><span>ROBOTICS / AUTOMATION</span><i>✳</i><span>ALWAYS LEARNING</span></div></section>
+<section className="about-section section-wrap" id="about"><div className="about-index"><span className="eyebrow">01 / THE PERSON BEHIND THE CODE</span><div className="about-stamp"><FiTerminal/><span>THINK<br/>MAKE<br/>REFINE</span></div></div><div className="about-copy"><h2>Not here to look busy.<br/><span className="gradient-text">Here to get better.</span></h2><p>I’m early in my programming journey, and I take that seriously. Every project is a place to practice fundamentals, solve a real problem and learn how to make software more useful. I’m especially interested in the intersection of software, AI and physical systems.</p><a className="text-link" href="https://github.com/Mahin98250?tab=repositories" target="_blank" rel="noreferrer">Browse my repositories <FiArrowUpRight/></a></div></section>
+<section className="section-wrap capabilities-section" id="capabilities"><Heading eyebrow="02 / TOOLKIT IN PROGRESS" title={<>Fundamentals first.<br/><span className="gradient-text">Ambition always.</span></>} description="A practical foundation built through experiments, repetition and debugging—not a list of skills I’m claiming to have mastered."/><div className="capability-grid">{capabilities.map((item,i)=>{const Icon=item.icon;return <motion.article className="capability-card" key={item.title} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true,amount:.2}} transition={{delay:i*.08,duration:.45}}><div className="capability-top"><span className="capability-icon"><Icon/></span><span className="card-number">0{i+1}</span></div><h3>{item.title}</h3><p>{item.detail}</p><div className="tag-list">{item.tags.map(t=><span key={t}>{t}</span>)}</div><span className="card-edge"/></motion.article>})}</div></section>
+<section className="projects-section" id="projects"><div className="section-wrap"><div className="projects-head"><Heading eyebrow="03 / SELECTED WORK" title={<>Small experiments.<br/><span className="gradient-text">Real learning.</span></>} description="A curated look at projects I’m exploring. Open a repository to see the code and the actual state of each project."/><a className="text-link all-projects" href="https://github.com/Mahin98250?tab=repositories" target="_blank" rel="noreferrer">All repositories <FiArrowUpRight/></a></div><div className="filter-row" role="group" aria-label="Filter projects">{filters.map(f=><button key={f} className={'filter-button'+(filter===f?' active':'')} onClick={()=>setFilter(f)} aria-pressed={filter===f}>{f}</button>)}<span className="project-count">{String(visibleProjects.length).padStart(2,'0')} PROJECTS</span></div><motion.div layout className="project-grid">{visibleProjects.map(project=>{const Icon=project.icon;return <motion.article layout key={project.name} className={'project-card accent-'+project.accent} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:.3}}><div className="project-art"><div className="project-art-grid"/><div className="project-art-top"><span>LAB / {project.number}</span><span>{project.category}</span></div><div className="project-symbol"><Icon/></div><span className="project-orbit"/><div className="project-art-bottom"><span>MAHIN PATEL / PROJECT FILE</span><FiArrowUpRight/></div></div><div className="project-content"><div className="project-title-row"><h3>{project.name}</h3><a href={project.href} target="_blank" rel="noreferrer" aria-label={'View '+project.name+' repository'} className="project-link"><FiArrowUpRight/></a></div><p>{project.description}</p><div className="tag-list">{project.stack.map(t=><span key={t}>{t}</span>)}</div><a className="project-repo-link" href={project.href} target="_blank" rel="noreferrer">Inspect source <FiExternalLink/></a></div></motion.article>})}</motion.div><p className="projects-note">Project descriptions are summaries, not claims of production readiness. Repository contents are the source of truth.</p></div></section>
+<section className="journey-section section-wrap" id="journey"><div className="journey-intro"><Heading eyebrow="04 / THE LONG GAME" title={<>The goal is not a title.<br/><span className="gradient-text">It’s capability.</span></>} description="My roadmap is grounded: learn the fundamentals, make useful things, and earn the right to tackle harder systems."/></div><div className="journey-list"><article className="journey-item"><span className="journey-marker">01</span><div><span className="journey-label">RIGHT NOW</span><h3>Strengthen programming fundamentals</h3><p>Practice code, mathematics, debugging and the habits that make reliable software possible.</p></div><span className="journey-state">IN PROGRESS</span></article><article className="journey-item"><span className="journey-marker">02</span><div><span className="journey-label">BUILD & SHIP</span><h3>Make projects people can actually use</h3><p>Test real workflows, improve accessibility, document trade-offs and learn from failure.</p></div><span className="journey-state">ONGOING</span></article><article className="journey-item"><span className="journey-marker">03</span><div><span className="journey-label">LONG-TERM DIRECTION</span><h3>Software, AI, robotics and automation</h3><p>Bring software together with intelligent systems and the physical world, one skill at a time.</p></div><span className="journey-state">EXPLORING</span></article></div></section>
+<section className="contact-section" id="contact"><div className="contact-orb"/><div className="section-wrap contact-inner"><span className="eyebrow">05 / OPEN CHANNEL</span><h2>Let’s make<br/><span className="gradient-text">something useful.</span></h2><p>Have a project idea, feedback or a technology rabbit hole worth exploring? Find me through the profiles below.</p><div className="contact-actions"><a className="button button-primary" href="https://github.com/Mahin98250" target="_blank" rel="noreferrer"><FiGithub/> GitHub <FiArrowUpRight/></a><a className="button button-secondary" href="https://www.instagram.com/mahin_patel2/" target="_blank" rel="noreferrer">Instagram <FiArrowUpRight/></a></div><span className="contact-footnote">A student programmer in progress. No inflated claims—just work, curiosity and iteration.</span></div></section></main>
+<footer className="site-footer"><div className="section-wrap footer-inner"><a className="brand" href="#home"><span className="brand-mark">M<span>.</span></span><span className="brand-name">MAHIN <b>PATEL</b><small>PROGRAMMER / BUILDER</small></span></a><span>DESIGNED WITH INTENT · BUILT TO LEARN</span><a href="#home" className="back-top">BACK TO TOP ↑</a></div><div className="section-wrap footer-bottom"><span>© {new Date().getFullYear()} Mahin Patel</span><span>CODE · CURIOSITY · CONSISTENCY</span><a href="https://github.com/Mahin98250" target="_blank" rel="noreferrer">GITHUB <FiArrowUpRight/></a></div></footer></div>
 }
