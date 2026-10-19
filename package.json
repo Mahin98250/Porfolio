@@ -1,12 +1,19 @@
 {
   "name": "mahin-portfolio",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:workspace": "turbo run build",
+    "lint:workspace": "turbo run lint",
+    "typecheck:shared": "npm run typecheck --workspace=@mahin/marketplace-data"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -25,6 +32,7 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
+    "turbo": "^2.5.0",
     "vite": "^6.3.5"
   }
 }
