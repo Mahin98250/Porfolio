@@ -4,7 +4,7 @@ test("home route presents programmer identity and selected work", async ({ page 
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Curiosity");
   await expect(page.getByText("STUDENT PROGRAMMER", { exact: false }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: /Explore selected work/i })).toHaveAttribute("href", "/projects");
+  await expect(page.getByRole("link", { name: /Explore selected work/i })).toHaveAttribute("href", "/projects/");
 });
 
 test("primary navigation reaches every top-level page", async ({ page }) => {

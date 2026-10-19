@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -36,6 +38,10 @@ jobs:
           PORTFOLIO_BASE_PATH: "/Porfolio"
           NEXT_PUBLIC_SITE_URL: "https://mahin98250.github.io/Porfolio"
         run: npm run build --workspace=@mahin/portfolio-next
+      - name: Include Doodhwala marketplace
+        env:
+          PORTFOLIO_BASE_PATH: "/Porfolio"
+        run: node scripts/prepare-doodhwala-pages.mjs
       - name: Ensure GitHub Pages serves Next.js assets
         run: printf 'GitHub Pages static export; Jekyll processing disabled.\n' > apps/portfolio/out/.nojekyll
       - name: Configure GitHub Pages
