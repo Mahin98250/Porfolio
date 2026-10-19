@@ -18,7 +18,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build:apps": "turbo run build --filter=@mahin/opticode-studio --filter=@mahin/learners-guide --filter=@mahin/dudhwala"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

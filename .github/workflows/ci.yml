@@ -47,6 +47,8 @@ jobs:
         env:
           PORTFOLIO_STATIC_EXPORT: "true"
         run: npm run build --workspace=@mahin/portfolio-next
+      - name: Build and verify standalone apps
+        run: npm run build:apps
       - name: Lint workspace packages
         run: npm run lint:workspace
       - name: Typecheck workspace packages
