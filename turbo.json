@@ -7,15 +7,10 @@
     "tsconfig.base.json",
     ".npmrc"
   ],
-  "globalEnv": [
-    "NODE_ENV",
-    "CI"
-  ],
+  "globalEnv": ["NODE_ENV", "CI"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "outputs": [
         "dist/**",
         ".next/**",
@@ -25,21 +20,15 @@
       ]
     },
     "lint": {
-      "dependsOn": [
-        "^lint"
-      ],
+      "dependsOn": ["^lint"],
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": [
-        "^typecheck"
-      ],
+      "dependsOn": ["^typecheck"],
       "outputs": []
     },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build",
       "outputs": [
         "coverage/**",
         "playwright-report/**",
