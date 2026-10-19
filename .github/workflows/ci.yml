@@ -31,6 +31,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build deployed portfolio
         run: npm run build
+      - name: Build Next.js App Router portfolio
+        run: npm run build --workspace=@mahin/portfolio-next
       - name: Typecheck shared marketplace contracts
         run: npm run typecheck:shared
 
