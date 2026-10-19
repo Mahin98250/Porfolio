@@ -39,3 +39,5 @@ h1,h2,h3,p{margin-top:0}h1{font-size:clamp(54px,7.1vw,98px);line-height:.98;lett
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.hero-scene canvas{display:none}}
 
 .brand-logo-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:0 0 22px}.brand-logo-card{display:flex;align-items:center;justify-content:center;gap:11px;padding:17px 12px;border-radius:17px;color:#dceaff;font-size:11px;font-weight:700}.brand-logo-card svg{width:21px;height:21px;flex:0 0 auto;color:#b9d5ff}.brand-logo-card:hover{border-color:#b9d5ff55;transform:translateY(-3px)}@media(max-width:700px){.brand-logo-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.brand-logo-card{flex-direction:column;gap:7px;padding:14px 5px;font-size:10px}}
+
+.project-card-links{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.project-card-links .text-link{font-size:11px}.strip-divider{color:#8293b2;font:11px var(--mono)}
