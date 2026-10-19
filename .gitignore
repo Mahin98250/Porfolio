@@ -6,6 +6,8 @@ node_modules/
 **/.turbo/
 dist/
 **/dist/
+out/
+**/out/
 build/
 coverage/
 playwright-report/

@@ -1,15 +1,55 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env", "**/.env.*", "!**/.env.example", "tsconfig.base.json", ".npmrc"],
-  "globalEnv": ["NODE_ENV", "CI"],
+  "globalDependencies": [
+    "**/.env",
+    "**/.env.*",
+    "!**/.env.example",
+    "tsconfig.base.json",
+    ".npmrc"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "CI"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/**", "coverage/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        "out/**",
+        ".next/**",
+        "!.next/cache/**",
+        "build/**",
+        "coverage/**"
+      ]
     },
-    "lint": { "dependsOn": ["^lint"], "outputs": [] },
-    "typecheck": { "dependsOn": ["^typecheck"], "outputs": [] },
-    "test": { "dependsOn": ["^build"], "outputs": ["coverage/**", "playwright-report/**", "test-results/**"] },
-    "dev": { "cache": false, "persistent": true }
+    "lint": {
+      "dependsOn": [
+        "^lint"
+      ],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": [
+        "^typecheck"
+      ],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**",
+        "playwright-report/**",
+        "test-results/**"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
   }
 }
