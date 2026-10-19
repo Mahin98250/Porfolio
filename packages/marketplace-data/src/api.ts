@@ -49,6 +49,7 @@ function mapApiError(payload: unknown, status: number): ApiResult<never> {
     };
   }
 
+  const requestId = safeRequestId(payload);
   return {
     ok: false,
     error: {
@@ -56,7 +57,7 @@ function mapApiError(payload: unknown, status: number): ApiResult<never> {
       message: status >= 500
         ? "The service is temporarily unavailable. Please try again."
         : "The request could not be completed.",
-      ...(safeRequestId(payload) ? { requestId: safeRequestId(payload) } : {}),
+      ...(requestId === undefined ? {} : { requestId }),
     },
   };
 }
