@@ -100,3 +100,13 @@ test("3D hero provides a static scene when reduced motion is requested", async (
   await expect(page.locator(".hero-scene .scene-static")).toBeVisible();
   await expect(page.locator(".hero-scene canvas")).toHaveCount(0);
 });
+
+test("cinematic homepage exposes its main chapters and project archive CTA", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("REALITIES");
+  for (const id of ["origin", "approach", "disciplines", "selected-work", "next"]) {
+    await expect(page.locator("#" + id)).toHaveCount(1);
+  }
+  await expect(page.getByRole("link", { name: /OPEN PROJECT ARCHIVE/i })).toHaveAttribute("href", "/projects");
+  await expect(page.getByRole("link", { name: /VIEW THE JOURNEY/i })).toHaveAttribute("href", "/journey");
+});
