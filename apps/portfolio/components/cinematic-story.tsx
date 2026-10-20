@@ -527,8 +527,8 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
         const radiusX = 1.62 * flare * uneven;
         const radiusY = 1.62 * 0.79 * flare * uneven * (1 + 0.035 * Math.sin(u * 9 + angle * 3));
         const point = center.clone()
-          .addScaledVector(frames.normals[row], nx * radiusX)
-          .addScaledVector(frames.binormals[row], ny * radiusY);
+          .addScaledVector(frames.normals[row]!, nx * radiusX)
+          .addScaledVector(frames.binormals[row]!, ny * radiusY);
         positions.push(point.x, point.y, point.z);
         uvs.push(u * 5.4, v * 3.4);
       }
