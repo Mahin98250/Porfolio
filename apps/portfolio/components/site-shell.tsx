@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MotionEnhancements } from "./motion-enhancements";
 
 const links = [
@@ -19,6 +19,10 @@ export function SiteShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   return (
     <div className="site-root">
       <MotionEnhancements />
@@ -29,21 +33,34 @@ export function SiteShell({ children }: Readonly<{ children: ReactNode }>) {
           <span className="brand-symbol">M<span>.</span></span>
           <span className="brand-copy">MAHIN PATEL<small>PROGRAMMER / BUILDER</small></span>
         </Link>
-        <button className="menu-toggle" type="button" aria-expanded={menuOpen} aria-label="Toggle navigation" onClick={() => setMenuOpen((open) => !open)}>
-          <span /><span />
+        <button
+          className="menu-toggle"
+          type="button"
+          aria-expanded={menuOpen}
+          aria-controls="main-navigation"
+          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+          onClick={() => setMenuOpen((open) => !open)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setMenuOpen(false);
+          }}
+        >
+          <span aria-hidden="true" /><span aria-hidden="true" />
         </button>
-        <nav className={menuOpen ? "navigation navigation-open" : "navigation"} aria-label="Main navigation">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={pathname === link.href ? "page" : undefined}
-              className={pathname === link.href ? "nav-link nav-active" : "nav-link"}
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav id="main-navigation" className={menuOpen ? "navigation navigation-open" : "navigation"} aria-label="Main navigation">
+          {links.map((link) => {
+            const active = pathname === link.href || (link.href === "/projects" && pathname.startsWith("/projects/"));
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={active ? "nav-link nav-active" : "nav-link"}
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
       </header>
       <main className="page-content">{children}</main>
