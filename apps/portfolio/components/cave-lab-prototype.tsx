@@ -3,7 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useMemo } from "react";
-import { BufferGeometry, Float32BufferAttribute, MeshStandardMaterial, DoubleSide, Vector3, Color } from "three";
+import { BufferGeometry, Float32BufferAttribute, MeshStandardMaterial, DoubleSide, Color, Mesh } from "three";
 
 type V3 = [number, number, number];
 const NX = 30, NY = 26, NZ = 82;
@@ -24,6 +24,26 @@ function hash(x: number, y: number, z: number) {
   const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
   return (n - Math.floor(n)) * 2 - 1;
 }
+function smoothNoise(x: number, y: number, z: number) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fade = (v: number) => v * v * (3 - 2 * v);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const fx = fade(x - ix), fy = fade(y - iy), fz = fade(z - iz);
+  const z0 = lerp(
+    lerp(hash(ix, iy, iz), hash(ix + 1, iy, iz), fx),
+    lerp(hash(ix, iy + 1, iz), hash(ix + 1, iy + 1, iz), fx), fy
+  );
+  const z1 = lerp(
+    lerp(hash(ix, iy, iz + 1), hash(ix + 1, iy, iz + 1), fx),
+    lerp(hash(ix, iy + 1, iz + 1), hash(ix + 1, iy + 1, iz + 1), fx), fy
+  );
+  return lerp(z0, z1, fz);
+}
+function at<T>(items: readonly T[], index: number): T {
+  const value = items[index];
+  if (value === undefined) throw new Error("Invalid cave polygon index");
+  return value;
+}
 function field(x: number, y: number, z: number): number {
   const t = (BOUNDS.maxZ - z) / (BOUNDS.maxZ - BOUNDS.minZ);
   const [cx, cy] = centerAt(Math.max(0, Math.min(1, t)));
@@ -31,11 +51,12 @@ function field(x: number, y: number, z: number): number {
   const dx = (x - cx) * (1 + 0.055 * Math.sin(y * 1.7 + z * 0.32));
   const dy = y - cy;
   const distance = Math.sqrt(dx * dx + dy * dy);
-  const broad = hash(Math.floor(x * 0.7), Math.floor(y * 0.7), Math.floor(z * 0.35)) * 0.22;
-  const medium = hash(Math.floor(x * 1.9), Math.floor(y * 1.9), Math.floor(z * 1.05)) * 0.095;
+  const broad = smoothNoise(x * 0.7, y * 0.7, z * 0.35) * 0.34;
+  const medium = smoothNoise(x * 1.9, y * 1.9, z * 1.05) * 0.13;
+  const fine = smoothNoise(x * 4.1, y * 4.1, z * 2.3) * 0.045;
   const ridges = Math.sin(x * 1.35 + z * 0.23) * Math.sin(y * 1.1 - z * 0.19) * 0.075;
   // Positive is open air. The zero surface is the boundary between the passage and solid rock.
-  let air = r - distance + broad + medium + ridges;
+  let air = r - distance + broad + medium + fine + ridges;
   // A side chamber is carved as an overlapping ellipsoid, not a decorative ring.
   const pocketX = x - (cx + (t > 0.33 ? -2.6 : 2.55));
   const pocketY = (y - cy) * 0.9;
@@ -47,21 +68,21 @@ function field(x: number, y: number, z: number): number {
 function interpolate(a: V3, b: V3, va: number, vb: number): V3 {
   const denom = va - vb;
   const t = Math.abs(denom) < 1e-6 ? 0.5 : Math.max(0, Math.min(1, va / denom));
-  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  return [a[0]! + (b[0]! - a[0]!) * t, a[1]! + (b[1]! - a[1]!) * t, a[2]! + (b[2]! - a[2]!) * t];
 }
 function polygoniseTet(points: V3[], values: number[], out: number[]) {
   const inside = [0,1,2,3].filter(i => values[i] >= 0);
   const outside = [0,1,2,3].filter(i => values[i] < 0);
   if (inside.length === 0 || inside.length === 4) return;
-  const edge = (a: number, b: number) => interpolate(points[a], points[b], values[a], values[b]);
+  const edge = (a: number, b: number) => interpolate(at(points, a), at(points, b), at(values, a), at(values, b));
   const pushTri = (a: V3, b: V3, c: V3) => { out.push(...a, ...b, ...c); };
   if (inside.length === 1) {
-    pushTri(edge(inside[0], outside[0]), edge(inside[0], outside[1]), edge(inside[0], outside[2]));
+    pushTri(edge(at(inside, 0), at(outside, 0)), edge(at(inside, 0), at(outside, 1)), edge(at(inside, 0), at(outside, 2)));
   } else if (inside.length === 3) {
-    pushTri(edge(outside[0], inside[0]), edge(outside[0], inside[2]), edge(outside[0], inside[1]));
+    pushTri(edge(at(outside, 0), at(inside, 0)), edge(at(outside, 0), at(inside, 2)), edge(at(outside, 0), at(inside, 1)));
   } else {
-    const a = edge(inside[0], outside[0]), b = edge(inside[0], outside[1]);
-    const c = edge(inside[1], outside[0]), d = edge(inside[1], outside[1]);
+    const a = edge(at(inside, 0), at(outside, 0)), b = edge(at(inside, 0), at(outside, 1));
+    const c = edge(at(inside, 1), at(outside, 0)), d = edge(at(inside, 1), at(outside, 1));
     pushTri(a, b, c); pushTri(b, d, c);
   }
 }
@@ -80,9 +101,9 @@ function buildCaveGeometry() {
   const vertices: number[] = [];
   for (let z = 0; z < NZ; z++) for (let y = 0; y < NY; y++) for (let x = 0; x < NX; x++) {
     const cubePoints = CORNERS.map(([dx,dy,dz]) => point(x+dx,y+dy,z+dz));
-    const cubeValues = CORNERS.map(([dx,dy,dz]) => values[index(x+dx,y+dy,z+dz)]);
+    const cubeValues = CORNERS.map(([dx,dy,dz]) => values[index(x+dx,y+dy,z+dz)]!);
     if (cubeValues.every(v => v >= 0) || cubeValues.every(v => v < 0)) continue;
-    for (const tet of TETS) polygoniseTet(tet.map(i => cubePoints[i]), tet.map(i => cubeValues[i]), vertices);
+    for (const tet of TETS) polygoniseTet(tet.map(i => at(cubePoints, i)), tet.map(i => at(cubeValues, i)), vertices);
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
@@ -97,7 +118,8 @@ function CaveMesh() {
     color: new Color("#82766a"), roughness: 0.97, metalness: 0,
     side: DoubleSide, flatShading: false,
   }), []);
-  return <mesh geometry={geometry} material={material} />;
+  const mesh = useMemo(() => new Mesh(geometry, material), [geometry, material]);
+  return <primitive object={mesh} dispose={null} />;
 }
 
 export default function CaveLabPrototype() {
