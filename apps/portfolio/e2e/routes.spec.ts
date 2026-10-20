@@ -121,6 +121,11 @@ test("project artwork receives pointer lighting on fine-pointer devices", async 
   await art.scrollIntoViewIfNeeded();
   await art.hover({ position: { x: 40, y: 40 } });
   await expect(art).toHaveClass(/is-pointer-card/);
+
+  await page.goto("/projects/opticode-studio");
+  const stage = page.locator(".project-stage");
+  await stage.hover({ position: { x: 75, y: 60 } });
+  await expect(stage).toHaveClass(/is-pointer-card/);
 });
 
 test("cinematic homepage exposes its main chapters and project archive CTA", async ({ page }) => {
