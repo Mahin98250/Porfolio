@@ -329,7 +329,7 @@ function CaveShell() {
     // lets the branch mouths read as openings into the surrounding rock.
     const portalT = 31 / 63; // the branch group is positioned at z = -22
     const portalTSpread = 0.052;
-    const portalAngleSpread = 0.37;
+    const portalAngleSpread = 0.58;
     for (let row = 0; row < axialSegments; row++) {
       for (let segment = 0; segment < radialSegments; segment++) {
         const t = (row + 0.5) / axialSegments;
