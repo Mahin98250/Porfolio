@@ -44,6 +44,7 @@ const pointerCardSelector = [
   ".project-story-main",
   ".project-learning-card",
   ".project-bottom-panel",
+  ".cinema-project-visual",
 ].join(",");
 
 export function MotionEnhancements() {
@@ -66,7 +67,9 @@ export function MotionEnhancements() {
       frame = window.requestAnimationFrame(() => {
         frame = 0;
         const max = document.documentElement.scrollHeight - window.innerHeight;
-        root.style.setProperty("--scroll-progress", String(max > 0 ? window.scrollY / max : 0));
+        const progressValue = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+        root.style.setProperty("--scroll-progress", String(progressValue));
+        root.style.setProperty("--story-progress", String(progressValue));
       });
     };
 
