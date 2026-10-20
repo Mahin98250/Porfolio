@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("home route presents programmer identity and selected work", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("IDEAS INTO");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("CODE IS ONLY");
   await expect(page.getByText("STUDENT PROGRAMMER", { exact: false }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: /OPEN PROJECT ARCHIVE/i })).toHaveAttribute("href", /projects\/?$/);
 });
@@ -103,7 +103,7 @@ test("3D hero provides a static scene when reduced motion is requested", async (
 
 test("cinematic homepage exposes its main chapters and project archive CTA", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("REALITIES");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("BEGINNING");
   for (const id of ["origin", "approach", "disciplines", "selected-work", "next"]) {
     await expect(page.locator("#" + id)).toHaveCount(1);
   }
