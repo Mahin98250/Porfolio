@@ -73,6 +73,26 @@ function caveRadiusAt(t: number): number {
     - 0.39 * bell(0.704, 0.037);
 }
 
+function caveAlcoveAt(t: number, angle: number): number {
+  // Localized side chambers are directional, not full rings around the passage.
+  // Each tuple is [depth-position, angle, length spread, angular spread, depth].
+  const pockets: Array<[number, number, number, number, number]> = [
+    [0.105, 0.25, 0.052, 0.48, 0.72],
+    [0.275, 2.35, 0.065, 0.58, 0.64],
+    [0.405, 5.25, 0.043, 0.43, 0.58],
+    [0.515, 1.05, 0.060, 0.64, 0.92],
+    [0.655, 3.28, 0.064, 0.52, 0.76],
+    [0.775, 4.80, 0.052, 0.47, 0.62],
+  ];
+  let depth = 0;
+  for (const [centerT, centerAngle, spreadT, spreadAngle, strength] of pockets) {
+    const dt = (t - centerT) / spreadT;
+    const da = Math.atan2(Math.sin(angle - centerAngle), Math.cos(angle - centerAngle)) / spreadAngle;
+    depth += strength * Math.exp(-0.5 * (dt * dt + da * da));
+  }
+  return depth;
+}
+
 function makeRockTextures(): { color: DataTexture; height: DataTexture } {
   const size = 384;
   const colorData = new Uint8Array(size * size * 4);
@@ -205,7 +225,7 @@ function CaveShell() {
         const medium = noise3(aroundX * 5.2 - 2, aroundY * 5.2 + 6, t * 23);
         const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
         const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
-        const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038) + fine * 0.045;
+        const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038) + caveAlcoveAt(t, angle) + fine * 0.045;
 
         // The floor is lower and flatter than the roof; upper surfaces have
         // more headroom and uneven overhangs. This deliberately avoids a
@@ -273,7 +293,7 @@ function CaveGuideDots() {
     {dots.map((dot, i) => (
       <mesh key={i} position={dot.position} scale={dot.size}>
         <sphereGeometry args={[1, 6, 5]} />
-        <meshBasicMaterial color={i % 9 === 0 ? "#bba68b" : "#91b1b4"} transparent opacity={dot.opacity} depthWrite={false} />
+        <meshBasicMaterial color={i % 9 === 0 ? "#bba68b" : "#9b907e"} transparent opacity={dot.opacity * 0.78} depthWrite={false} />
       </mesh>
     ))}
   </group>;
@@ -366,109 +386,6 @@ function CaveTunnel() {
   );
 }
 
-function DataChamber() {
-  const chamber = useRef<Group>(null);
-  useFrame((state, delta) => {
-    if (!chamber.current) return;
-    const p = state.clock.elapsedTime;
-    chamber.current.rotation.z = MathUtils.damp(chamber.current.rotation.z, Math.sin(p * 0.19) * 0.025, 1.3, Math.min(delta, 0.045));
-    chamber.current.scale.setScalar(0.98 + Math.sin(p * 0.4) * 0.018);
-  });
-  return (
-    <group ref={chamber}>
-      {Array.from({ length: 18 }, (_, i) => {
-        const z = -15.5 - i * 1.23;
-        const radius = 2.3 + Math.sin(i * 1.37) * 0.14;
-        return (
-          <group key={i} position={[Math.sin(i * 0.35) * 0.12, Math.cos(i * 0.41) * 0.12, z]} rotation={[0.06 * Math.sin(i), 0.08 * Math.cos(i * 0.71), i * 0.13]}>
-            <mesh>
-              <torusGeometry args={[radius, 0.018, 6, 72]} />
-              <meshStandardMaterial color={i % 3 === 0 ? "#e4bd8a" : "#9982d3"} emissive={i % 3 === 0 ? "#7d4e26" : "#33205d"} emissiveIntensity={0.65} roughness={0.28} metalness={0.72} />
-            </mesh>
-            <mesh rotation={[0, 0, Math.PI / 2]}>
-              <torusGeometry args={[radius * 0.72, 0.009, 5, 64]} />
-              <meshBasicMaterial color="#8bbfc4" transparent opacity={0.56} />
-            </mesh>
-            {Array.from({ length: 4 }, (_, j) => (
-              <mesh key={j} position={[Math.cos(j * Math.PI / 2 + i * 0.21) * radius, Math.sin(j * Math.PI / 2 + i * 0.21) * radius, 0]} scale={0.055 + (j % 2) * 0.025}>
-                <octahedronGeometry args={[1, 0]} />
-                <meshBasicMaterial color={j % 2 ? "#e6c795" : "#b29bff"} />
-              </mesh>
-            ))}
-          </group>
-        );
-      })}
-    </group>
-  );
-}
-
-function ProjectRelics() {
-  const group = useRef<Group>(null);
-  useFrame((state, delta) => {
-    if (!group.current) return;
-    const step = Math.min(delta, 0.045);
-    group.current.rotation.y = MathUtils.damp(group.current.rotation.y, Math.sin(state.clock.elapsedTime * 0.16) * 0.07, 1.2, step);
-  });
-  const relics = [
-    { position: [-2.2, 0.45, -22.4] as [number, number, number], color: "#e4b77c", scale: 0.58 },
-    { position: [0.15, -0.35, -27.3] as [number, number, number], color: "#a9d4ff", scale: 0.66 },
-    { position: [2.15, 0.45, -32.2] as [number, number, number], color: "#a5d7be", scale: 0.62 },
-  ];
-  return (
-    <group ref={group}>
-      {relics.map((relic, i) => (
-        <group key={i} position={relic.position}>
-          <mesh scale={relic.scale}>
-            <icosahedronGeometry args={[1, 2]} />
-            <meshPhysicalMaterial color={relic.color} metalness={0.55} roughness={0.19} clearcoat={1} emissive={relic.color} emissiveIntensity={0.16} />
-          </mesh>
-          <mesh rotation={[0.42 + i * 0.31, 0.25, 0.8]}>
-            <torusGeometry args={[relic.scale * 1.55, 0.012, 6, 80]} />
-            <meshBasicMaterial color={relic.color} transparent opacity={0.85} />
-          </mesh>
-          <mesh rotation={[1.18, -0.4, i * 0.6]}>
-            <torusGeometry args={[relic.scale * 1.88, 0.009, 6, 72]} />
-            <meshBasicMaterial color="#a98cf4" transparent opacity={0.55} />
-          </mesh>
-          <pointLight color={relic.color} intensity={2.5} distance={5} />
-        </group>
-      ))}
-    </group>
-  );
-}
-
-function RobotArm() {
-  const shoulder = useRef<Group>(null);
-  const elbow = useRef<Group>(null);
-  useFrame((state, delta) => {
-    const step = Math.min(delta, 0.045);
-    const beat = Math.sin(state.clock.elapsedTime * 0.42);
-    if (shoulder.current) shoulder.current.rotation.z = MathUtils.damp(shoulder.current.rotation.z, -0.42 + beat * 0.12, 1.1, step);
-    if (elbow.current) elbow.current.rotation.z = MathUtils.damp(elbow.current.rotation.z, 0.74 + Math.sin(state.clock.elapsedTime * 0.31) * 0.16, 1.0, step);
-  });
-  return (
-    <group position={[0.55, -1.15, -40.5]} rotation={[0, -0.25, 0]}>
-      <mesh position={[0, -0.18, 0]}><cylinderGeometry args={[0.72, 0.86, 0.32, 32]} /><meshStandardMaterial color="#302b36" metalness={0.86} roughness={0.29} /></mesh>
-      <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.48, 0.56, 0.3, 32]} /><meshStandardMaterial color="#b18b62" metalness={0.84} roughness={0.24} /></mesh>
-      <mesh position={[0, 0.4, 0]}><sphereGeometry args={[0.34, 22, 22]} /><meshPhysicalMaterial color="#77727e" metalness={0.92} roughness={0.2} clearcoat={0.8} /></mesh>
-      <group ref={shoulder} position={[0, 0.42, 0]}>
-        <mesh position={[0.16, 0.86, 0]} rotation={[0, 0, -0.24]}><boxGeometry args={[0.42, 1.8, 0.42]} /><meshStandardMaterial color="#b8a17d" metalness={0.86} roughness={0.22} /></mesh>
-        <mesh position={[0.28, 1.62, 0]}><sphereGeometry args={[0.3, 22, 22]} /><meshPhysicalMaterial color="#4c4a55" metalness={0.94} roughness={0.18} /></mesh>
-        <group ref={elbow} position={[0.28, 1.62, 0]}>
-          <mesh position={[0.22, 0.78, 0]} rotation={[0, 0, 0.28]}><boxGeometry args={[0.34, 1.58, 0.34]} /><meshStandardMaterial color="#8f90a4" metalness={0.9} roughness={0.2} /></mesh>
-          <mesh position={[0.35, 1.47, 0]}><sphereGeometry args={[0.23, 20, 20]} /><meshPhysicalMaterial color="#d4b58c" metalness={0.92} roughness={0.18} /></mesh>
-          <group position={[0.35, 1.55, 0]}>
-            <mesh position={[0.1, 0.18, 0]}><boxGeometry args={[0.46, 0.22, 0.34]} /><meshStandardMaterial color="#c6b59a" metalness={0.88} roughness={0.2} /></mesh>
-            <mesh position={[0.28, -0.02, 0.09]} rotation={[0, 0, -0.32]}><boxGeometry args={[0.08, 0.4, 0.08]} /><meshStandardMaterial color="#e2c18d" metalness={0.9} roughness={0.23} /></mesh>
-            <mesh position={[0.28, -0.02, -0.09]} rotation={[0, 0, -0.32]}><boxGeometry args={[0.08, 0.4, 0.08]} /><meshStandardMaterial color="#e2c18d" metalness={0.9} roughness={0.23} /></mesh>
-          </group>
-        </group>
-      </group>
-      <pointLight position={[0.3, 1.7, 1.2]} color="#e4b77c" intensity={2.8} distance={7} />
-    </group>
-  );
-}
-
 function World({ progressRef }: { progressRef: ProgressRef }) {
   const world = useRef<Group>(null);
   useFrame((state, delta) => {
@@ -497,25 +414,16 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
 
   return (
     <>
-      <color attach="background" args={["#09070c"]} />
-      <fog attach="fog" args={["#09070c", 7, 31]} />
-      <ambientLight intensity={0.28} />
-      <directionalLight position={[4, 5, 3]} intensity={1.35} color="#f3e6d7" />
-      <pointLight position={[0, 0, 5]} intensity={5.5} distance={14} color="#c8a27d" />
-      <pointLight position={[-3, 1.8, -11]} intensity={4.2} distance={17} color="#9d70bb" />
-      <pointLight position={[2.8, -1.4, -25]} intensity={3.6} distance={14} color="#7d9eb9" />
-      <pointLight position={[-1.8, 2.5, -43]} intensity={5.4} distance={15} color="#e3b477" />
+      <color attach="background" args={["#090806"]} />
+      <fog attach="fog" args={["#090806", 7, 32]} />
+      <ambientLight intensity={0.22} color="#c5b9a7" />
+      <directionalLight position={[4, 5, 3]} intensity={1.05} color="#e0d0b8" />
+      <pointLight position={[0, 0, 5]} intensity={4.3} distance={13} color="#c9ab81" />
+      <pointLight position={[-3, 1.8, -11]} intensity={2.2} distance={13} color="#b1a18b" />
+      <pointLight position={[2.8, -1.4, -25]} intensity={1.8} distance={11} color="#9da69d" />
+      <pointLight position={[-1.8, 2.5, -43]} intensity={3.0} distance={14} color="#c5ad87" />
       <group ref={world}>
         <CaveTunnel />
-        <DataChamber />
-        <ProjectRelics />
-        <RobotArm />
-        <group position={[0, 0, -52]}>
-          <mesh><torusGeometry args={[2.15, 0.045, 8, 100]} /><meshPhysicalMaterial color="#e8c38e" metalness={0.82} roughness={0.2} emissive="#604224" emissiveIntensity={0.9} /></mesh>
-          <mesh rotation={[0.5, 0.35, 0.75]}><torusGeometry args={[1.66, 0.017, 8, 90]} /><meshBasicMaterial color="#a690e9" transparent opacity={0.9} /></mesh>
-          <mesh><icosahedronGeometry args={[0.76, 3]} /><meshPhysicalMaterial color="#d9c4ed" metalness={0.48} roughness={0.16} transparent opacity={0.78} transmission={0.18} clearcoat={1} emissive="#47245f" emissiveIntensity={0.6} /></mesh>
-          <pointLight intensity={9} distance={15} color="#e2bc88" />
-        </group>
       </group>
     </>
   );
