@@ -112,6 +112,7 @@ test("mobile chapter dock keeps the long-form story navigable", async ({ page })
   await chapters.getByRole("link", { name: "Approach chapter" }).click();
   await expect(page).toHaveURL(/#approach$/);
   await expect(page.locator("#approach")).toHaveCount(1);
+  await expect(chapters.getByRole("link", { name: "Approach chapter" })).toHaveAttribute("aria-current", "location");
 });
 
 test("project artwork receives pointer lighting on fine-pointer devices", async ({ page }) => {
