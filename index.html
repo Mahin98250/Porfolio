@@ -35,6 +35,7 @@
   <div id="root">
     <!-- Static-first fallback: the site stays visible even when GitHub Pages serves source files instead of Vite's built bundle. The React app replaces this markup on a correct Actions deployment. -->
     <div class="fb-site">
+      <aside class="fb-chapter-rail" aria-label="Story chapters"><a href="#home"><span>00</span><i>ORIGIN</i></a><a href="#about"><span>01</span><i>APPROACH</i></a><a href="#capabilities"><span>02</span><i>FIELDS</i></a><a href="#projects"><span>03</span><i>WORK</i></a><a href="#journey"><span>04</span><i>JOURNEY</i></a><a href="#contact"><span>05</span><i>CONTACT</i></a></aside>
       <header class="fb-nav"><nav class="fb-shell fb-navinner" aria-label="Main navigation">
         <a class="fb-brand" href="#home"><span class="fb-logo">M<span>.</span></span> MAHIN PATEL</a>
         <button class="fb-menu" id="fb-menu" aria-expanded="false" aria-controls="fb-links">Menu ☰</button>
@@ -42,9 +43,9 @@
       </nav></header>
       <main>
         <section class="fb-shell fb-hero" id="home">
-          <div class="fb-hero-copy"><span class="fb-status"><i></i> CURIOUS BUILDER · ALWAYS LEARNING</span>
-            <p class="fb-kicker" style="margin-top:28px">DESIGNING AND BUILDING FOR WHAT’S NEXT</p>
-            <h1>Ideas into <span class="fb-gradient">useful</span><br>digital experiences.</h1>
+          <div class="fb-hero-copy"><span class="fb-status"><i></i> STUDENT PROGRAMMER · FUTURE ENGINEER</span>
+            <p class="fb-kicker" style="margin-top:28px">FROM A QUESTION TO A WORKING THING</p>
+            <h1>Code is only<br><span class="fb-gradient">the beginning.</span></h1>
             <p class="fb-lede">I’m Mahin Patel — a student developer exploring software, AI and thoughtful product design. I build projects to learn by doing, solve real problems and make technology feel simpler.</p>
             <div class="fb-actions"><a class="fb-btn fb-btn-primary" href="#projects">Explore my work ↗</a><a class="fb-btn fb-btn-secondary" href="#contact">Get in touch ↓</a></div>
             <div class="fb-proof"><span>Hands-on projects</span><span>Ahmedabad, India</span><span>Robotics · AI · Automation</span></div>
@@ -102,4 +103,10 @@
   .fb-nav{background:rgba(10,7,16,.84)}
   .fb-btn,.fb-navcta{border-radius:999px}
   .fb-section{border-color:#c4a3ff1f}
+  .fb-chapter-rail{position:fixed;z-index:28;left:15px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;padding:7px;border:1px solid #c4a3ff26;border-radius:999px;background:#100b18df;backdrop-filter:blur(18px);box-shadow:0 12px 40px #0005}
+  .fb-chapter-rail a{display:flex;align-items:center;gap:9px;min-height:31px;padding-right:8px;color:#b3a0c9}
+  .fb-chapter-rail a span{display:grid;place-items:center;width:29px;height:29px;border:1px solid #c4a3ff30;border-radius:50%;font:8px "DM Mono",monospace;background:#100b18}
+  .fb-chapter-rail a i{font:8px "DM Mono",monospace;font-style:normal;letter-spacing:1px}
+  .fb-chapter-rail a:hover{color:#e8bd86}
+  @media(max-width:700px){.fb-chapter-rail{left:50%;top:auto;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);flex-direction:row;gap:2px;padding:5px}.fb-chapter-rail a{padding:0;gap:0}.fb-chapter-rail a span{width:30px;height:30px}.fb-chapter-rail a i{display:none}.fb-footer{padding-bottom:85px}}
 </style>
