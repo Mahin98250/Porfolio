@@ -52,3 +52,22 @@ test("project detail panels reveal instead of remaining hidden below the hero", 
   await closingPanel.scrollIntoViewIfNeeded();
   await expect(closingPanel).toHaveClass(/is-visible/);
 });
+
+test("project archive renders six responsive cards with valid project actions", async ({ page }) => {
+  await page.goto("/projects");
+  const cards = page.locator(".all-project-card");
+  await expect(cards).toHaveCount(6);
+  await expect(cards.nth(0).getByRole("heading", { level: 3 })).toContainText("OptiCode Studio");
+  await expect(cards.nth(0).getByRole("link", { name: /Project overview/i })).toHaveAttribute(
+    "href",
+    /\\/projects\\/opticode-studio\\/?$/,
+  );
+  await expect(cards.nth(0).getByRole("link", { name: /Source/i })).toHaveAttribute(
+    "href",
+    "https://github.com/Mahin98250/OptiCode-Studio",
+  );
+  await expect(cards.nth(5).getByRole("link", { name: /Browse repositories/i })).toHaveAttribute(
+    "href",
+    "https://github.com/Mahin98250?tab=repositories",
+  );
+});
