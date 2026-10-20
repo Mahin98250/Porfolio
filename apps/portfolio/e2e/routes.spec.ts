@@ -71,3 +71,25 @@ test("project archive renders six responsive cards with valid project actions", 
     "https://github.com/Mahin98250?tab=repositories",
   );
 });
+
+test("project detail keeps Projects navigation marked as current", async ({ page }) => {
+  await page.goto("/projects/opticode-studio");
+  await expect(page.getByRole("link", { name: "Projects", exact: true })).toHaveAttribute("aria-current", "page");
+});
+
+test("mobile navigation exposes its state and closes after route selection", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  const openButton = page.getByRole("button", { name: "Open navigation" });
+  await expect(openButton).toHaveAttribute("aria-controls", "main-navigation");
+  await openButton.click();
+
+  const closeButton = page.getByRole("button", { name: "Close navigation" });
+  await expect(closeButton).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator("#main-navigation")).toBeVisible();
+  await page.locator("#main-navigation").getByRole("link", { name: "Projects", exact: true }).click();
+
+  await expect(page).toHaveURL(new RegExp("/projects/?$"));
+  await expect(page.getByRole("button", { name: "Open navigation" })).toHaveAttribute("aria-expanded", "false");
+});
