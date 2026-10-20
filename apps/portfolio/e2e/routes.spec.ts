@@ -93,3 +93,10 @@ test("mobile navigation exposes its state and closes after route selection", asy
   await expect(page).toHaveURL(new RegExp("/projects/?$"));
   await expect(page.getByRole("button", { name: "Open navigation" })).toHaveAttribute("aria-expanded", "false");
 });
+
+test("3D hero provides a static scene when reduced motion is requested", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator(".hero-scene .scene-static")).toBeVisible();
+  await expect(page.locator(".hero-scene canvas")).toHaveCount(0);
+});
