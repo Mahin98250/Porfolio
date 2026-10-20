@@ -93,6 +93,24 @@ function caveAlcoveAt(t: number, angle: number): number {
   return depth;
 }
 
+function caveSurfacePoint(t: number, angle: number): [number, number] {
+  const [cx, cy] = caveCenter(t);
+  const radiusAt = caveRadiusAt(t);
+  const aroundX = Math.cos(angle);
+  const aroundY = Math.sin(angle);
+  const coarse = noise3(aroundX * 1.7 + 8, aroundY * 1.7 - 4, t * 7.5);
+  const medium = noise3(aroundX * 5.2 - 2, aroundY * 5.2 + 6, t * 23);
+  const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
+  const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
+  const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038)
+    + caveAlcoveAt(t, angle) + fine * 0.045;
+  const floorRidge = Math.max(0, -aroundY) * Math.sin(t * 31 + aroundX * 5.7 + coarse) * 0.105;
+  return [
+    cx + aroundX * radius * (0.98 + medium * 0.045),
+    cy + aroundY * radius * (aroundY >= 0 ? 1.08 : 0.73) + floorRidge,
+  ];
+}
+
 function makeRockTextures(): { color: DataTexture; height: DataTexture } {
   const size = 384;
   const colorData = new Uint8Array(size * size * 4);
@@ -157,15 +175,16 @@ function CaveRocks() {
     const t = 0.025 + hash01(i * 23.91 + 5.3) * 0.93;
     const angle = hash01(i * 61.17 + 1.7) * Math.PI * 2;
     const [cx, cy] = caveCenter(t);
-    const z = 8.35 - t * 62.2;
-    const roomRadius = caveRadiusAt(t);
+    const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
+    const z = 9 - t * 63;
     const size = 0.13 + hash01(i * 14.31 + 2.1) * 0.25;
-    // Rocks sit partially embedded at the wall surface; they are not scattered
-    // through the middle of the viewer's path.
-    const radius = roomRadius * (1 + noise3(Math.cos(angle) * 1.2, Math.sin(angle) * 1.2, t * 5) * 0.045) - size * 0.72;
-    const verticalScale = Math.sin(angle) > 0 ? 1.04 : 0.74;
+    // Anchor rubble to the actual noisy wall field and sink it slightly into
+    // the rock so pieces do not float in the middle of the passage.
+    const dx = surfaceX - cx;
+    const dy = surfaceY - cy;
+    const radialLength = Math.hypot(dx, dy) || 1;
     return {
-      position: [cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius * verticalScale, z] as [number, number, number],
+      position: [surfaceX - (dx / radialLength) * size * 0.72, surfaceY - (dy / radialLength) * size * 0.72, z] as [number, number, number],
       scale: [
         size * (0.8 + hash01(i * 2.13) * 1.1),
         size * (0.65 + hash01(i * 7.31) * 0.95),
@@ -344,22 +363,33 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
 function CaveFormations() {
   const formations = useMemo(() => Array.from({ length: 35 }, (_, i) => {
     const t = 0.045 + hash01(i * 17.31 + 8.1) * 0.91;
-    const [cx, cy] = caveCenter(t);
-    const radius = caveRadiusAt(t);
     const choice = hash01(i * 9.73 + 2.4);
     const hanging = choice < 0.64;
     const wall = choice >= 0.64 && choice < 0.83;
     const side = hash01(i * 13.61 + 4.2) > 0.5 ? 1 : -1;
+    const angle = hanging
+      ? 0.38 + hash01(i * 14.3 + 7.1) * (Math.PI - 0.76)
+      : wall
+        ? (side > 0 ? 0 : Math.PI) + (hash01(i * 3.77 + 2.1) - 0.5) * 0.16
+        : Math.PI + 0.30 + hash01(i * 8.91 + 6.8) * (Math.PI - 0.60);
+    const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
+    const [cx, cy] = caveCenter(t);
+    const dx = surfaceX - cx;
+    const dy = surfaceY - cy;
+    const radialLength = Math.hypot(dx, dy) || 1;
     const length = 0.55 + hash01(i * 23.71 + 3.3) * (hanging ? 1.25 : 0.95);
-    const z = 8.35 - t * 61.8;
-    const x = wall ? cx + side * radius * 0.80 : cx + (hash01(i * 19.1 + 5.2) - 0.5) * radius * 0.55;
-    const y = wall
-      ? cy + (hash01(i * 7.7 + 6.2) - 0.48) * radius * 0.78
-      : cy + (hanging ? radius * 0.99 : -radius * 0.67);
+    const z = 9 - t * 63;
     const geometry = makeFormationGeometry(i * 1.73 + 0.4, length, hanging);
+    // Place the broad end inside the wall by a few centimetres; the formation
+    // axis then points inward, following the local roof, floor, or side wall.
+    const rotationZ = hanging ? angle - Math.PI / 2 : Math.PI / 2 + angle;
     return {
-      position: [x, y, z] as [number, number, number],
-      rotation: [wall ? (hash01(i * 5.7) - 0.5) * 0.8 : 0, (hash01(i * 3.9) - 0.5) * 0.8, wall ? side * Math.PI * 0.42 : (hash01(i * 21.7) - 0.5) * 0.25] as [number, number, number],
+      position: [surfaceX - (dx / radialLength) * 0.055, surfaceY - (dy / radialLength) * 0.055, z] as [number, number, number],
+      rotation: [
+        wall ? (hash01(i * 5.7) - 0.5) * 0.22 : (hash01(i * 2.71) - 0.5) * 0.10,
+        (hash01(i * 3.9) - 0.5) * 0.18,
+        rotationZ + (hash01(i * 21.7) - 0.5) * 0.18,
+      ] as [number, number, number],
       scale: [0.68 + hash01(i * 4.2) * 0.82, 0.7 + hash01(i * 12.5) * 0.95, 0.72 + hash01(i * 8.6) * 0.8] as [number, number, number],
       geometry,
       color: i % 7 === 0 ? "#5b4b40" : i % 3 === 0 ? "#403a35" : "#4b4038",
