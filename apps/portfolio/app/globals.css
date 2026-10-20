@@ -1037,3 +1037,19 @@ html:has(.cinematic-story-track),body:has(.cinematic-story-track){background:#08
 .cave-lab-view-label{position:absolute;bottom:16px;left:18px;color:#aaa096;font:9px var(--mono,monospace);letter-spacing:.12em;pointer-events:none}
 .cave-lab-footer{display:flex;justify-content:space-between;gap:14px;padding-top:17px;color:#8e877f;font:9px var(--mono,monospace);letter-spacing:.09em}
 @media(max-width:650px){.cave-lab-header{flex-wrap:wrap}.cave-lab-header span:last-child{width:100%}.cave-lab-view{height:58vh;min-height:360px}.cave-lab-footer{flex-direction:column;gap:8px}}
+
+
+/* Branching story choice — cinematic, tactile decision panel. */
+.cinema-branch-choice{position:absolute;z-index:8;left:50%;top:50%;width:min(720px,calc(100% - 44px));transform:translate(-50%,-50%);padding:clamp(24px,4vw,44px);border:1px solid #d4bd9b55;background:linear-gradient(135deg,#17130fdf,#09090bdc);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 24px 100px #0009;color:#eee6d9;opacity:0;pointer-events:none;transition:opacity .24s ease}
+.cinema-branch-choice:before{content:"";position:absolute;inset:8px;border:1px solid #e7d1b51b;pointer-events:none}
+.cinema-branch-choice .cinema-scene-kicker{display:flex;align-items:center;gap:10px;font:9px var(--mono,monospace);letter-spacing:.18em;color:#c7ad8c}
+.cinema-branch-choice .cinema-scene-kicker i{width:6px;height:6px;background:#d4b48b;border-radius:50%;box-shadow:0 0 14px #d4b48b}
+.cinema-branch-choice h2{margin:16px 0 12px;font-size:clamp(36px,5.6vw,64px);line-height:.9;letter-spacing:-.055em;text-transform:uppercase}
+.cinema-branch-choice h2 em{font-family:Georgia,serif;font-weight:400;text-transform:none;color:#c8b195}
+.cinema-branch-choice>p{max-width:420px;color:#b8b0a4;font-size:13px;line-height:1.7;margin-bottom:24px}
+.cinema-branch-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cinema-branch-actions button{min-height:52px;padding:12px;border:1px solid #bda17a80;background:#d4bd9b0b;color:#e9ddcb;font:9px var(--mono,monospace);letter-spacing:.07em;cursor:pointer;transition:background .22s,border-color .22s,transform .22s}
+.cinema-branch-actions button:hover,.cinema-branch-actions button:focus-visible{background:#d4bd9b22;border-color:#e5c99e;transform:translateY(-2px);outline:none}
+.cinema-branch-confirm{display:block;margin-top:16px;color:#b6a58f;font:8px var(--mono,monospace);letter-spacing:.12em}
+@media(max-width:600px){.cinema-branch-choice{padding:25px 18px}.cinema-branch-actions{grid-template-columns:1fr}.cinema-branch-actions button{min-height:48px}.cinema-branch-choice h2{font-size:42px}}
+@media(prefers-reduced-motion:reduce){.cinema-branch-choice,.cinema-branch-actions button{transition:none}}
