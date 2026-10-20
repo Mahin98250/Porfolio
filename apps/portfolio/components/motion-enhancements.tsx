@@ -72,6 +72,18 @@ export function MotionEnhancements() {
         root.style.setProperty("--scroll-progress", String(progressValue));
         root.style.setProperty("--story-progress", String(progressValue));
         root.style.setProperty("--chapter-progress", (progressValue * 80.5).toFixed(2) + "%");
+
+        // Scrub each cinematic chapter directly from scroll position.
+        const cinematicSections = document.querySelectorAll<HTMLElement>(
+          ".cinema-hero, .manifesto-chapter, .disciplines-chapter, .work-chapter, .next-chapter"
+        );
+        cinematicSections.forEach((section) => {
+          const rect = section.getBoundingClientRect();
+          const span = window.innerHeight + rect.height;
+          const shotProgress = span > 0 ? Math.min(1, Math.max(0, (window.innerHeight - rect.top) / span)) : 0;
+          section.style.setProperty("--shot-progress", shotProgress.toFixed(4));
+          section.style.setProperty("--shot-depth", (1 - Math.abs(shotProgress - 0.5) * 2).toFixed(4));
+        });
       });
     };
 

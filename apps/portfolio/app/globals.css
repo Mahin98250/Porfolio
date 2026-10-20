@@ -795,3 +795,16 @@ body{background:radial-gradient(ellipse at 70% 9%,rgba(94,51,130,.18),transparen
 .cinema-button.is-magnetic:hover{transform:translate3d(var(--magnet-x,0px),calc(var(--magnet-y,0px) - 2px),0)}
 @media(max-width:580px){.cinema-button.is-magnetic,.cinema-button.is-magnetic:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){.cinema-button.is-magnetic,.cinema-button.is-magnetic:hover{transform:none!important}}
+
+
+/* SCROLL FILM: continuous chapter motion scrubbed by the user's scroll position. */
+.cinema-hero,.manifesto-chapter,.disciplines-chapter,.work-chapter,.next-chapter{--shot-progress:0;--shot-depth:0;position:relative;isolation:isolate;transform-style:preserve-3d}
+.cinema-hero::after,.manifesto-chapter::after,.disciplines-chapter::after,.work-chapter::after,.next-chapter::after{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;opacity:calc(.12 + var(--shot-depth)*.22);background:radial-gradient(ellipse at calc(50% + (var(--shot-progress) - .5)*34%) calc(45% + (var(--shot-progress) - .5)*22%),rgba(174,127,255,.13),transparent 56%)}
+.cinema-hero-art{transform:translate3d(calc((var(--shot-progress) - .5)*-22px),calc((var(--shot-progress) - .5)*28px),0) scale(calc(.94 + var(--shot-depth)*.06));transform-origin:center;will-change:transform}
+.cinema-hero-copy{transform:translate3d(0,calc((.5 - var(--shot-progress))*30px),0);opacity:clamp(.68,calc(.68 + var(--shot-depth)*.32),1);will-change:transform,opacity}
+.manifesto-main,.disciplines-heading,.work-heading,.next-chapter>h2,.next-chapter>.cinema-overline{transform:translate3d(0,calc((.5 - var(--shot-progress))*22px),0)}
+.manifesto-symbol,.next-chapter-orbit{transform:rotate(calc((var(--shot-progress) - .5)*26deg)) translate3d(0,calc((.5 - var(--shot-progress))*22px),0)}
+.cinema-project-visual{transform:perspective(900px) rotateY(calc((var(--shot-progress) - .5)*-7deg)) translateZ(calc(var(--shot-depth)*8px));transition:transform .14s linear,border-color .3s}
+.discipline-row{transform:translate3d(calc((.5 - var(--shot-progress))*18px),0,0)}
+@media(max-width:760px){.cinema-hero-art{transform:translate3d(0,calc((var(--shot-progress) - .5)*12px),0) scale(calc(.97 + var(--shot-depth)*.03))}.cinema-hero-copy,.manifesto-main,.disciplines-heading,.work-heading,.next-chapter>h2,.next-chapter>.cinema-overline{transform:none;opacity:1}.cinema-project-visual,.discipline-row{transform:none}}
+@media(prefers-reduced-motion:reduce){.cinema-hero-art,.cinema-hero-copy,.manifesto-main,.disciplines-heading,.work-heading,.next-chapter>h2,.next-chapter>.cinema-overline,.manifesto-symbol,.next-chapter-orbit,.cinema-project-visual,.discipline-row{transform:none!important;opacity:1!important;will-change:auto}.cinema-hero::after,.manifesto-chapter::after,.disciplines-chapter::after,.work-chapter::after,.next-chapter::after{display:none}}
