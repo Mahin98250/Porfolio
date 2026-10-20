@@ -259,7 +259,7 @@ export function CinematicStory() {
         const leave = 1 - MathUtils.clamp((progress - (to - fade)) / fade, 0, 1);
         const opacity = Math.min(enter, leave);
         panel.style.opacity = String(opacity);
-        panel.style.transform = "translate3d(0," + ((1 - opacity) * 24) + "px,0) scale(" + (0.986 + opacity * 0.014) + ")";
+        panel.style.transform = "translate3d(0,calc(-50% + " + ((1 - opacity) * 24) + "px),0) scale(" + (0.986 + opacity * 0.014) + ")";
         panel.style.pointerEvents = opacity > 0.55 ? "auto" : "none";
         panel.setAttribute("aria-hidden", opacity > 0.3 ? "false" : "true");
         panel.inert = opacity <= 0.3;
@@ -268,8 +268,10 @@ export function CinematicStory() {
         const hintOpacity = 1 - MathUtils.clamp(progress / 0.10, 0, 1);
         hint.style.opacity = String(hintOpacity);
       }
-      const active = scenes.find((scene) => progress >= scene.from && progress < scene.to) ?? scenes[scenes.length - 1];
-      track.dataset.chapter = active.id;
+      const activeId = scenes.find((scene) => progress >= scene.from && progress < scene.to)?.id ?? "ending";
+      track.dataset.chapter = activeId;
+      const chapterLabel = document.querySelector<HTMLElement>("[data-chapter-label]");
+      if (chapterLabel) chapterLabel.textContent = String(scenes.findIndex((scene) => scene.id === activeId) + 1).padStart(2, "0");
     };
 
     let raf = 0;
