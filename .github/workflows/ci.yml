@@ -139,7 +139,7 @@ jobs:
         with:
           node-version: 22
       - name: Verify JSON formatting
-        run: npx --yes prettier@3.5.3 turbo.json
+        run: npx --yes prettier@3.5.3 --check turbo.json tsconfig.base.json packages/marketplace-data/package.json packages/marketplace-data/tsconfig.json apps/portfolio/package.json apps/portfolio/tsconfig.json apps/dudhwala-workspace/package.json
 
   deploy:
     name: Deploy verified portfolio to GitHub Pages
