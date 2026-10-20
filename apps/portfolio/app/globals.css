@@ -808,3 +808,27 @@ body{background:radial-gradient(ellipse at 70% 9%,rgba(94,51,130,.18),transparen
 .discipline-row{transform:translate3d(calc((.5 - var(--shot-progress))*18px),0,0)}
 @media(max-width:760px){.cinema-hero-art{transform:translate3d(0,calc((var(--shot-progress) - .5)*12px),0) scale(calc(.97 + var(--shot-depth)*.03))}.cinema-hero-copy,.manifesto-main,.disciplines-heading,.work-heading,.next-chapter>h2,.next-chapter>.cinema-overline{transform:none;opacity:1}.cinema-project-visual,.discipline-row{transform:none}}
 @media(prefers-reduced-motion:reduce){.cinema-hero-art,.cinema-hero-copy,.manifesto-main,.disciplines-heading,.work-heading,.next-chapter>h2,.next-chapter>.cinema-overline,.manifesto-symbol,.next-chapter-orbit,.cinema-project-visual,.discipline-row{transform:none!important;opacity:1!important;will-change:auto}.cinema-hero::after,.manifesto-chapter::after,.disciplines-chapter::after,.work-chapter::after,.next-chapter::after{display:none}}
+
+
+/* SCROLL CAMERA: each work item gets its own shot progress instead of borrowing the whole chapter's timing. */
+.cinema-project,.discipline-row{--shot-progress:0;--shot-depth:0}
+.cinema-project-visual{
+  transform:perspective(1000px)
+    rotateY(calc((var(--shot-progress) - .5)*-12deg))
+    rotateX(calc((.5 - var(--shot-progress))*5deg))
+    translateZ(calc(var(--shot-depth)*14px));
+  transform-origin:center;
+}
+.cinema-project-copy{
+  transform:translate3d(0,calc((.5 - var(--shot-progress))*20px),0);
+  opacity:clamp(.78,calc(.78 + var(--shot-depth)*.22),1);
+  transition:opacity .12s linear;
+}
+.discipline-row{transform:translate3d(calc((.5 - var(--shot-progress))*22px),0,0)}
+@media(max-width:760px){
+  .cinema-project-visual,.cinema-project-copy,.discipline-row{transform:none}
+  .cinema-project-copy{opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+  .cinema-project-visual,.cinema-project-copy,.discipline-row{transform:none!important;opacity:1!important;transition:none!important}
+}

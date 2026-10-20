@@ -85,7 +85,16 @@ function SceneContent({ scrollProgress }: { scrollProgress: ScrollProgress }) {
     const step = Math.min(delta, 0.045);
     const scroll = MathUtils.clamp(scrollProgress.current / 0.82, 0, 1);
     const targetX = state.pointer.y * -0.09 + Math.sin(state.clock.elapsedTime * 0.21) * 0.025;
-    const targetY = state.pointer.x * 0.12 + state.clock.elapsedTime * 0.055 + scroll * 0.22;
+    const camera = state.camera;
+    const dollyBeat = Math.sin(scroll * Math.PI);
+    const targetCameraZ = 5.8 - dollyBeat * 1.55 + scroll * 2.25;
+    const targetCameraX = Math.sin(scroll * Math.PI) * 0.38 - scroll * 0.16 + state.pointer.x * 0.045;
+    const targetCameraY = Math.sin(scroll * Math.PI * 2) * 0.16 - state.pointer.y * 0.045;
+    camera.position.z = MathUtils.damp(camera.position.z, targetCameraZ, 2.8, step);
+    camera.position.x = MathUtils.damp(camera.position.x, targetCameraX, 2.8, step);
+    camera.position.y = MathUtils.damp(camera.position.y, targetCameraY, 2.8, step);
+    camera.lookAt(0, 0, 0);
+    const targetY = state.pointer.x * 0.12 + state.clock.elapsedTime * 0.055 + scroll * 0.48;
     structure.current.rotation.x = MathUtils.damp(structure.current.rotation.x, targetX, 2.5, step);
     structure.current.rotation.y = MathUtils.damp(structure.current.rotation.y, targetY, 2.5, step);
     structure.current.rotation.z = MathUtils.damp(
@@ -95,7 +104,14 @@ function SceneContent({ scrollProgress }: { scrollProgress: ScrollProgress }) {
       step,
     );
     structure.current.position.x = MathUtils.damp(structure.current.position.x, state.pointer.x * 0.12, 2, step);
-    structure.current.scale.setScalar(1 - scroll * 0.075);
+    // A restrained push-in followed by a pull-back gives the opening its own camera beat.
+    structure.current.scale.setScalar(1 + dollyBeat * 0.13 - scroll * 0.2);
+    structure.current.position.y = MathUtils.damp(
+      structure.current.position.y,
+      Math.sin(scroll * Math.PI) * 0.1 + state.pointer.y * -0.045,
+      2,
+      step,
+    );
   });
 
   return (
@@ -131,7 +147,11 @@ export function HeroScene() {
     const syncMotionPreference = () => setMotionAllowed(!motionPreference.matches);
     const syncDocumentVisibility = () => setDocumentVisible(!document.hidden);
     const syncScrollProgress = () => {
-      scrollProgress.current = Math.min(1, window.scrollY / Math.max(window.innerHeight, 1));
+      const host = sceneRef.current?.closest<HTMLElement>(".cinema-hero");
+      const top = host?.getBoundingClientRect().top ?? -window.scrollY;
+      const span = Math.max(host?.offsetHeight ?? window.innerHeight, window.innerHeight, 1);
+      // Normalize progress over the opening chapter so the camera tracks the scene leaving the frame.
+      scrollProgress.current = MathUtils.clamp(-top / span, 0, 1);
     };
 
     const preferenceSyncFrame = window.requestAnimationFrame(() => {

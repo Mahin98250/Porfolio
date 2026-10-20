@@ -75,7 +75,7 @@ export function MotionEnhancements() {
 
         // Scrub each cinematic chapter directly from scroll position.
         const cinematicSections = document.querySelectorAll<HTMLElement>(
-          ".cinema-hero, .manifesto-chapter, .disciplines-chapter, .work-chapter, .next-chapter"
+          ".cinema-hero, .manifesto-chapter, .disciplines-chapter, .work-chapter, .next-chapter, .cinema-project, .discipline-row"
         );
         cinematicSections.forEach((section) => {
           const rect = section.getBoundingClientRect();
