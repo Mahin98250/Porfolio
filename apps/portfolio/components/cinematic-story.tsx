@@ -2,26 +2,160 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DoubleSide, Float32BufferAttribute, MathUtils, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
+import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
 
+function hash01(seed: number): number {
+  const value = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
+  return value - Math.floor(value);
+}
+
+function hash3(x: number, y: number, z: number): number {
+  const value = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453123;
+  return (value - Math.floor(value)) * 2 - 1;
+}
+
+function fadeNoise(value: number): number {
+  return value * value * (3 - 2 * value);
+}
+
+function noise3(x: number, y: number, z: number): number {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const z0 = Math.floor(z);
+  const fx = fadeNoise(x - x0);
+  const fy = fadeNoise(y - y0);
+  const fz = fadeNoise(z - z0);
+  const x00 = MathUtils.lerp(hash3(x0, y0, z0), hash3(x0 + 1, y0, z0), fx);
+  const x10 = MathUtils.lerp(hash3(x0, y0 + 1, z0), hash3(x0 + 1, y0 + 1, z0), fx);
+  const x01 = MathUtils.lerp(hash3(x0, y0, z0 + 1), hash3(x0 + 1, y0, z0 + 1), fx);
+  const x11 = MathUtils.lerp(hash3(x0, y0 + 1, z0 + 1), hash3(x0 + 1, y0 + 1, z0 + 1), fx);
+  return MathUtils.lerp(MathUtils.lerp(x00, x10, fy), MathUtils.lerp(x01, x11, fy), fz);
+}
+
+function noise2(x: number, y: number): number {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = fadeNoise(x - x0);
+  const fy = fadeNoise(y - y0);
+  const a = MathUtils.lerp(hash3(x0, y0, 0), hash3(x0 + 1, y0, 0), fx);
+  const b = MathUtils.lerp(hash3(x0, y0 + 1, 0), hash3(x0 + 1, y0 + 1, 0), fx);
+  return MathUtils.lerp(a, b, fy);
+}
+
+function caveCenter(t: number): [number, number] {
+  // A wider, more deliberate route: bends are part of the rock volume, not
+  // just a banking camera laid over a straight corridor.
+  const p = MathUtils.clamp(t, 0, 1);
+  return [
+    Math.sin(p * Math.PI * 2.65 + 0.18) * 1.62
+      + Math.sin(p * Math.PI * 5.15 + 0.7) * 0.44
+      + Math.sin(p * Math.PI * 8.1 + 1.9) * 0.13,
+    Math.sin(p * Math.PI * 1.9 - 0.42) * 0.48
+      + Math.sin(p * Math.PI * 5.6 + 0.2) * 0.16,
+  ];
+}
+
+function caveRadiusAt(t: number): number {
+  const bell = (center: number, width: number) => {
+    const d = (t - center) / width;
+    return Math.exp(-d * d * 0.5);
+  };
+  // Broad rooms alternate with deliberately pinched rock gates. A radius
+  // envelope like this creates visible changes in scale instead of one tube.
+  return 2.58
+    + 1.12 * bell(0.205, 0.075)
+    + 1.72 * bell(0.565, 0.092)
+    + 0.82 * bell(0.805, 0.062)
+    - 0.58 * bell(0.415, 0.043)
+    - 0.39 * bell(0.704, 0.037);
+}
+
+function makeRockTextures(): { color: DataTexture; height: DataTexture } {
+  const size = 512;
+  const colorData = new Uint8Array(size * size * 4);
+  const heightData = new Uint8Array(size * size * 4);
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const broad = noise2(x / 118, y / 118);
+      const mid = noise2(x / 39, y / 39);
+      const fine = noise2(x / 11, y / 11);
+      const grain = noise2(x / 3.2, y / 3.2);
+      const bedding = Math.sin(y / 27 + noise2(x / 58, y / 43) * 2.4) * 0.07;
+      const pore = noise2(x / 1.6, y / 1.6) * 0.035;
+      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore, 0, 1);
+      const i = (y * size + x) * 4;
+
+      // Muted mineral grey, umber and limestone tones; contrast is kept
+      // restrained so the lighting, not a painted pattern, defines the rock.
+      colorData[i] = Math.round(39 + value * 37);
+      colorData[i + 1] = Math.round(35 + value * 32);
+      colorData[i + 2] = Math.round(31 + value * 29);
+      colorData[i + 3] = 255;
+
+      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding, 0, 1);
+      const h = Math.round(255 * relief);
+      heightData[i] = h;
+      heightData[i + 1] = h;
+      heightData[i + 2] = h;
+      heightData[i + 3] = 255;
+    }
+  }
+
+  const color = new DataTexture(colorData, size, size);
+  color.colorSpace = SRGBColorSpace;
+  color.wrapS = RepeatWrapping;
+  color.wrapT = RepeatWrapping;
+  color.magFilter = LinearFilter;
+  color.minFilter = LinearMipmapLinearFilter;
+  color.generateMipmaps = true;
+  color.needsUpdate = true;
+
+  const height = new DataTexture(heightData, size, size);
+  height.wrapS = RepeatWrapping;
+  height.wrapT = RepeatWrapping;
+  height.magFilter = LinearFilter;
+  height.minFilter = LinearMipmapLinearFilter;
+  height.generateMipmaps = true;
+  height.needsUpdate = true;
+
+  return { color, height };
+}
+
 function CaveRocks() {
   const geometry = useMemo(() => new IcosahedronGeometry(1, 1), []);
-  const material = useMemo(() => new MeshStandardMaterial({ color: "#30252f", roughness: 0.98, metalness: 0.02, flatShading: true }), []);
-  const rocks = useMemo(() => Array.from({ length: 420 }, (_, i) => {
-    const angle = i * 2.399963;
-    const t = ((i * 47) % 970) / 1000 + 0.015;
+  const material = useMemo(() => new MeshStandardMaterial({
+    color: "#5d5148",
+    roughness: 0.99,
+    metalness: 0,
+    flatShading: true,
+  }), []);
+  const rocks = useMemo(() => Array.from({ length: 154 }, (_, i) => {
+    const t = 0.025 + hash01(i * 23.91 + 5.3) * 0.93;
+    const angle = hash01(i * 61.17 + 1.7) * Math.PI * 2;
     const [cx, cy] = caveCenter(t);
-    const z = 8.2 - t * 61;
-    const wallSide = Math.cos(angle) >= 0 ? 1 : -1;
-    const radius = 2.3 + ((i * 19) % 49) / 40;
-    const size = 0.10 + ((i * 13) % 23) / 100;
+    const z = 8.35 - t * 62.2;
+    const roomRadius = caveRadiusAt(t);
+    const size = 0.13 + hash01(i * 14.31 + 2.1) * 0.25;
+    // Rocks sit partially embedded at the wall surface; they are not scattered
+    // through the middle of the viewer's path.
+    const radius = roomRadius * (1 + noise3(Math.cos(angle) * 1.2, Math.sin(angle) * 1.2, t * 5) * 0.045) - size * 0.72;
+    const verticalScale = Math.sin(angle) > 0 ? 1.04 : 0.74;
     return {
-      position: [cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius * 0.78, z] as [number, number, number],
-      scale: [size * (1 + (i % 3) * 0.65), size * (0.65 + (i % 4) * 0.28), size * (0.85 + (i % 5) * 0.19)] as [number, number, number],
-      rotation: [angle * 0.8 + wallSide * t, angle * 0.43, angle * 0.27] as [number, number, number],
+      position: [cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius * verticalScale, z] as [number, number, number],
+      scale: [
+        size * (0.8 + hash01(i * 2.13) * 1.1),
+        size * (0.65 + hash01(i * 7.31) * 0.95),
+        size * (0.75 + hash01(i * 11.71) * 1.0),
+      ] as [number, number, number],
+      rotation: [
+        hash01(i * 3.97) * Math.PI,
+        hash01(i * 4.83) * Math.PI,
+        hash01(i * 9.13) * Math.PI,
+      ] as [number, number, number],
     };
   }), []);
   const rockMesh = useMemo(() => {
@@ -42,20 +176,12 @@ function CaveRocks() {
   return <primitive object={rockMesh as unknown as Object3D} dispose={null} />;
 }
 
-function caveCenter(t: number): [number, number] {
-  // A hand-shaped cave spline: a broad left bend, a right-hand dogleg, then a
-  // subtle vertical drop. The same curve drives the rock shell and camera rail.
-  const p = MathUtils.clamp(t, 0, 1);
-  return [
-    Math.sin(p * Math.PI * 2.05) * 1.08 + Math.sin(p * Math.PI * 5.1 + 0.45) * 0.22,
-    Math.sin(p * Math.PI * 3.1 - 0.3) * 0.34 + Math.sin(p * Math.PI * 7.0) * 0.09,
-  ];
-}
-
 function CaveShell() {
   const shell = useMemo(() => {
-    const radialSegments = 88;
-    const axialSegments = 156;
+    // A denser, non-uniform shell. Large-scale chambers and constrictions are
+    // sculpted into the cross-section before rock detail is added.
+    const radialSegments = 144;
+    const axialSegments = 224;
     const positions: number[] = [];
     const colors: number[] = [];
     const uvs: number[] = [];
@@ -65,41 +191,35 @@ function CaveShell() {
       const t = row / axialSegments;
       const z = 9 - t * 63;
       const [cx, cy] = caveCenter(t);
-      const [nextX, nextY] = caveCenter(Math.min(1, t + 0.002));
-      const tangentX = nextX - cx;
-      const tangentY = nextY - cy;
-      const yaw = Math.atan2(tangentX, 1);
-      const pitch = Math.atan2(tangentY, 1);
-      const baseRadius = 3.12 + Math.sin(t * 15.2) * 0.16 + Math.sin(t * 33.7 + 0.8) * 0.08;
+      const radiusAt = caveRadiusAt(t);
 
       for (let segment = 0; segment <= radialSegments; segment++) {
         const u = segment / radialSegments;
         const angle = u * Math.PI * 2;
-        const broadRock = Math.sin(angle * 3.0 + t * 11.0) * 0.27
-          + Math.sin(angle * 5.0 - t * 18.0 + 0.8) * 0.16
-          + Math.cos(angle * 8.0 + t * 27.0) * 0.075;
-        const fracturedRock = Math.sin(angle * 17.0 + t * 47.0) * 0.032
-          + Math.sin(angle * 29.0 - t * 69.0) * 0.014;
-        const strata = Math.sin(t * 52 + Math.sin(angle * 2.0) * 1.8) * 0.055;
-        const radius = baseRadius + broadRock + fracturedRock + strata;
-        const localX = Math.cos(angle) * radius;
-        const localY = Math.sin(angle) * radius * (0.78 + Math.sin(angle * 2.0 + t * 6.0) * 0.035);
-        // Slightly rotate the tunnel cross-section through each bend, avoiding a
-        // uniform cylindrical pipe silhouette.
-        const x = cx + localX * Math.cos(yaw) - localY * Math.sin(yaw);
-        const y = cy + localX * Math.sin(pitch) + localY * Math.cos(pitch);
+        const aroundX = Math.cos(angle);
+        const aroundY = Math.sin(angle);
+        // Noise is sampled in circular 3D coordinates so the seam at 0/2π
+        // matches. Broad noise creates natural masses; finer octaves add
+        // broken ledges and erosion instead of repeated sinusoidal rings.
+        const coarse = noise3(aroundX * 1.7 + 8, aroundY * 1.7 - 4, t * 7.5);
+        const medium = noise3(aroundX * 5.2 - 2, aroundY * 5.2 + 6, t * 23);
+        const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
+        const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
+        const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038) + fine * 0.045;
+
+        // The floor is lower and flatter than the roof; upper surfaces have
+        // more headroom and uneven overhangs. This deliberately avoids a
+        // symmetric oval cross-section.
+        const verticalScale = aroundY >= 0 ? 1.08 : 0.73;
+        const floorRidge = Math.max(0, -aroundY) * Math.sin(t * 31 + aroundX * 5.7 + coarse) * 0.105;
+        const x = cx + aroundX * radius * (0.98 + medium * 0.045);
+        const y = cy + aroundY * radius * verticalScale + floorRidge;
         positions.push(x, y, z);
         uvs.push(u * 3.8, t * 7.5);
 
-        const mineral = Math.sin(angle * 2.7 + t * 18.0) * 0.5 + 0.5;
-        const damp = Math.max(0, Math.sin(angle + 0.6) * 0.5 + 0.5);
-        const roughness = Math.max(0.08, Math.min(0.95, 0.32 + broadRock * 0.6 + fracturedRock * 1.5 + mineral * 0.16));
-        const shadowPocket = Math.max(0, Math.sin(angle * 6.0 + t * 38.0) * Math.cos(t * 91.0)) * 0.08;
-        colors.push(
-          0.105 + roughness * 0.14 + mineral * 0.025 - shadowPocket,
-          0.075 + roughness * 0.105 + damp * 0.018 - shadowPocket * 0.7,
-          0.068 + roughness * 0.092 + mineral * 0.045 - shadowPocket * 0.5,
-        );
+        const mineral = Math.max(0, Math.sin(angle * 2.3 + coarse * 2.2 + t * 8.7)) * 0.5;
+        const shade = MathUtils.clamp(0.82 + coarse * 0.10 + medium * 0.07 + fine * 0.035 - mineral * 0.035, 0.58, 1.0);
+        colors.push(shade, shade * (0.97 + mineral * 0.025), shade * (0.93 + mineral * 0.08));
       }
     }
 
@@ -120,68 +240,116 @@ function CaveShell() {
     return geometry;
   }, []);
 
+  const maps = useMemo(() => makeRockTextures(), []);
   const material = useMemo(() => new MeshStandardMaterial({
-    color: "#ffffff",
+    color: "#d4c7b3",
+    map: maps.color,
+    bumpMap: maps.height,
+    bumpScale: 0.17,
     vertexColors: true,
-    roughness: 0.99,
-    metalness: 0.005,
+    roughness: 0.98,
+    metalness: 0,
     side: DoubleSide,
-  }), []);
+  }), [maps]);
   const mesh = useMemo(() => new Mesh(shell, material), [shell, material]);
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
 function CaveGuideDots() {
-  const dots = useMemo(() => Array.from({ length: 96 }, (_, i) => {
-    const t = 0.025 + (i / 95) * 0.94;
+  const dots = useMemo(() => Array.from({ length: 62 }, (_, i) => {
+    const t = 0.025 + (i / 61) * 0.94;
     const [cx, cy] = caveCenter(t);
+    const radius = caveRadiusAt(t);
     const z = 9 - t * 63;
-    // A subtle dotted bioluminescent seam sits low on the cave wall/floor.
-    const side = i % 2 === 0 ? -1 : 1;
+    // A single quiet trail follows the actual cave route near the floor rather
+    // than alternating left/right and making a decorative zig-zag.
     return {
-      position: [cx + side * (1.55 + Math.sin(t * 34) * 0.18), cy - 1.78 + Math.sin(t * 19) * 0.08, z] as [number, number, number],
-      size: 0.018 + (i % 5) * 0.004,
-      opacity: 0.22 + (i % 4) * 0.08,
+      position: [cx + 0.17 + Math.sin(t * 17) * 0.045, cy - radius * 0.69, z] as [number, number, number],
+      size: 0.012 + hash01(i * 7.43 + 2.8) * 0.012,
+      opacity: 0.15 + hash01(i * 12.7 + 1.4) * 0.16,
     };
   }), []);
   return <group>
     {dots.map((dot, i) => (
       <mesh key={i} position={dot.position} scale={dot.size}>
-        <sphereGeometry args={[1, 7, 6]} />
-        <meshBasicMaterial color={i % 7 === 0 ? "#d8b98c" : "#8bbfc4"} transparent opacity={dot.opacity} />
+        <sphereGeometry args={[1, 6, 5]} />
+        <meshBasicMaterial color={i % 9 === 0 ? "#bba68b" : "#91b1b4"} transparent opacity={dot.opacity} depthWrite={false} />
       </mesh>
     ))}
   </group>;
 }
- 
+
+function makeFormationGeometry(seed: number, length: number, hanging: boolean): BufferGeometry {
+  const radialSegments = 9;
+  const axialSegments = 7;
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const profile = [0.29, 0.34, 0.275, 0.22, 0.155, 0.105, 0.055, 0.012];
+
+  for (let row = 0; row <= axialSegments; row++) {
+    const u = row / axialSegments;
+    const base = profile[row];
+    const taper = length * u;
+    for (let segment = 0; segment <= radialSegments; segment++) {
+      const angle = (segment / radialSegments) * Math.PI * 2;
+      const irregular = 1
+        + Math.sin(angle * 3.0 + seed * 1.7 + u * 3.1) * 0.19
+        + Math.sin(angle * 5.0 - seed * 0.8 + u * 7.2) * 0.10
+        + noise3(Math.cos(angle) * 2.4 + seed, Math.sin(angle) * 2.4, u * 4.2) * 0.13;
+      const radius = Math.max(0.006, base * irregular * (0.9 + hash01(seed * 11 + row) * 0.2));
+      const lean = Math.sin(u * Math.PI * 0.85 + seed) * u * 0.14;
+      positions.push(
+        Math.cos(angle) * radius + lean,
+        hanging ? -taper : taper,
+        Math.sin(angle) * radius * (0.84 + Math.sin(seed) * 0.08),
+      );
+    }
+  }
+
+  for (let row = 0; row < axialSegments; row++) {
+    for (let segment = 0; segment < radialSegments; segment++) {
+      const a = row * (radialSegments + 1) + segment;
+      const b = a + radialSegments + 1;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 function CaveFormations() {
-  const formations = useMemo(() => Array.from({ length: 52 }, (_, i) => {
-    const t = 0.055 + ((i * 19) % 875) / 1000;
+  const formations = useMemo(() => Array.from({ length: 35 }, (_, i) => {
+    const t = 0.045 + hash01(i * 17.31 + 8.1) * 0.91;
     const [cx, cy] = caveCenter(t);
-    const side = i % 2 === 0 ? -1 : 1;
-    const z = 8.2 - t * 61;
-    const hanging = i % 4 !== 0;
-    const spread = 1.78 + (i % 5) * 0.16;
+    const radius = caveRadiusAt(t);
+    const choice = hash01(i * 9.73 + 2.4);
+    const hanging = choice < 0.64;
+    const wall = choice >= 0.64 && choice < 0.83;
+    const side = hash01(i * 13.61 + 4.2) > 0.5 ? 1 : -1;
+    const length = 0.55 + hash01(i * 23.71 + 3.3) * (hanging ? 1.25 : 0.95);
+    const z = 8.35 - t * 61.8;
+    const x = wall ? cx + side * radius * 0.80 : cx + (hash01(i * 19.1 + 5.2) - 0.5) * radius * 0.55;
+    const y = wall
+      ? cy + (hash01(i * 7.7 + 6.2) - 0.48) * radius * 0.78
+      : cy + (hanging ? radius * 0.99 : -radius * 0.67);
+    const geometry = makeFormationGeometry(i * 1.73 + 0.4, length, hanging);
     return {
-      position: [cx + side * spread, cy + (hanging ? 1.72 : -1.62), z] as [number, number, number],
-      rotation: [hanging ? Math.PI + Math.sin(i * 1.4) * 0.22 : Math.sin(i) * 0.2, Math.sin(i * 0.7) * 0.24, Math.cos(i * 1.1) * 0.28] as [number, number, number],
-      scale: [0.45 + (i % 4) * 0.19, 0.5 + (i % 6) * 0.24, 0.42 + (i % 3) * 0.18] as [number, number, number],
-      hanging,
-      color: i % 5 === 0 ? "#55483f" : i % 3 === 0 ? "#3f3434" : "#493b39",
+      position: [x, y, z] as [number, number, number],
+      rotation: [wall ? (hash01(i * 5.7) - 0.5) * 0.8 : 0, (hash01(i * 3.9) - 0.5) * 0.8, wall ? side * Math.PI * 0.42 : (hash01(i * 21.7) - 0.5) * 0.25] as [number, number, number],
+      scale: [0.68 + hash01(i * 4.2) * 0.82, 0.7 + hash01(i * 12.5) * 0.95, 0.72 + hash01(i * 8.6) * 0.8] as [number, number, number],
+      geometry,
+      color: i % 7 === 0 ? "#5b4b40" : i % 3 === 0 ? "#403a35" : "#4b4038",
     };
   }), []);
   return <group>
-    {formations.map((f, i) => (
-      <group key={i} position={f.position} rotation={f.rotation} scale={f.scale}>
-        <mesh>
-          <coneGeometry args={[0.48, f.hanging ? 1.45 : 1.1, 7, 2]} />
-          <meshStandardMaterial color={f.color} roughness={0.99} metalness={0.0} flatShading />
-        </mesh>
-        <mesh position={[0.08, f.hanging ? -0.22 : 0.18, 0.02]} rotation={[0.18, 0.4, 0.15]}>
-          <coneGeometry args={[0.29, f.hanging ? 0.82 : 0.66, 6, 1]} />
-          <meshStandardMaterial color="#302827" roughness={1} flatShading />
-        </mesh>
-      </group>
+    {formations.map((formation, i) => (
+      <mesh key={i} geometry={formation.geometry} position={formation.position} rotation={formation.rotation} scale={formation.scale}>
+        <meshStandardMaterial color={formation.color} roughness={0.99} metalness={0} flatShading />
+      </mesh>
     ))}
   </group>;
 }
@@ -192,23 +360,7 @@ function CaveTunnel() {
       <CaveShell />
       <CaveGuideDots />
       <CaveFormations />
-      <mesh position={[0, 0, 8.65]} rotation={[0.035, -0.02, 0.08]}>
-        <torusGeometry args={[2.72, 0.2, 10, 84]} />
-        <meshStandardMaterial color="#51414f" roughness={0.98} metalness={0.015} />
-      </mesh>
-      {Array.from({ length: 7 }, (_, i) => (
-        <mesh key={"stalactite-" + i} position={[-2.05 + i * 0.67, 2.05 + Math.sin(i * 1.3) * 0.18, 6.8 - (i % 3) * 1.45]} rotation={[Math.PI, 0.08 * Math.sin(i), 0.12 * Math.cos(i)]} scale={[0.72 + (i % 2) * 0.3, 0.85 + (i % 3) * 0.35, 0.72 + (i % 2) * 0.25]}>
-          <coneGeometry args={[0.24, 0.9, 6, 1]} />
-          <meshStandardMaterial color="#493947" roughness={0.99} flatShading />
-        </mesh>
-      ))}
       <CaveRocks />
-      {Array.from({ length: 13 }, (_, i) => (
-        <mesh key={"crystal-" + i} position={[Math.sin(i * 2.4) * 1.65, Math.cos(i * 1.37) * 1.8, 2 - i * 1.65]} rotation={[i * 0.51, i * 0.29, i * 0.7]}>
-          <octahedronGeometry args={[0.12 + (i % 3) * 0.055, 0]} />
-          <meshStandardMaterial color={i % 2 ? "#9b7d9f" : "#bb926d"} emissive={i % 2 ? "#2b1437" : "#3b2110"} emissiveIntensity={0.8} roughness={0.3} metalness={0.2} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -324,15 +476,15 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
     const camera = state.camera;
     const targetZ = 14 - progress * 54;
     const [pathX, pathY] = caveCenter(progress);
-    const [aheadX, aheadY] = caveCenter(Math.min(1, progress + 0.035));
-    const bendStrength = MathUtils.clamp((aheadX - pathX) * 0.9, -0.62, 0.62);
+    const [aheadX, aheadY] = caveCenter(Math.min(1, progress + 0.055));
+    const bendStrength = MathUtils.clamp((aheadX - pathX) * 1.45, -0.82, 0.82);
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
     camera.position.x = MathUtils.damp(camera.position.x, pathX, 3.2, step);
     camera.position.y = MathUtils.damp(camera.position.y, pathY, 3.0, step);
     // Look through the next section of the passage, so the camera visibly banks
     // into each dogleg instead of staring down an endless straight tube.
-    camera.lookAt(aheadX + bendStrength, aheadY + (aheadY - pathY) * 1.8, camera.position.z - 8.5);
-    camera.rotation.z = MathUtils.damp(camera.rotation.z, -bendStrength * 0.18, 2.2, step);
+    camera.lookAt(aheadX + bendStrength * 0.72, aheadY + (aheadY - pathY) * 2.0, camera.position.z - 7.8);
+    camera.rotation.z = MathUtils.damp(camera.rotation.z, -bendStrength * 0.13, 2.2, step);
     if (world.current) {
       world.current.rotation.z = MathUtils.damp(world.current.rotation.z, Math.sin(progress * Math.PI * 3) * 0.012, 1.8, step);
     }
