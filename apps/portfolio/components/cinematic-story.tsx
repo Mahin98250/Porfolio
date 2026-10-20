@@ -210,27 +210,29 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
 }
 
 function CaveRocks() {
-  const geometry = useMemo(() => new IcosahedronGeometry(1, 1), []);
+  const geometry = useMemo(() => new IcosahedronGeometry(1, 2), []);
   const material = useMemo(() => new MeshStandardMaterial({
-    color: "#5d5148",
+    color: "#554a40",
     roughness: 0.99,
     metalness: 0,
-    flatShading: true,
+    flatShading: false,
   }), []);
-  const rocks = useMemo(() => Array.from({ length: 154 }, (_, i) => {
+  // Wall dressing should read as fractured limestone, not boulders floating
+  // through the camera path. Use fewer, smaller pieces and sink them further.
+  const rocks = useMemo(() => Array.from({ length: 102 }, (_, i) => {
     const t = 0.025 + hash01(i * 23.91 + 5.3) * 0.93;
     const angle = hash01(i * 61.17 + 1.7) * Math.PI * 2;
     const [cx, cy] = caveCenter(t);
     const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
     const z = 9 - t * 63;
-    const size = 0.13 + hash01(i * 14.31 + 2.1) * 0.25;
+    const size = 0.075 + hash01(i * 14.31 + 2.1) * 0.135;
     // Anchor rubble to the actual noisy wall field and sink it slightly into
     // the rock so pieces do not float in the middle of the passage.
     const dx = surfaceX - cx;
     const dy = surfaceY - cy;
     const radialLength = Math.hypot(dx, dy) || 1;
     return {
-      position: [surfaceX - (dx / radialLength) * size * 0.72, surfaceY - (dy / radialLength) * size * 0.72, z] as [number, number, number],
+      position: [surfaceX - (dx / radialLength) * size * 1.12, surfaceY - (dy / radialLength) * size * 1.12, z] as [number, number, number],
       scale: [
         size * (0.8 + hash01(i * 2.13) * 1.1),
         size * (0.65 + hash01(i * 7.31) * 0.95),
@@ -438,7 +440,7 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
 }
 
 function CaveFormations() {
-  const formations = useMemo(() => Array.from({ length: 35 }, (_, i) => {
+  const formations = useMemo(() => Array.from({ length: 27 }, (_, i) => {
     const t = 0.045 + hash01(i * 17.31 + 8.1) * 0.91;
     const choice = hash01(i * 9.73 + 2.4);
     const hanging = choice < 0.64;
@@ -454,7 +456,7 @@ function CaveFormations() {
     const dx = surfaceX - cx;
     const dy = surfaceY - cy;
     const radialLength = Math.hypot(dx, dy) || 1;
-    const length = 0.55 + hash01(i * 23.71 + 3.3) * (hanging ? 1.25 : 0.95);
+    const length = 0.34 + hash01(i * 23.71 + 3.3) * (hanging ? 0.82 : 0.64);
     const z = 9 - t * 63;
     const geometry = makeFormationGeometry(i * 1.73 + 0.4, length, hanging);
     // Place the broad end inside the wall by a few centimetres; the formation
@@ -489,17 +491,22 @@ function CaveBranch({ side }: { side: -1 | 1 }) {
     // Begin at the side-wall portal, not at the middle of the chamber.
     // The passage then sweeps outward and forward, so the camera can turn
     // through the opening without crossing the solid outside of the main shell.
+    const junctionT = 31 / 63;
+    const wallRadius = caveRadiusAt(junctionT);
+    // Start each passage exactly at the carved side-wall opening. The
+    // centreline then bends into the rock instead of beginning in the chamber.
     const points = [
-      new Vector3(side * 2.25, 0.02, 0),
-      new Vector3(side * 2.8, 0.08, -0.45),
-      new Vector3(side * 3.8, 0.18, -1.25),
-      new Vector3(side * 5.1, 0.22, -2.5),
-      new Vector3(side * 6.4, 0.12, -4.1),
-      new Vector3(side * 7.5, -0.02, -6.0),
-      new Vector3(side * 8.2, -0.12, -8.2),
-      new Vector3(side * 8.5, -0.16, -10.4),
+      new Vector3(side * (wallRadius - 0.04), 0, 0),
+      new Vector3(side * (wallRadius + 0.28), 0.03, -0.32),
+      new Vector3(side * (wallRadius + 0.82), 0.08, -0.9),
+      new Vector3(side * 5.05, 0.12, -1.9),
+      new Vector3(side * 6.25, 0.12, -3.6),
+      new Vector3(side * 7.25, 0.01, -5.5),
+      new Vector3(side * 8.0, -0.09, -7.7),
+      new Vector3(side * 8.5, -0.16, -10.8),
+      new Vector3(side * 8.62, -0.19, -12.8),
     ];
-    return new TubeGeometry(new CatmullRomCurve3(points), 96, 1.78, 32, false);
+    return new TubeGeometry(new CatmullRomCurve3(points), 112, 1.62, 40, false);
   }, [side]);
   const material = useMemo(() => new MeshStandardMaterial({
     color: side < 0 ? "#51463c" : "#625343",
@@ -516,10 +523,18 @@ function CaveTunnel() {
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
-      <group position={[0.1, 0.15, -22]}>
-        <CaveBranch side={-1} />
-        <CaveBranch side={1} />
-      </group>
+      {
+        /* Put the fork origin on the actual main-cave centreline. */
+        (() => {
+          const [junctionX, junctionY] = caveCenter(31 / 63);
+          return (
+            <group position={[junctionX, junctionY, -22]}>
+              <CaveBranch side={-1} />
+              <CaveBranch side={1} />
+            </group>
+          );
+        })()
+      }
     </group>
   );
 }
@@ -531,24 +546,35 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     const progress = MathUtils.clamp(progressRef.current, 0, 1);
     const camera = state.camera;
     const targetZ = 14 - progress * 54;
-    // Convert camera depth into the cave mesh's own spline parameter. The
-    // camera used to follow the same percentage as the scroll story, which
-    // made it drift away from the newly sculpted route.
+    // Drive the camera from world depth, not the story-panel percentages.
+    // This keeps the camera aligned with the actual shell and branch openings.
     const routeT = MathUtils.clamp((9 - targetZ) / 63, 0, 1);
-    const [baseX, pathY] = caveCenter(routeT);
-    const [aheadBaseX, aheadY] = caveCenter(Math.min(1, routeT + 0.075));
-    const [farBaseX, farY] = caveCenter(Math.min(1, routeT + 0.12));
     const branchOffset = branchChoice.current === "left" ? -1 : branchChoice.current === "right" ? 1 : 0;
-    // The fork is at world z=-22 (routeT≈0.492). Keep the camera centered
-    // until it reaches that junction, then ease it through the side-wall
-    // portal and along the chosen passage's real centreline.
-    const branchBlend = branchOffset === 0 ? 0 : MathUtils.smoothstep(routeT, 0.492, 0.635);
-    const branchDistance = MathUtils.clamp((routeT - 0.492) / 0.143, 0, 1);
-    const branchX = branchOffset * (2.35 + branchDistance * 5.95);
-    const pathX = baseX + branchOffset * branchBlend * 2.35 + (branchOffset === 0 ? 0 : branchOffset * branchDistance * 5.95);
-    const aheadBranchBlend = branchOffset === 0 ? 0 : MathUtils.smoothstep(routeT + 0.075, 0.492, 0.635);
-    const aheadX = aheadBaseX + branchOffset * aheadBranchBlend * 2.35 + (branchOffset === 0 ? 0 : branchOffset * MathUtils.clamp((routeT + 0.075 - 0.492) / 0.143, 0, 1) * 5.95);
-    const farX = farBaseX + branchOffset * MathUtils.smoothstep(routeT + 0.12, 0.492, 0.635) * 2.35 + (branchOffset === 0 ? 0 : branchOffset * MathUtils.clamp((routeT + 0.12 - 0.492) / 0.143, 0, 1) * 5.95);
+    const junctionT = 31 / 63;
+    const [junctionX, junctionY] = caveCenter(junctionT);
+    const junctionRadius = caveRadiusAt(junctionT);
+    const routePoint = (atT: number): [number, number] => {
+      const t = MathUtils.clamp(atT, 0, 1);
+      const [x, y] = caveCenter(t);
+      if (branchOffset === 0) return [x, y];
+
+      // Approach the fork along the main route, then travel through the
+      // selected opening and follow the same centreline as that branch mesh.
+      if (t < junctionT) {
+        const approach = MathUtils.smoothstep(t, 0.35, junctionT);
+        return [
+          MathUtils.lerp(x, junctionX + branchOffset * (junctionRadius - 0.12), approach),
+          MathUtils.lerp(y, junctionY, approach),
+        ];
+      }
+
+      const distance = MathUtils.clamp((t - junctionT) / 0.143, 0, 1);
+      const lateral = MathUtils.lerp(junctionRadius - 0.12, 8.5, distance);
+      return [junctionX + branchOffset * lateral, junctionY - 0.19 * distance];
+    };
+    const [pathX, pathY] = routePoint(routeT);
+    const [aheadX, aheadY] = routePoint(routeT + 0.075);
+    const [farX, farY] = routePoint(routeT + 0.12);
     const bendStrength = MathUtils.clamp((aheadX - pathX) * 0.8, -0.95, 0.95);
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
     camera.position.x = MathUtils.damp(camera.position.x, pathX, 2.15, step);
