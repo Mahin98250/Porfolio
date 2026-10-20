@@ -51,16 +51,18 @@ function SceneContent() {
 export function HeroScene() {
   const sceneRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
-  const [documentVisible, setDocumentVisible] = useState(true);
-  const [motionAllowed, setMotionAllowed] = useState(true);
+  const [documentVisible, setDocumentVisible] = useState(
+    () => typeof document === "undefined" || !document.hidden,
+  );
+  const [motionAllowed, setMotionAllowed] = useState(
+    () => typeof window === "undefined" || !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
 
   useEffect(() => {
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const syncMotionPreference = () => setMotionAllowed(!motionPreference.matches);
     const syncDocumentVisibility = () => setDocumentVisible(!document.hidden);
 
-    syncMotionPreference();
-    syncDocumentVisibility();
     const supportsMediaChangeEvent = typeof motionPreference.addEventListener === "function";
     if (supportsMediaChangeEvent) {
       motionPreference.addEventListener("change", syncMotionPreference);
@@ -78,8 +80,6 @@ export function HeroScene() {
         { rootMargin: "100px 0px" },
       );
       observer.observe(sceneElement);
-    } else {
-      setInView(true);
     }
 
     return () => {
