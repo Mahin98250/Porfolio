@@ -129,6 +129,14 @@ test("project artwork receives pointer lighting on fine-pointer devices", async 
   await expect(stage).toHaveClass(/is-pointer-card/);
 });
 
+test("cinematic CTAs respond to pointer magnetism on desktop", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/");
+  const cta = page.locator(".cinema-button").first();
+  await cta.hover({ position: { x: 18, y: 16 } });
+  await expect(cta).toHaveClass(/is-magnetic/);
+});
+
 test("cinematic homepage exposes its main chapters and project archive CTA", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("BEGINNING");

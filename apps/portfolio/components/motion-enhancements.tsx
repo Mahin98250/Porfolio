@@ -102,7 +102,7 @@ export function MotionEnhancements() {
 
       const element = event.target instanceof Element ? event.target : null;
       const target = element?.closest<HTMLElement>(pointerCardSelector) ?? null;
-      const magneticButton = element?.closest<HTMLElement>(".button") ?? null;
+      const magneticButton = element?.closest<HTMLElement>(".button, .cinema-button") ?? null;
 
       if (target !== activeCard) {
         resetCard(activeCard);
