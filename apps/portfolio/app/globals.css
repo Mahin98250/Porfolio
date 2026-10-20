@@ -623,3 +623,8 @@ body{background:radial-gradient(ellipse at 70% 9%,rgba(94,51,130,.18),transparen
 .chapter-rail a.chapter-active i{opacity:1;transform:translateX(0);color:#d9c4f1}
 .chapter-rail a:focus-visible span{outline:2px solid #eab878;outline-offset:3px}
 @media(max-width:1150px){.chapter-rail a.chapter-active i{display:none}}
+
+
+.scroll-progress{background:linear-gradient(90deg,#eab878,#b89aff,#e0b0cb);box-shadow:0 0 16px #c6a4ff55}
+.motion-glow{background:radial-gradient(circle,#bb8cfb12,transparent 70%)}
+::selection{background:rgba(199,159,255,.34);color:#fff}
