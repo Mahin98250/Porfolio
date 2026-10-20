@@ -71,7 +71,7 @@ export function MotionEnhancements() {
         const progressValue = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
         root.style.setProperty("--scroll-progress", String(progressValue));
         root.style.setProperty("--story-progress", String(progressValue));
-        root.style.setProperty("--chapter-progress", (progressValue * 100).toFixed(2) + "%");
+        root.style.setProperty("--chapter-progress", (progressValue * 80.5).toFixed(2) + "%");
       });
     };
 
