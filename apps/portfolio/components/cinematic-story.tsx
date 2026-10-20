@@ -324,8 +324,23 @@ function CaveShell() {
       }
     }
 
+    // Carve two real apertures into the shell where the story forks.
+    // Omitting shell faces (rather than placing tubes against a closed wall)
+    // lets the branch mouths read as openings into the surrounding rock.
+    const portalT = 31 / 63; // the branch group is positioned at z = -22
+    const portalTSpread = 0.052;
+    const portalAngleSpread = 0.37;
     for (let row = 0; row < axialSegments; row++) {
       for (let segment = 0; segment < radialSegments; segment++) {
+        const t = (row + 0.5) / axialSegments;
+        const angle = ((segment + 0.5) / radialSegments) * Math.PI * 2;
+        const tDistance = (t - portalT) / portalTSpread;
+        const rightAngleDistance = Math.atan2(Math.sin(angle), Math.cos(angle));
+        const leftAngleDistance = Math.atan2(Math.sin(angle - Math.PI), Math.cos(angle - Math.PI));
+        const insideRightPortal = tDistance * tDistance + (rightAngleDistance / portalAngleSpread) ** 2 < 1;
+        const insideLeftPortal = tDistance * tDistance + (leftAngleDistance / portalAngleSpread) ** 2 < 1;
+        if (insideRightPortal || insideLeftPortal) continue;
+
         const a = row * (radialSegments + 1) + segment;
         const b = a + radialSegments + 1;
         indices.push(a, b, a + 1, b, b + 1, a + 1);
