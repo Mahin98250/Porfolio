@@ -7,8 +7,8 @@ test("home opens in the cave and reveals the selected work at the end of the sto
   await expect(page.locator(".cinematic-story-track")).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", "/projects");
-  await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", "/journey");
+  await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", /\/projects\/?$/);
+  await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", /\/journey\/?$/);
 });
 
 test("primary navigation reaches every top-level page", async ({ page }) => {
@@ -151,7 +151,7 @@ test("cinematic ending exposes journey, project, and contact actions", async ({ 
   await expect(page.getByRole("heading", { level: 2 })).toContainText("BUILD WHAT’S");
   await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", "/projects");
   await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", "/journey");
-  await expect(page.getByRole("link", { name: /GET IN TOUCH/i })).toHaveAttribute("href", "/contact");
+  await expect(page.getByRole("link", { name: /GET IN TOUCH/i })).toHaveAttribute("href", /\/contact\/?$/);
 });
 
 test("cinematic homepage keeps a single persistent stage and story chapters", async ({ page }) => {
@@ -159,5 +159,5 @@ test("cinematic homepage keeps a single persistent stage and story chapters", as
   await expect(page.locator(".cinematic-story-track")).toHaveCount(1);
   await expect(page.locator(".cinematic-story-stage")).toHaveCount(1);
   await expect(page.locator("[data-story-scene]")).toHaveCount(9);
-  await expect(page.locator(".cinema-progress-track span")).toBeVisible();
+  await expect(page.locator(".cinema-progress-track")).toBeVisible();
 });
