@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, TubeGeometry, Vector3, CatmullRomCurve3 } from "three";
+import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Vector3, CatmullRomCurve3 } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -484,17 +484,12 @@ function CaveFormations() {
   </group>;
 }
 
-function CaveBranch({ side }: { side: -1 | 1 }) {
+function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMaterial }) {
   const geometry = useMemo(() => {
-    // Open-ended passages peel away from the central chamber. Their separate
-    // axes give the later camera choice real geometry to travel into.
-    // Begin at the side-wall portal, not at the middle of the chamber.
-    // The passage then sweeps outward and forward, so the camera can turn
-    // through the opening without crossing the solid outside of the main shell.
+    // These are cross-sections of a rock passage, not a perfect primitive
+    // pipe: the cross-section is asymmetric, chipped and subtly changing.
     const junctionT = 31 / 63;
     const wallRadius = caveRadiusAt(junctionT);
-    // Start each passage exactly at the carved side-wall opening. The
-    // centreline then bends into the rock instead of beginning in the chamber.
     const points = [
       new Vector3(side * (wallRadius - 0.04), 0, 0),
       new Vector3(side * (wallRadius + 0.28), 0.03, -0.32),
@@ -506,35 +501,79 @@ function CaveBranch({ side }: { side: -1 | 1 }) {
       new Vector3(side * 8.5, -0.16, -10.8),
       new Vector3(side * 8.62, -0.19, -12.8),
     ];
-    return new TubeGeometry(new CatmullRomCurve3(points), 112, 1.62, 40, false);
+    const curve = new CatmullRomCurve3(points, false, "centripetal");
+    const tubularSegments = 144;
+    const radialSegments = 48;
+    const frames = curve.computeFrenetFrames(tubularSegments, false);
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+
+    for (let row = 0; row <= tubularSegments; row++) {
+      const u = row / tubularSegments;
+      const center = curve.getPointAt(u);
+      const flare = u < 0.105 ? MathUtils.lerp(1.12, 1, u / 0.105) : 1 + Math.sin(u * 7.4 + side) * 0.018;
+      for (let segment = 0; segment <= radialSegments; segment++) {
+        const v = segment / radialSegments;
+        const angle = v * Math.PI * 2;
+        const nx = Math.cos(angle);
+        const ny = Math.sin(angle);
+        const broad = noise3(nx * 2.1 + side * 1.7, ny * 2.0 - 0.8, u * 7.5);
+        const chipped = noise3(nx * 5.6 - 1.3, ny * 5.1 + 2.4, u * 20);
+        const ridges = Math.sin(angle * 5 + u * 15 + side * 0.8) * 0.035
+          + Math.sin(angle * 9 - u * 23) * 0.018;
+        const uneven = MathUtils.clamp(1 + broad * 0.12 + chipped * 0.045 + ridges, 0.76, 1.23);
+        const radiusX = 1.62 * flare * uneven;
+        const radiusY = 1.62 * 0.79 * flare * uneven * (1 + 0.035 * Math.sin(u * 9 + angle * 3));
+        const point = center.clone()
+          .addScaledVector(frames.normals[row], nx * radiusX)
+          .addScaledVector(frames.binormals[row], ny * radiusY);
+        positions.push(point.x, point.y, point.z);
+        uvs.push(u * 5.4, v * 3.4);
+      }
+    }
+
+    for (let row = 0; row < tubularSegments; row++) {
+      for (let segment = 0; segment < radialSegments; segment++) {
+        const a = row * (radialSegments + 1) + segment;
+        const b = a + radialSegments + 1;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+
+    const result = new BufferGeometry();
+    result.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    result.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    result.setIndex(indices);
+    result.computeVertexNormals();
+    return result;
   }, [side]);
-  const material = useMemo(() => new MeshStandardMaterial({
-    color: side < 0 ? "#51463c" : "#625343",
-    roughness: 0.99, metalness: 0, side: DoubleSide,
-  }), [side]);
   const mesh = useMemo(() => new Mesh(geometry, material), [geometry, material]);
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
 function CaveTunnel() {
+  const branchMaps = useMemo(() => makeRockTextures(), []);
+  const branchMaterial = useMemo(() => new MeshStandardMaterial({
+    color: "#c0ad96",
+    map: branchMaps.color,
+    bumpMap: branchMaps.height,
+    bumpScale: 0.15,
+    roughness: 0.99,
+    metalness: 0,
+    side: DoubleSide,
+  }), [branchMaps]);
+  const [junctionX, junctionY] = caveCenter(31 / 63);
   return (
     <group>
       <CaveShell />
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
-      {
-        /* Put the fork origin on the actual main-cave centreline. */
-        (() => {
-          const [junctionX, junctionY] = caveCenter(31 / 63);
-          return (
-            <group position={[junctionX, junctionY, -22]}>
-              <CaveBranch side={-1} />
-              <CaveBranch side={1} />
-            </group>
-          );
-        })()
-      }
+      <group position={[junctionX, junctionY, -22]}>
+        <CaveBranch side={-1} material={branchMaterial} />
+        <CaveBranch side={1} material={branchMaterial} />
+      </group>
     </group>
   );
 }
