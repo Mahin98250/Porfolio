@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { MathUtils, type Group, type InstancedMesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
+import { MathUtils, type Group, InstancedMesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
