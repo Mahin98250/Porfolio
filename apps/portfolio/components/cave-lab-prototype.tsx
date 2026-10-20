@@ -58,9 +58,9 @@ function field(x: number, y: number, z: number): number {
   // Positive is open air. The zero surface is the boundary between the passage and solid rock.
   let air = r - distance + broad + medium + fine + ridges;
   // A side chamber is carved as an overlapping ellipsoid, not a decorative ring.
-  const pocketX = x - (cx + (t > 0.33 ? -2.6 : 2.55));
+  const pocketX = x - (cx + (t > 0.58 ? -2.65 : 2.55));
   const pocketY = (y - cy) * 0.9;
-  const pocketZ = (z - (t > 0.33 ? -7.5 : -18.5)) * 0.38;
+  const pocketZ = (z - (t > 0.58 ? -18.5 : -7.5)) * 0.38;
   const pocket = 1.15 - Math.sqrt(pocketX * pocketX + pocketY * pocketY + pocketZ * pocketZ);
   air = Math.max(air, pocket);
   return air;
@@ -104,8 +104,8 @@ function interpolate(a: V3, b: V3, va: number, vb: number): V3 {
   return [a[0]! + (b[0]! - a[0]!) * t, a[1]! + (b[1]! - a[1]!) * t, a[2]! + (b[2]! - a[2]!) * t];
 }
 function polygoniseTet(points: V3[], values: number[], out: number[]) {
-  const inside = [0,1,2,3].filter(i => values[i] >= 0);
-  const outside = [0,1,2,3].filter(i => values[i] < 0);
+  const inside = [0,1,2,3].filter(i => at(values, i) >= 0);
+  const outside = [0,1,2,3].filter(i => at(values, i) < 0);
   if (inside.length === 0 || inside.length === 4) return;
   const edge = (a: number, b: number) => interpolate(at(points, a), at(points, b), at(values, a), at(values, b));
   const pushTri = (a: V3, b: V3, c: V3) => { out.push(...a, ...b, ...c); };
