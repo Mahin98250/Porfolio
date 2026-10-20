@@ -45,26 +45,38 @@ function SculpturalCore() {
   );
 }
 
-function OrbitalStructure() {
+function CaveTunnel() {
+  const rings = Array.from({ length: 24 }, (_, index) => {
+    const z = 5 - index * 1.05;
+    const radius = 2.15 + Math.sin(index * 1.71) * 0.23 + Math.cos(index * 0.63) * 0.16;
+    return { z, radius, rotation: index * 0.19, tint: index % 3 === 0 ? "#b28bca" : index % 3 === 1 ? "#4c3b59" : "#79617f" };
+  });
+  const rocks = Array.from({ length: 92 }, (_, index) => {
+    const angle = index * 2.39996;
+    const z = 4.5 - (index % 31) * 0.79;
+    const radius = 1.55 + ((index * 17) % 31) / 31 * 0.95;
+    const size = 0.12 + ((index * 7) % 13) / 100;
+    return { position: [Math.cos(angle) * radius, Math.sin(angle) * radius, z] as [number, number, number], scale: [size * (1 + (index % 3)), size * (0.7 + (index % 4) * 0.2), size * (0.8 + (index % 5) * 0.18)] as [number, number, number], rotation: [angle, angle * 0.7, angle * 0.4] as [number, number, number], index };
+  });
   return (
-    <>
-      <mesh rotation={[0.7, 0.25, 0.2]}>
-        <torusGeometry args={[1.48, 0.018, 8, 180]} />
-        <meshPhysicalMaterial color="#eac18b" metalness={0.86} roughness={0.2} clearcoat={1} />
+    <group>
+      {rings.map((ring, index) => (
+        <mesh key={index} position={[0, 0, ring.z]} rotation={[0, 0, ring.rotation]}>
+          <torusGeometry args={[ring.radius, 0.14 + (index % 4) * 0.035, 8, 72]} />
+          <meshStandardMaterial color={ring.tint} roughness={0.96} metalness={0.04} />
+        </mesh>
+      ))}
+      {rocks.map((rock) => (
+        <mesh key={rock.index} position={rock.position} scale={rock.scale} rotation={rock.rotation}>
+          <icosahedronGeometry args={[1, 1]} />
+          <meshStandardMaterial color={rock.index % 4 === 0 ? "#4a354f" : "#211a2a"} roughness={1} flatShading />
+        </mesh>
+      ))}
+      <mesh position={[0, 0, -22]}>
+        <sphereGeometry args={[0.72, 24, 24]} />
+        <meshBasicMaterial color="#f2c995" />
       </mesh>
-      <mesh rotation={[1.15, -0.8, 0.58]}>
-        <torusGeometry args={[1.72, 0.011, 8, 180]} />
-        <meshBasicMaterial color="#c4a4ff" transparent opacity={0.72} />
-      </mesh>
-      <mesh rotation={[0.25, 1.05, -0.3]}>
-        <torusGeometry args={[1.9, 0.008, 6, 180]} />
-        <meshBasicMaterial color="#9edecf" transparent opacity={0.54} />
-      </mesh>
-      <mesh rotation={[0.5, 0.2, 1.1]} scale={0.78}>
-        <torusKnotGeometry args={[1.45, 0.014, 160, 8, 2, 5]} />
-        <meshPhysicalMaterial color="#d4c4ff" metalness={0.8} roughness={0.22} clearcoat={1} />
-      </mesh>
-    </>
+    </group>
   );
 }
 
@@ -78,58 +90,35 @@ function Satellite({ position, color, scale = 0.07 }: { position: [number, numbe
 }
 
 function SceneContent({ scrollProgress }: { scrollProgress: ScrollProgress }) {
-  const structure = useRef<Group>(null);
-
+  const tunnel = useRef<Group>(null);
   useFrame((state, delta) => {
-    if (!structure.current) return;
     const step = Math.min(delta, 0.045);
-    const scroll = MathUtils.clamp(scrollProgress.current / 0.82, 0, 1);
-    const targetX = state.pointer.y * -0.09 + Math.sin(state.clock.elapsedTime * 0.21) * 0.025;
+    const progress = MathUtils.clamp(scrollProgress.current, 0, 1);
     const camera = state.camera;
-    const dollyBeat = Math.sin(scroll * Math.PI);
-    const targetCameraZ = 5.8 - dollyBeat * 1.55 + scroll * 2.25;
-    const targetCameraX = Math.sin(scroll * Math.PI) * 0.38 - scroll * 0.16 + state.pointer.x * 0.045;
-    const targetCameraY = Math.sin(scroll * Math.PI * 2) * 0.16 - state.pointer.y * 0.045;
-    camera.position.z = MathUtils.damp(camera.position.z, targetCameraZ, 2.8, step);
-    camera.position.x = MathUtils.damp(camera.position.x, targetCameraX, 2.8, step);
-    camera.position.y = MathUtils.damp(camera.position.y, targetCameraY, 2.8, step);
-    camera.lookAt(0, 0, 0);
-    const targetY = state.pointer.x * 0.12 + state.clock.elapsedTime * 0.055 + scroll * 0.48;
-    structure.current.rotation.x = MathUtils.damp(structure.current.rotation.x, targetX, 2.5, step);
-    structure.current.rotation.y = MathUtils.damp(structure.current.rotation.y, targetY, 2.5, step);
-    structure.current.rotation.z = MathUtils.damp(
-      structure.current.rotation.z,
-      Math.sin(state.clock.elapsedTime * 0.16) * 0.035 - scroll * 0.08,
-      2,
-      step,
-    );
-    structure.current.position.x = MathUtils.damp(structure.current.position.x, state.pointer.x * 0.12, 2, step);
-    // A restrained push-in followed by a pull-back gives the opening its own camera beat.
-    structure.current.scale.setScalar(1 + dollyBeat * 0.13 - scroll * 0.2);
-    structure.current.position.y = MathUtils.damp(
-      structure.current.position.y,
-      Math.sin(scroll * Math.PI) * 0.1 + state.pointer.y * -0.045,
-      2,
-      step,
-    );
+    // Scroll is the camera rail: the viewer travels into the cave, not past a floating object.
+    const targetZ = 5.2 - progress * 23.5;
+    const targetX = Math.sin(progress * Math.PI * 2) * 0.28 + state.pointer.x * 0.035;
+    const targetY = Math.sin(progress * Math.PI * 1.35) * 0.19 + state.pointer.y * -0.035;
+    camera.position.z = MathUtils.damp(camera.position.z, targetZ, 3.4, step);
+    camera.position.x = MathUtils.damp(camera.position.x, targetX, 2.6, step);
+    camera.position.y = MathUtils.damp(camera.position.y, targetY, 2.6, step);
+    camera.lookAt(targetX * 0.35, targetY * 0.35, targetZ - 8);
+    if (tunnel.current) {
+      tunnel.current.rotation.z = MathUtils.damp(tunnel.current.rotation.z, Math.sin(progress * Math.PI * 2) * 0.035, 2, step);
+    }
   });
-
   return (
     <>
-      <fog attach="fog" args={["#0a0710", 5.4, 11]} />
-      <ambientLight intensity={0.62} />
-      <directionalLight position={[4, 5, 4]} intensity={2.1} color="#f0e6ff" />
-      <pointLight position={[-3.5, 1.4, 2.3]} intensity={3.1} color="#9f78ff" />
-      <pointLight position={[2.8, -2.2, -2]} intensity={2.2} color="#eeb77b" />
-      <pointLight position={[0, 3, -2]} intensity={1.1} color="#8bd9cc" />
-      <group ref={structure}>
-        <OrbitalStructure />
-        <SculpturalCore />
-        <Satellite position={[1.86, 0.7, 0.15]} color="#eac18b" scale={0.075} />
-        <Satellite position={[-1.57, -0.74, 0.45]} color="#9edecf" scale={0.052} />
-        <Satellite position={[0.7, -1.75, -0.3]} color="#c4a4ff" scale={0.065} />
+      <color attach="background" args={["#08060b"]} />
+      <fog attach="fog" args={["#08060b", 4, 24]} />
+      <ambientLight intensity={0.24} />
+      <pointLight position={[0, 0, -20]} intensity={18} distance={30} color="#eac18b" />
+      <pointLight position={[-2, 1, -8]} intensity={3.5} distance={13} color="#a77bd3" />
+      <pointLight position={[2, -1, 2]} intensity={1.8} distance={8} color="#6f526f" />
+      <group ref={tunnel}>
+        <CaveTunnel />
       </group>
-      <Sparkles count={105} scale={[5.3, 4.8, 3.4]} size={1.35} speed={0.16} color="#e5d6ff" opacity={0.66} />
+      <Sparkles count={150} scale={[4.4, 4.4, 27]} position={[0, 0, -9]} size={1.1} speed={0.12} color="#e6c7f5" opacity={0.5} />
     </>
   );
 }
@@ -197,11 +186,11 @@ export function HeroScene() {
   const shouldAnimate = motionAllowed && inView && documentVisible;
 
   return (
-    <div ref={sceneRef} className="hero-scene" aria-label="Interactive 3D orbital sculpture" role="img">
+    <div ref={sceneRef} className="hero-scene" aria-label="Scroll-driven 3D cave journey" role="img">
       {motionAllowed ? (
         <Canvas
           dpr={[1, 1.45]}
-          camera={{ position: [0, 0, 5.8], fov: 39 }}
+          camera={{ position: [0, 0, 5.2], fov: 67 }}
           gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
           frameloop={shouldAnimate ? "always" : "never"}
           fallback={<div className="scene-fallback scene-static" aria-hidden="true" />}
@@ -212,7 +201,7 @@ export function HeroScene() {
         <div className="scene-fallback scene-static" aria-hidden="true" />
       )}
       <span className="scene-label">
-        {motionAllowed ? (shouldAnimate ? "LIVE SPATIAL STUDY / POINTER + SCROLL" : "3D SCENE PAUSED / PERFORMANCE SAVING") : "STATIC PREVIEW / REDUCED MOTION"}
+        {motionAllowed ? (shouldAnimate ? "SCROLL TO ENTER / LIVE 3D CAVE" : "3D SCENE PAUSED / PERFORMANCE SAVING") : "STATIC PREVIEW / REDUCED MOTION"}
       </span>
     </div>
   );
