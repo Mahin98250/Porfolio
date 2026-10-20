@@ -617,3 +617,9 @@ body{background:radial-gradient(ellipse at 70% 9%,rgba(94,51,130,.18),transparen
   .project-row{grid-template-columns:34px 1fr;gap:12px}
   .project-row .button{grid-column:2}
 }
+
+
+.chapter-rail a.chapter-active span{background:#d8b4ff;color:#100b17;border-color:#e5c4ff;box-shadow:0 0 22px #c6a4ff30}
+.chapter-rail a.chapter-active i{opacity:1;transform:translateX(0);color:#d9c4f1}
+.chapter-rail a:focus-visible span{outline:2px solid #eab878;outline-offset:3px}
+@media(max-width:1150px){.chapter-rail a.chapter-active i{display:none}}
