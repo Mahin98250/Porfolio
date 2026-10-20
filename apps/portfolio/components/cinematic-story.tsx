@@ -50,11 +50,11 @@ function caveCenter(t: number): [number, number] {
   // just a banking camera laid over a straight corridor.
   const p = MathUtils.clamp(t, 0, 1);
   return [
-    Math.sin(p * Math.PI * 2.65 + 0.18) * 1.62
-      + Math.sin(p * Math.PI * 5.15 + 0.7) * 0.44
-      + Math.sin(p * Math.PI * 8.1 + 1.9) * 0.13,
-    Math.sin(p * Math.PI * 1.9 - 0.42) * 0.48
-      + Math.sin(p * Math.PI * 5.6 + 0.2) * 0.16,
+    Math.sin(p * Math.PI * 2.65) * 1.62
+      + Math.sin(p * Math.PI * 5.15) * 0.44
+      + Math.sin(p * Math.PI * 8.1) * 0.13,
+    Math.sin(p * Math.PI * 1.9) * 0.48
+      + Math.sin(p * Math.PI * 5.6) * 0.16,
   ];
 }
 
@@ -74,7 +74,7 @@ function caveRadiusAt(t: number): number {
 }
 
 function makeRockTextures(): { color: DataTexture; height: DataTexture } {
-  const size = 512;
+  const size = 384;
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
 
@@ -475,8 +475,12 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
     const progress = MathUtils.clamp(progressRef.current, 0, 1);
     const camera = state.camera;
     const targetZ = 14 - progress * 54;
-    const [pathX, pathY] = caveCenter(progress);
-    const [aheadX, aheadY] = caveCenter(Math.min(1, progress + 0.055));
+    // Convert camera depth into the cave mesh's own spline parameter. The
+    // camera used to follow the same percentage as the scroll story, which
+    // made it drift away from the newly sculpted route.
+    const routeT = MathUtils.clamp((9 - targetZ) / 63, 0, 1);
+    const [pathX, pathY] = caveCenter(routeT);
+    const [aheadX, aheadY] = caveCenter(Math.min(1, routeT + 0.055));
     const bendStrength = MathUtils.clamp((aheadX - pathX) * 1.45, -0.82, 0.82);
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
     camera.position.x = MathUtils.damp(camera.position.x, pathX, 3.2, step);
