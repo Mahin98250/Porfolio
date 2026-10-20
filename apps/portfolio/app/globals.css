@@ -743,3 +743,19 @@ body{background:radial-gradient(ellipse at 70% 9%,rgba(94,51,130,.18),transparen
   .project-stage,.project-stage .stage-glow{transition:none!important;will-change:auto}
   .project-stage.is-pointer-card{transform:none!important}
 }
+
+
+/* The chapter rail doubles as a restrained reading-progress instrument */
+.chapter-rail::before,.chapter-rail::after{
+  content:"";position:absolute;z-index:0;left:11px;top:21px;width:1px;pointer-events:none;
+}
+.chapter-rail::before{bottom:21px;background:linear-gradient(180deg,#c5a4ff3b,#eab87820)}
+.chapter-rail::after{
+  height:min(var(--chapter-progress,0%),calc(100% - 42px));
+  background:linear-gradient(180deg,#c6a4ff,#eab878);
+  box-shadow:0 0 9px #c6a4ff4d;
+}
+.chapter-rail a{position:relative;z-index:1}
+@media(max-width:580px){
+  .chapter-rail::before,.chapter-rail::after{display:none}
+}
