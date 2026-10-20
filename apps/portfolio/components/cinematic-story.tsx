@@ -290,7 +290,22 @@ function CaveShell() {
         const medium = noise3(aroundX * 5.2 - 2, aroundY * 5.2 + 6, t * 23);
         const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
         const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
-        const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038) + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle) + fine * 0.045;
+        // The entrance lip is not a clean cut plane: its edge breaks forward
+        // and backward by angle, with a stronger chipped silhouette near the roof.
+        const entranceWeight = Math.pow(Math.max(0, 1 - t / 0.115), 1.65);
+        const entranceChip = (
+          Math.sin(angle * 3.0 + 0.4) * 0.34
+          + Math.sin(angle * 5.0 + 1.7) * 0.19
+          + noise3(aroundX * 4.2 + 2.1, aroundY * 4.2 - 0.8, 1.4) * 0.28
+        ) * entranceWeight;
+        const entranceBulge = entranceWeight * (
+          Math.max(0, aroundY) * 0.34
+          + Math.max(0, -aroundY) * 0.10
+          + Math.sin(angle * 2.0 - 0.7) * 0.12
+        );
+        const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038)
+          + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle)
+          + entranceBulge + fine * 0.045;
 
         // The floor is lower and flatter than the roof; upper surfaces have
         // more headroom and uneven overhangs. This deliberately avoids a
@@ -299,7 +314,8 @@ function CaveShell() {
         const floorRidge = Math.max(0, -aroundY) * Math.sin(t * 31 + aroundX * 5.7 + coarse) * 0.105;
         const x = cx + aroundX * radius * (0.98 + medium * 0.045);
         const y = cy + aroundY * radius * verticalScale + floorRidge;
-        positions.push(x, y, z);
+        const entranceEdgeZ = entranceChip * 1.5 + entranceWeight * Math.sin(angle * 2.7 + 0.8) * 0.22;
+        positions.push(x, y, z + entranceEdgeZ);
         uvs.push(u * 3.8, t * 7.5);
 
         const mineral = Math.max(0, Math.sin(angle * 2.3 + coarse * 2.2 + t * 8.7)) * 0.5;
@@ -499,6 +515,8 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
       <directionalLight position={[4, 5, 3]} intensity={1.35} color="#ead8bd" />
       {/* Warm entrance spill: a broad, visible source rather than a glowing ring. */}
       <pointLight position={[0.1, 1.1, 5.4]} intensity={8.5} distance={22} decay={1.65} color="#ffd39a" />
+      {/* Entrance key light grazes the chipped rock lip from outside the cave. */}
+      <spotLight position={[-1.8, 3.4, 11.5]} target-position={[0, 0.1, 1.4]} intensity={95} distance={24} angle={0.72} penumbra={0.82} decay={1.8} color="#ffd9a6" />
       <pointLight position={[-2.5, 1.0, -4.5]} intensity={4.2} distance={17} decay={1.8} color="#e8bd85" />
       {/* Soft pools of reflected light reveal the side chambers along the route. */}
       <pointLight position={[2.2, 1.0, -12.5]} intensity={4.8} distance={18} decay={1.9} color="#e7d1ad" />
