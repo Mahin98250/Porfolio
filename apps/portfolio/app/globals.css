@@ -326,3 +326,8 @@ body{background-attachment:fixed}
 @media(prefers-reduced-motion:reduce){
   .menu-toggle span,.navigation-open{animation:none!important;transition:none!important}
 }
+
+
+/* Keep the WebGL fallback in the same stage without reserving extra layout */
+.hero-scene .scene-static{position:absolute;inset:0;min-width:0;min-height:0;border-radius:inherit}
+@media(prefers-reduced-motion:reduce){.hero-scene .scene-static{display:block}}
