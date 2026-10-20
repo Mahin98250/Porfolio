@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { MathUtils, type Group, InstancedMesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
+import { BufferGeometry, DoubleSide, Float32BufferAttribute, MathUtils, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -39,23 +39,68 @@ function CaveRocks() {
   return <primitive object={rockMesh as unknown as Object3D} dispose={null} />;
 }
 
-function CaveTunnel() {
-  const ribs = useMemo(() => Array.from({ length: 24 }, (_, i) => ({
-    z: 8 - i * 1.28,
-    radius: 2.15 + Math.sin(i * 1.71) * 0.22 + Math.cos(i * 0.51) * 0.12,
-    rotation: [Math.sin(i * 0.87) * 0.12, Math.cos(i * 0.53) * 0.14, Math.sin(i * 1.11) * 0.16] as [number, number, number],
-    size: 0.16 + (i % 4) * 0.035,
-    shade: (["#3b303c", "#4a3949", "#28222e", "#594253"] as const)[i % 4] ?? "#30252f",
-  })), []);
+function CaveShell() {
+  const shell = useMemo(() => {
+    const radialSegments = 52;
+    const axialSegments = 88;
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
 
+    for (let row = 0; row <= axialSegments; row++) {
+      const t = row / axialSegments;
+      const z = 9 - t * 35;
+      for (let segment = 0; segment <= radialSegments; segment++) {
+        const u = segment / radialSegments;
+        const angle = u * Math.PI * 2;
+        const strata =
+          Math.sin(angle * 3.2 + row * 0.19) * 0.19 +
+          Math.sin(angle * 7.1 - row * 0.43) * 0.09 +
+          Math.sin(row * 0.29 + angle * 1.4) * 0.11 +
+          Math.cos(angle * 10 + row * 0.62) * 0.035;
+        const radius = 2.72 + strata;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius * 0.84 + Math.sin(angle * 2 + row * 0.31) * 0.075;
+        positions.push(x, y, z);
+        uvs.push(u, t * 3.2);
+        const variation = Math.max(0.14, Math.min(0.92, 0.48 + strata * 1.2 + Math.sin(row * 0.9 + angle * 5) * 0.12));
+        colors.push(0.10 + variation * 0.15, 0.075 + variation * 0.105, 0.105 + variation * 0.15);
+      }
+    }
+
+    for (let row = 0; row < axialSegments; row++) {
+      for (let segment = 0; segment < radialSegments; segment++) {
+        const a = row * (radialSegments + 1) + segment;
+        const b = a + radialSegments + 1;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
+    geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  }, []);
+
+  const material = useMemo(() => new MeshStandardMaterial({
+    color: "#ffffff",
+    vertexColors: true,
+    roughness: 0.98,
+    metalness: 0.015,
+    side: DoubleSide,
+  }), []);
+  const mesh = useMemo(() => new Mesh(shell, material), [shell, material]);
+  return <primitive object={mesh as unknown as Object3D} dispose={null} />;
+}
+
+function CaveTunnel() {
   return (
     <group>
-      {ribs.map((rib, index) => (
-        <mesh key={index} position={[Math.sin(index * 0.27) * 0.12, Math.cos(index * 0.31) * 0.1, rib.z]} rotation={rib.rotation}>
-          <torusGeometry args={[rib.radius, rib.size, 7, 48]} />
-          <meshStandardMaterial color={rib.shade} roughness={0.98} metalness={0.02} />
-        </mesh>
-      ))}
+      <CaveShell />
       <CaveRocks />
       {Array.from({ length: 13 }, (_, i) => (
         <mesh key={"crystal-" + i} position={[Math.sin(i * 2.4) * 1.65, Math.cos(i * 1.37) * 1.8, 2 - i * 1.65]} rotation={[i * 0.51, i * 0.29, i * 0.7]}>
