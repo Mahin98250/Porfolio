@@ -10,12 +10,12 @@ export const metadata: Metadata = {
     template: "%s · Mahin Patel",
   },
   description:
-    "The portfolio of Mahin Patel, a student programmer exploring software, AI, robotics and automation through practical projects.",
+    "Mahin Patel builds digital tools while exploring AI, robotics and automation. A portfolio of experiments, prototypes and the questions behind them.",
   applicationName: "Mahin Patel Portfolio",
   openGraph: {
     type: "website",
     title: "Mahin Patel — Programmer & Builder",
-    description: "Curiosity, compiled into real things.",
+    description: "Code is only the beginning. Follow the experiments, systems and questions shaping Mahin Patel’s path.",
     siteName: "Mahin Patel Portfolio",
   },
   robots: { index: true, follow: true },
