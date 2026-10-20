@@ -694,3 +694,28 @@ body{background:radial-gradient(ellipse at 70% 9%,rgba(94,51,130,.18),transparen
   .cinema-project-visual .cinema-project-grid{animation:none!important;transform:none!important;opacity:.7}
   .cinema-hero-art .hero-scene{transform:none}
 }
+
+
+/* Cursor-as-a-light-source: the project objects gently react to the viewer */
+.cinema-project-visual{
+  transition:transform .32s cubic-bezier(.2,.7,.2,1),border-color .35s;
+  will-change:transform;
+}
+.cinema-project-visual::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;
+  background:radial-gradient(280px circle at var(--card-x,50%) var(--card-y,50%),color-mix(in srgb,var(--project-b) 17%,transparent),transparent 68%);
+  transition:opacity .3s;
+}
+.cinema-project-visual.is-pointer-card{
+  transform:perspective(900px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateZ(5px);
+  border-color:color-mix(in srgb,var(--project-a) 45%,transparent);
+}
+.cinema-project-visual.is-pointer-card::before{opacity:1}
+@media(max-width:580px){
+  .cinema-project-visual{will-change:auto}
+  .cinema-project-visual.is-pointer-card{transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .cinema-project-visual,.cinema-project-visual::before{transition:none!important;will-change:auto}
+  .cinema-project-visual.is-pointer-card{transform:none!important}
+}
