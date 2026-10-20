@@ -1,0 +1,388 @@
+"use client";
+
+import Link from "next/link";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { MathUtils, type Group, type InstancedMesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+
+type ProgressRef = { current: number };
+
+function CaveRocks() {
+  const ref = useRef<InstancedMesh>(null);
+  const geometry = useMemo(() => new IcosahedronGeometry(1, 1), []);
+  const material = useMemo(() => new MeshStandardMaterial({ color: "#30252f", roughness: 0.98, metalness: 0.02, flatShading: true }), []);
+  const rocks = useMemo(() => Array.from({ length: 230 }, (_, i) => {
+    const angle = i * 2.399963;
+    const z = 7.5 - ((i * 37) % 290) / 10;
+    const radius = 2.05 + ((i * 19) % 41) / 30;
+    const size = 0.12 + ((i * 13) % 17) / 100;
+    return {
+      position: [Math.cos(angle) * radius, Math.sin(angle) * radius, z] as [number, number, number],
+      scale: [size * (1 + (i % 3) * 0.45), size * (0.7 + (i % 4) * 0.2), size * (0.9 + (i % 5) * 0.14)] as [number, number, number],
+      rotation: [angle * 0.8, angle * 0.43, angle * 0.27] as [number, number, number],
+    };
+  }), []);
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const dummy = new Object3D();
+    rocks.forEach((rock, index) => {
+      dummy.position.set(...rock.position);
+      dummy.rotation.set(...rock.rotation);
+      dummy.scale.set(...rock.scale);
+      dummy.updateMatrix();
+      ref.current?.setMatrixAt(index, dummy.matrix);
+    });
+    if (ref.current) ref.current.instanceMatrix.needsUpdate = true;
+  }, [rocks]);
+
+  return <instancedMesh ref={ref} args={[geometry, material, rocks.length]} frustumCulled={false} />;
+}
+
+function CaveTunnel() {
+  const ribs = useMemo(() => Array.from({ length: 24 }, (_, i) => ({
+    z: 8 - i * 1.28,
+    radius: 2.15 + Math.sin(i * 1.71) * 0.22 + Math.cos(i * 0.51) * 0.12,
+    rotation: [Math.sin(i * 0.87) * 0.12, Math.cos(i * 0.53) * 0.14, Math.sin(i * 1.11) * 0.16] as [number, number, number],
+    size: 0.16 + (i % 4) * 0.035,
+    shade: ["#3b303c", "#4a3949", "#28222e", "#594253"][i % 4],
+  })), []);
+
+  return (
+    <group>
+      {ribs.map((rib, index) => (
+        <mesh key={index} position={[Math.sin(index * 0.27) * 0.12, Math.cos(index * 0.31) * 0.1, rib.z]} rotation={rib.rotation}>
+          <torusGeometry args={[rib.radius, rib.size, 7, 48]} />
+          <meshStandardMaterial color={rib.shade} roughness={0.98} metalness={0.02} />
+        </mesh>
+      ))}
+      <CaveRocks />
+      {Array.from({ length: 13 }, (_, i) => (
+        <mesh key={"crystal-" + i} position={[Math.sin(i * 2.4) * 1.65, Math.cos(i * 1.37) * 1.8, 2 - i * 1.65]} rotation={[i * 0.51, i * 0.29, i * 0.7]}>
+          <octahedronGeometry args={[0.12 + (i % 3) * 0.055, 0]} />
+          <meshStandardMaterial color={i % 2 ? "#9b7d9f" : "#bb926d"} emissive={i % 2 ? "#2b1437" : "#3b2110"} emissiveIntensity={0.8} roughness={0.3} metalness={0.2} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function DataChamber() {
+  const chamber = useRef<Group>(null);
+  useFrame((state, delta) => {
+    if (!chamber.current) return;
+    const p = state.clock.elapsedTime;
+    chamber.current.rotation.z = MathUtils.damp(chamber.current.rotation.z, Math.sin(p * 0.19) * 0.025, 1.3, Math.min(delta, 0.045));
+    chamber.current.scale.setScalar(0.98 + Math.sin(p * 0.4) * 0.018);
+  });
+  return (
+    <group ref={chamber}>
+      {Array.from({ length: 18 }, (_, i) => {
+        const z = -15.5 - i * 1.23;
+        const radius = 2.3 + Math.sin(i * 1.37) * 0.14;
+        return (
+          <group key={i} position={[Math.sin(i * 0.35) * 0.12, Math.cos(i * 0.41) * 0.12, z]} rotation={[0.06 * Math.sin(i), 0.08 * Math.cos(i * 0.71), i * 0.13]}>
+            <mesh>
+              <torusGeometry args={[radius, 0.018, 6, 72]} />
+              <meshStandardMaterial color={i % 3 === 0 ? "#e4bd8a" : "#9982d3"} emissive={i % 3 === 0 ? "#7d4e26" : "#33205d"} emissiveIntensity={0.65} roughness={0.28} metalness={0.72} />
+            </mesh>
+            <mesh rotation={[0, 0, Math.PI / 2]}>
+              <torusGeometry args={[radius * 0.72, 0.009, 5, 64]} />
+              <meshBasicMaterial color="#8bbfc4" transparent opacity={0.56} />
+            </mesh>
+            {Array.from({ length: 4 }, (_, j) => (
+              <mesh key={j} position={[Math.cos(j * Math.PI / 2 + i * 0.21) * radius, Math.sin(j * Math.PI / 2 + i * 0.21) * radius, 0]} scale={0.055 + (j % 2) * 0.025}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial color={j % 2 ? "#e6c795" : "#b29bff"} />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+function ProjectRelics() {
+  const group = useRef<Group>(null);
+  useFrame((state, delta) => {
+    if (!group.current) return;
+    const step = Math.min(delta, 0.045);
+    group.current.rotation.y = MathUtils.damp(group.current.rotation.y, Math.sin(state.clock.elapsedTime * 0.16) * 0.07, 1.2, step);
+  });
+  const relics = [
+    { position: [-2.2, 0.45, -22.4] as [number, number, number], color: "#e4b77c", scale: 0.58 },
+    { position: [0.15, -0.35, -27.3] as [number, number, number], color: "#a9d4ff", scale: 0.66 },
+    { position: [2.15, 0.45, -32.2] as [number, number, number], color: "#a5d7be", scale: 0.62 },
+  ];
+  return (
+    <group ref={group}>
+      {relics.map((relic, i) => (
+        <group key={i} position={relic.position}>
+          <mesh scale={relic.scale}>
+            <icosahedronGeometry args={[1, 2]} />
+            <meshPhysicalMaterial color={relic.color} metalness={0.55} roughness={0.19} clearcoat={1} emissive={relic.color} emissiveIntensity={0.16} />
+          </mesh>
+          <mesh rotation={[0.42 + i * 0.31, 0.25, 0.8]}>
+            <torusGeometry args={[relic.scale * 1.55, 0.012, 6, 80]} />
+            <meshBasicMaterial color={relic.color} transparent opacity={0.85} />
+          </mesh>
+          <mesh rotation={[1.18, -0.4, i * 0.6]}>
+            <torusGeometry args={[relic.scale * 1.88, 0.009, 6, 72]} />
+            <meshBasicMaterial color="#a98cf4" transparent opacity={0.55} />
+          </mesh>
+          <pointLight color={relic.color} intensity={2.5} distance={5} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function RobotArm() {
+  const shoulder = useRef<Group>(null);
+  const elbow = useRef<Group>(null);
+  useFrame((state, delta) => {
+    const step = Math.min(delta, 0.045);
+    const beat = Math.sin(state.clock.elapsedTime * 0.42);
+    if (shoulder.current) shoulder.current.rotation.z = MathUtils.damp(shoulder.current.rotation.z, -0.42 + beat * 0.12, 1.1, step);
+    if (elbow.current) elbow.current.rotation.z = MathUtils.damp(elbow.current.rotation.z, 0.74 + Math.sin(state.clock.elapsedTime * 0.31) * 0.16, 1.0, step);
+  });
+  return (
+    <group position={[0.55, -1.15, -40.5]} rotation={[0, -0.25, 0]}>
+      <mesh position={[0, -0.18, 0]}><cylinderGeometry args={[0.72, 0.86, 0.32, 32]} /><meshStandardMaterial color="#302b36" metalness={0.86} roughness={0.29} /></mesh>
+      <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.48, 0.56, 0.3, 32]} /><meshStandardMaterial color="#b18b62" metalness={0.84} roughness={0.24} /></mesh>
+      <mesh position={[0, 0.4, 0]}><sphereGeometry args={[0.34, 22, 22]} /><meshPhysicalMaterial color="#77727e" metalness={0.92} roughness={0.2} clearcoat={0.8} /></mesh>
+      <group ref={shoulder} position={[0, 0.42, 0]}>
+        <mesh position={[0.16, 0.86, 0]} rotation={[0, 0, -0.24]}><boxGeometry args={[0.42, 1.8, 0.42]} /><meshStandardMaterial color="#b8a17d" metalness={0.86} roughness={0.22} /></mesh>
+        <mesh position={[0.28, 1.62, 0]}><sphereGeometry args={[0.3, 22, 22]} /><meshPhysicalMaterial color="#4c4a55" metalness={0.94} roughness={0.18} /></mesh>
+        <group ref={elbow} position={[0.28, 1.62, 0]}>
+          <mesh position={[0.22, 0.78, 0]} rotation={[0, 0, 0.28]}><boxGeometry args={[0.34, 1.58, 0.34]} /><meshStandardMaterial color="#8f90a4" metalness={0.9} roughness={0.2} /></mesh>
+          <mesh position={[0.35, 1.47, 0]}><sphereGeometry args={[0.23, 20, 20]} /><meshPhysicalMaterial color="#d4b58c" metalness={0.92} roughness={0.18} /></mesh>
+          <group position={[0.35, 1.55, 0]}>
+            <mesh position={[0.1, 0.18, 0]}><boxGeometry args={[0.46, 0.22, 0.34]} /><meshStandardMaterial color="#c6b59a" metalness={0.88} roughness={0.2} /></mesh>
+            <mesh position={[0.28, -0.02, 0.09]} rotation={[0, 0, -0.32]}><boxGeometry args={[0.08, 0.4, 0.08]} /><meshStandardMaterial color="#e2c18d" metalness={0.9} roughness={0.23} /></mesh>
+            <mesh position={[0.28, -0.02, -0.09]} rotation={[0, 0, -0.32]}><boxGeometry args={[0.08, 0.4, 0.08]} /><meshStandardMaterial color="#e2c18d" metalness={0.9} roughness={0.23} /></mesh>
+          </group>
+        </group>
+      </group>
+      <pointLight position={[0.3, 1.7, 1.2]} color="#e4b77c" intensity={2.8} distance={7} />
+    </group>
+  );
+}
+
+function World({ progressRef }: { progressRef: ProgressRef }) {
+  const world = useRef<Group>(null);
+  useFrame((state, delta) => {
+    const step = Math.min(delta, 0.045);
+    const progress = MathUtils.clamp(progressRef.current, 0, 1);
+    const camera = state.camera;
+    const targetZ = 8 - progress * 48;
+    const pathX = Math.sin(progress * Math.PI * 2.25) * 0.34;
+    const pathY = Math.sin(progress * Math.PI * 2.9) * 0.16;
+    camera.position.z = MathUtils.damp(camera.position.z, targetZ, 6.2, step);
+    camera.position.x = MathUtils.damp(camera.position.x, pathX, 4.4, step);
+    camera.position.y = MathUtils.damp(camera.position.y, pathY, 4.4, step);
+    camera.lookAt(pathX * 0.55, pathY * 0.55, camera.position.z - 8);
+    if (world.current) {
+      world.current.rotation.z = MathUtils.damp(world.current.rotation.z, Math.sin(progress * Math.PI * 3) * 0.012, 1.8, step);
+    }
+  });
+
+  return (
+    <>
+      <color attach="background" args={["#09070c"]} />
+      <fog attach="fog" args={["#09070c", 7, 31]} />
+      <ambientLight intensity={0.28} />
+      <directionalLight position={[4, 5, 3]} intensity={1.35} color="#f3e6d7" />
+      <pointLight position={[0, 0, 5]} intensity={5.5} distance={14} color="#c8a27d" />
+      <pointLight position={[-3, 1.8, -11]} intensity={4.2} distance={17} color="#9d70bb" />
+      <pointLight position={[2.8, -1.4, -25]} intensity={3.6} distance={14} color="#7d9eb9" />
+      <pointLight position={[-1.8, 2.5, -43]} intensity={5.4} distance={15} color="#e3b477" />
+      <group ref={world}>
+        <CaveTunnel />
+        <DataChamber />
+        <ProjectRelics />
+        <RobotArm />
+        <group position={[0, 0, -52]}>
+          <mesh><torusGeometry args={[2.15, 0.045, 8, 100]} /><meshPhysicalMaterial color="#e8c38e" metalness={0.82} roughness={0.2} emissive="#604224" emissiveIntensity={0.9} /></mesh>
+          <mesh rotation={[0.5, 0.35, 0.75]}><torusGeometry args={[1.66, 0.017, 8, 90]} /><meshBasicMaterial color="#a690e9" transparent opacity={0.9} /></mesh>
+          <mesh><icosahedronGeometry args={[0.76, 3]} /><meshPhysicalMaterial color="#d9c4ed" metalness={0.48} roughness={0.16} transparent opacity={0.78} transmission={0.18} clearcoat={1} emissive="#47245f" emissiveIntensity={0.6} /></mesh>
+          <pointLight intensity={9} distance={15} color="#e2bc88" />
+        </group>
+      </group>
+    </>
+  );
+}
+
+const scenes = [
+  { id: "opening", from: -0.035, to: 0.15 },
+  { id: "identity", from: 0.105, to: 0.30 },
+  { id: "approach", from: 0.265, to: 0.435 },
+  { id: "code", from: 0.40, to: 0.535 },
+  { id: "opticode", from: 0.50, to: 0.60 },
+  { id: "learning", from: 0.575, to: 0.68 },
+  { id: "marketplace", from: 0.655, to: 0.755 },
+  { id: "robotics", from: 0.725, to: 0.89 },
+  { id: "ending", from: 0.855, to: 1.04 },
+] as const;
+
+export function CinematicStory() {
+  const trackRef = useRef<HTMLElement>(null);
+  const sceneProgress = useRef(0);
+  const [motionAllowed, setMotionAllowed] = useState(true);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onMotion = () => setMotionAllowed(!reduceMotion.matches);
+    const onVisibility = () => setVisible(!document.hidden);
+    onMotion();
+    onVisibility();
+    reduceMotion.addEventListener?.("change", onMotion);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const storyScenes = Array.from(document.querySelectorAll<HTMLElement>("[data-story-scene]"));
+    const hint = document.querySelector<HTMLElement>("[data-scroll-hint]");
+    const update = () => {
+      const track = trackRef.current;
+      if (!track) return;
+      const rect = track.getBoundingClientRect();
+      const scrollable = Math.max(1, track.offsetHeight - window.innerHeight);
+      const progress = MathUtils.clamp(-rect.top / scrollable, 0, 1);
+      sceneProgress.current = progress;
+      track.style.setProperty("--story-progress", progress.toFixed(4));
+      storyScenes.forEach((panel) => {
+        const from = Number(panel.dataset.from ?? 0);
+        const to = Number(panel.dataset.to ?? 1);
+        const fade = 0.038;
+        const enter = MathUtils.clamp((progress - from) / fade, 0, 1);
+        const leave = 1 - MathUtils.clamp((progress - (to - fade)) / fade, 0, 1);
+        const opacity = Math.min(enter, leave);
+        panel.style.opacity = String(opacity);
+        panel.style.transform = "translate3d(0," + ((1 - opacity) * 24) + "px,0) scale(" + (0.986 + opacity * 0.014) + ")";
+        panel.style.pointerEvents = opacity > 0.55 ? "auto" : "none";
+        panel.setAttribute("aria-hidden", opacity > 0.3 ? "false" : "true");
+        panel.inert = opacity <= 0.3;
+      });
+      if (hint) {
+        const hintOpacity = 1 - MathUtils.clamp(progress / 0.10, 0, 1);
+        hint.style.opacity = String(hintOpacity);
+      }
+      const active = scenes.find((scene) => progress >= scene.from && progress < scene.to) ?? scenes[scenes.length - 1];
+      track.dataset.chapter = active.id;
+    };
+
+    let raf = 0;
+    const queueUpdate = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => { raf = 0; update(); });
+    };
+    update();
+    window.addEventListener("scroll", queueUpdate, { passive: true });
+    window.addEventListener("resize", queueUpdate, { passive: true });
+    return () => {
+      reduceMotion.removeEventListener?.("change", onMotion);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("scroll", queueUpdate);
+      window.removeEventListener("resize", queueUpdate);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return (
+    <section ref={trackRef} className="cinematic-story-track" aria-label="Mahin Patel — a cinematic journey through code, systems, and robotics">
+      <div className="cinematic-story-stage">
+        {motionAllowed ? (
+          <Canvas
+            dpr={[1, 1.35]}
+            camera={{ position: [0, 0, 8], fov: 67, near: 0.1, far: 100 }}
+            gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
+            frameloop={visible ? "always" : "never"}
+            fallback={<div className="cinema-cave-fallback" aria-hidden="true" />}
+          >
+            <Suspense fallback={null}><World progressRef={sceneProgress} /></Suspense>
+          </Canvas>
+        ) : <div className="cinema-cave-fallback" aria-hidden="true" />}
+        <div className="cinema-vignette" aria-hidden="true" />
+        <div className="cinema-atmosphere" aria-hidden="true" />
+        <div className="cinema-film-grain" aria-hidden="true" />
+        <div className="cinema-frame-lines" aria-hidden="true" />
+
+        <div className="cinema-scene-copy cinema-copy-opening" data-story-scene data-from="-0.035" data-to="0.15" aria-hidden="false">
+          <span className="cinema-scene-kicker"><i /> AN INTERACTIVE FILM / 001</span>
+          <h1>STEP INTO<br /><span>THE UNKNOWN.</span></h1>
+          <p>A journey from curiosity to code — and from code to the physical world.</p>
+          <span className="cinema-scene-micro">SCROLL TO DESCEND <b>↓</b></span>
+        </div>
+
+        <div className="cinema-scene-copy cinema-copy-identity" data-story-scene data-from="0.105" data-to="0.30" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> THE PERSON BEHIND THE BUILDS</span>
+          <h2>MAHIN<br /><span>PATEL.</span></h2>
+          <p>Student programmer. Independent builder. Future robotics and automation engineer.</p>
+          <div className="cinema-chips"><span>AHMEDABAD, INDIA</span><span>LEARN / BUILD / REPEAT</span></div>
+        </div>
+
+        <div className="cinema-scene-copy cinema-copy-approach" data-story-scene data-from="0.265" data-to="0.435" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> CHAPTER 02 / THE APPROACH</span>
+          <h2>CURIOSITY<br />BECOMES<br /><span>SOMETHING REAL.</span></h2>
+          <p>Ask better questions. Build a rough version. Test what breaks. Improve what matters. Every project is another step from an idea to a working system.</p>
+          <div className="cinema-wordline">OBSERVE <b>✳</b> EXPERIMENT <b>✳</b> REFINE</div>
+        </div>
+
+        <div className="cinema-scene-copy cinema-copy-code" data-story-scene data-from="0.40" data-to="0.535" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> CHAPTER 03 / THE DIGITAL FRONTIER</span>
+          <h2>CODE IS<br />THE FIRST <span>DOOR.</span></h2>
+          <p>Interfaces, applications and connected systems — the starting point for turning abstract ideas into something people can use.</p>
+          <div className="cinema-chips"><span>HTML / CSS / JS</span><span>REACT</span><span>PYTHON / SYSTEMS</span></div>
+        </div>
+
+        <div className="cinema-project-reveal" data-story-scene data-from="0.50" data-to="0.60" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> PROJECT WORLD / 001</span>
+          <span className="cinema-project-counter">01 — 03</span>
+          <h2>OPTICODE<br /><span>STUDIO.</span></h2>
+          <p>Moving information through light. Exploring optical file transfer, QR streams, frame reconstruction and offline-first communication.</p>
+          <a href="https://github.com/Mahin98250/OptiCode-Studio" target="_blank" rel="noreferrer">ENTER PROJECT <span>↗</span></a>
+        </div>
+
+        <div className="cinema-project-reveal cinema-project-reveal-right" data-story-scene data-from="0.575" data-to="0.68" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> PROJECT WORLD / 002</span>
+          <span className="cinema-project-counter">02 — 03</span>
+          <h2>LEARNER’S<br /><span>GUIDE.</span></h2>
+          <p>A student-focused learning platform designed to make study resources and everyday learning workflows easier to navigate.</p>
+          <a href="https://github.com/Mahin98250/Final-Learner-s-Guide" target="_blank" rel="noreferrer">ENTER PROJECT <span>↗</span></a>
+        </div>
+
+        <div className="cinema-project-reveal" data-story-scene data-from="0.655" data-to="0.755" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> PROJECT WORLD / 003</span>
+          <span className="cinema-project-counter">03 — 03</span>
+          <h2>DUDHWALA<br /><span>MARKETPLACE.</span></h2>
+          <p>Connecting customers with independent local milk sellers through a marketplace built around distinct journeys and useful everyday interactions.</p>
+          <a href="https://github.com/Mahin98250/Dudh-Wallah" target="_blank" rel="noreferrer">ENTER PROJECT <span>↗</span></a>
+        </div>
+
+        <div className="cinema-scene-copy cinema-copy-robotics" data-story-scene data-from="0.725" data-to="0.89" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> CHAPTER 05 / THE PHYSICAL WORLD</span>
+          <h2>FROM<br />CODE TO<br /><span>MACHINES.</span></h2>
+          <p>The long game: robotics, sensors, control systems and automation — where software starts interacting with the real world.</p>
+          <div className="cinema-chips"><span>ENGINEERING</span><span>CONTROL</span><span>ROBOTICS</span></div>
+        </div>
+
+        <div className="cinema-scene-copy cinema-copy-ending" data-story-scene data-from="0.855" data-to="1.04" aria-hidden="true">
+          <span className="cinema-scene-kicker"><i /> THE NEXT CHAPTER IS YOURS TO EXPLORE</span>
+          <h2>BUILD WHAT’S<br /><span>NEXT.</span></h2>
+          <p>Still learning. Still experimenting. Working toward a future in robotics and automation, one real project at a time.</p>
+          <div className="cinema-ending-actions">
+            <Link href="/projects">EXPLORE THE WORK <span>↗</span></Link>
+            <Link href="/journey">FOLLOW THE JOURNEY <span>↗</span></Link>
+            <Link href="/contact">GET IN TOUCH <span>↗</span></Link>
+          </div>
+          <span className="cinema-end-note">MAHIN PATEL / ALWAYS IN PROGRESS</span>
+        </div>
+
+        <div className="cinema-hud-top"><span>MP<span className="hud-dot">●</span></span><span>AN ORIGINAL INTERACTIVE STORY</span><span>AHMEDABAD / IN</span></div>
+        <div className="cinema-hud-bottom"><span data-scroll-hint>SCROLL TO TRAVEL <b>↓</b></span><span className="cinema-chapter-status">CINEMATIC MODE / <b data-chapter-label>01</b></span></div>
+        <div className="cinema-progress-track"><span data-progress-bar /></div>
+      </div>
+    </section>
+  );
+}
