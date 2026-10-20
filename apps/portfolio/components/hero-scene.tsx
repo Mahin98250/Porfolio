@@ -100,7 +100,6 @@ function SceneContent({ scrollProgress }: { scrollProgress: ScrollProgress }) {
 
   return (
     <>
-      <color attach="background" args={["#0a0710"]} />
       <fog attach="fog" args={["#0a0710", 5.4, 11]} />
       <ambientLight intensity={0.62} />
       <directionalLight position={[4, 5, 4]} intensity={2.1} color="#f0e6ff" />
