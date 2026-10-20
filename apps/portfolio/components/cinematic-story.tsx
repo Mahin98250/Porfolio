@@ -622,6 +622,14 @@ export function CinematicStory() {
         const hintOpacity = 1 - MathUtils.clamp(progress / 0.10, 0, 1);
         hint.style.opacity = String(hintOpacity);
       }
+      const branchPanel = document.querySelector<HTMLElement>(".cinema-branch-choice");
+      if (branchPanel) {
+        const branchWindow = Math.min(MathUtils.clamp((progress - 0.425) / 0.025, 0, 1), 1 - MathUtils.clamp((progress - 0.53) / 0.025, 0, 1));
+        branchPanel.style.opacity = String(branchWindow);
+        branchPanel.style.pointerEvents = branchWindow > 0.55 && !branchChoice.current ? "auto" : "none";
+        branchPanel.setAttribute("aria-hidden", branchWindow > 0.3 ? "false" : "true");
+        branchPanel.inert = branchWindow <= 0.3;
+      }
       const activeId = scenes.find((scene) => progress >= scene.from && progress < scene.to)?.id ?? "ending";
       track.dataset.chapter = activeId;
       const chapterLabel = document.querySelector<HTMLElement>("[data-chapter-label]");
@@ -737,7 +745,7 @@ export function CinematicStory() {
           <span className="cinema-end-note">MAHIN PATEL / ALWAYS IN PROGRESS</span>
         </div>
 
-        <div className={"cinema-branch-choice" + (sceneProgress.current > 0.425 && sceneProgress.current < 0.555 && !selectedBranch ? " is-visible" : "")} aria-live="polite">
+        <div className="cinema-branch-choice" aria-live="polite">
           <span className="cinema-scene-kicker"><i /> THE PASSAGE DIVIDES</span>
           <h2>Which way<br />will you <em>explore?</em></h2>
           <p>Two paths. Two different chapters. Choose your direction.</p>
