@@ -497,7 +497,7 @@ function CaveTunnel() {
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
-      <group position={[0.1, 0.15, -22]} rotation={[0, Math.PI / 2, 0]}>
+      <group position={[0.1, 0.15, -22]}>
         <CaveBranch side={-1} />
         <CaveBranch side={1} />
       </group>
@@ -505,7 +505,7 @@ function CaveTunnel() {
   );
 }
 
-function World({ progressRef }: { progressRef: ProgressRef }) {
+function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branchChoice: { current: "left" | "right" | null } }) {
   const world = useRef<Group>(null);
   useFrame((state, delta) => {
     const step = Math.min(delta, 0.045);
@@ -516,16 +516,22 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
     // camera used to follow the same percentage as the scroll story, which
     // made it drift away from the newly sculpted route.
     const routeT = MathUtils.clamp((9 - targetZ) / 63, 0, 1);
-    const [pathX, pathY] = caveCenter(routeT);
-    const [aheadX, aheadY] = caveCenter(Math.min(1, routeT + 0.075));
-    const [farX, farY] = caveCenter(Math.min(1, routeT + 0.12));
+    const [baseX, pathY] = caveCenter(routeT);
+    const [aheadBaseX, aheadY] = caveCenter(Math.min(1, routeT + 0.075));
+    const [farBaseX, farY] = caveCenter(Math.min(1, routeT + 0.12));
+    const branchBlend = branchChoice.current && routeT > 0.43
+      ? MathUtils.smoothstep(routeT, 0.43, 0.62) : 0;
+    const branchOffset = branchChoice.current === "left" ? -1 : branchChoice.current === "right" ? 1 : 0;
+    const pathX = baseX + branchOffset * branchBlend * 3.8;
+    const aheadX = aheadBaseX + branchOffset * MathUtils.smoothstep(routeT + 0.075, 0.43, 0.62) * 4.8;
+    const farX = farBaseX + branchOffset * MathUtils.smoothstep(routeT + 0.12, 0.43, 0.62) * 5.8;
     const bendStrength = MathUtils.clamp((aheadX - pathX) * 1.45, -0.82, 0.82);
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
-    camera.position.x = MathUtils.damp(camera.position.x, pathX, 3.2, step);
+    camera.position.x = MathUtils.damp(camera.position.x, pathX, 2.15, step);
     camera.position.y = MathUtils.damp(camera.position.y, pathY, 3.0, step);
-    // Look through the next section of the passage, so the camera visibly banks
-    // into each dogleg instead of staring down an endless straight tube.
-    camera.lookAt(aheadX * 0.62 + farX * 0.38 + bendStrength * 0.45, aheadY * 0.62 + farY * 0.38 + (aheadY - pathY) * 1.4, camera.position.z - 8.6);
+    // After the choice, ease the camera off the central route and into the
+    // selected arm instead of snapping sideways.
+    camera.lookAt(aheadX * 0.62 + farX * 0.38 + bendStrength * 0.45, aheadY * 0.62 + farY * 0.38 + (aheadY - pathY) * 1.4, camera.position.z - 7.8);
     camera.rotation.z = MathUtils.damp(camera.rotation.z, -bendStrength * 0.13, 2.2, step);
     if (world.current) {
       world.current.rotation.z = MathUtils.damp(world.current.rotation.z, Math.sin(progress * Math.PI * 3) * 0.012, 1.8, step);
@@ -573,7 +579,7 @@ const scenes = [
 export function CinematicStory() {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLElement>(null);
-  const sceneProgress = useRef(0);
+  const sceneProgress = useRef(0);\n  const branchChoice = useRef<"left" | "right" | null>(null);\n  const [selectedBranch, setSelectedBranch] = useState<"left" | "right" | null>(null);
   const [motionAllowed, setMotionAllowed] = useState(true);
   const [visible, setVisible] = useState(true);
 
@@ -652,7 +658,7 @@ export function CinematicStory() {
             frameloop={visible ? "always" : "never"}
             fallback={<div className="cinema-cave-fallback" aria-hidden="true" />}
           >
-            <Suspense fallback={null}><World progressRef={sceneProgress} /></Suspense>
+            <Suspense fallback={null}><World progressRef={sceneProgress} branchChoice={branchChoice} /></Suspense>
           </Canvas>
         ) : <div className="cinema-cave-fallback" aria-hidden="true" />}
         <div className="cinema-vignette" aria-hidden="true" />
@@ -729,6 +735,17 @@ export function CinematicStory() {
             <Link href="/contact">GET IN TOUCH <span>↗</span></Link>
           </div>
           <span className="cinema-end-note">MAHIN PATEL / ALWAYS IN PROGRESS</span>
+        </div>
+
+        <div className={"cinema-branch-choice" + (sceneProgress.current > 0.425 && sceneProgress.current < 0.555 && !selectedBranch ? " is-visible" : "")} aria-live="polite">
+          <span className="cinema-scene-kicker"><i /> THE PASSAGE DIVIDES</span>
+          <h2>Which way<br />will you <em>explore?</em></h2>
+          <p>Two paths. Two different chapters. Choose your direction.</p>
+          <div className="cinema-branch-actions">
+            <button type="button" onClick={() => { branchChoice.current = "left"; setSelectedBranch("left"); const root = scrollRootRef.current; const track = trackRef.current; if (root && track) root.scrollTo({ top: (track.offsetHeight - root.clientHeight) * 0.49, behavior: motionAllowed ? "smooth" : "auto" }); }}>← TAKE THE LEFT PASSAGE</button>
+            <button type="button" onClick={() => { branchChoice.current = "right"; setSelectedBranch("right"); const root = scrollRootRef.current; const track = trackRef.current; if (root && track) root.scrollTo({ top: (track.offsetHeight - root.clientHeight) * 0.49, behavior: motionAllowed ? "smooth" : "auto" }); }}>TAKE THE RIGHT PASSAGE →</button>
+          </div>
+          {selectedBranch && <span className="cinema-branch-confirm">PATH SELECTED · {selectedBranch.toUpperCase()} · KEEP SCROLLING</span>}
         </div>
 
         <div className="cinema-hud-top"><span>MP<span className="hud-dot">●</span></span><span>AN ORIGINAL INTERACTIVE STORY</span><span>AHMEDABAD / IN</span></div>
