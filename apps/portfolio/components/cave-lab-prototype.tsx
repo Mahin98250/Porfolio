@@ -65,6 +65,35 @@ function field(x: number, y: number, z: number): number {
   const pocketZ = (z - (t > 0.58 ? -18.5 : -7.5)) * 0.38;
   const pocket = 1.15 - Math.sqrt(pocketX * pocketX + pocketY * pocketY + pocketZ * pocketZ);
   air = Math.max(air, pocket);
+
+  // Carve natural rock teeth directly into the volume so they form part of
+  // the cave boundary instead of looking like floating decorative meshes.
+  const segmentDistance = (px: number, py: number, pz: number, ax: number, ay: number, az: number, bx: number, by: number, bz: number) => {
+    const vx = bx - ax, vy = by - ay, vz = bz - az;
+    const denom = vx * vx + vy * vy + vz * vz;
+    const u = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy + (pz - az) * vz) / Math.max(denom, 1e-6)));
+    return Math.hypot(px - (ax + vx * u), py - (ay + vy * u), pz - (az + vz * u));
+  };
+  const formations = [
+    { z: -3.4, side: 1, length: 0.95, radius: 0.22 },
+    { z: -6.8, side: -1, length: 0.72, radius: 0.19 },
+    { z: -11.7, side: 1, length: 1.28, radius: 0.24 },
+    { z: -15.1, side: -1, length: 0.86, radius: 0.2 },
+    { z: -21.9, side: 1, length: 1.05, radius: 0.22 },
+    { z: -26.2, side: -1, length: 0.7, radius: 0.18 },
+  ];
+  for (const formation of formations) {
+    const ft = (BOUNDS.maxZ - formation.z) / (BOUNDS.maxZ - BOUNDS.minZ);
+    const [fx, fy] = centerAt(ft);
+    const fr = radiusAt(ft);
+    const surfaceY = fy + formation.side * fr * (formation.side > 0 ? 1.08 : 0.72);
+    const tipY = surfaceY - formation.side * formation.length;
+    const axisX = fx + Math.sin(formation.z * 1.7) * 0.35;
+    const axisZ = formation.z + Math.sin(formation.z * 0.8) * 0.22;
+    const distanceToSpire = segmentDistance(x, y, z, axisX, surfaceY, axisZ, axisX + 0.12, tipY, axisZ + 0.08);
+    const taper = formation.radius * (1 - 0.42 * Math.max(0, Math.min(1, Math.abs(y - surfaceY) / formation.length)));
+    air = Math.min(air, distanceToSpire - taper);
+  }
   return air;
 }
 function makeCaveMaps() {
