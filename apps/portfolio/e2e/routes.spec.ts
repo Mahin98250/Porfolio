@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("home route presents programmer identity and selected work", async ({ page }) => {
+test("home opens in the cave and reveals the selected work at the end of the story", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("CODE IS ONLY");
-  await expect(page.getByText("STUDENT PROGRAMMER", { exact: false }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: /OPEN PROJECT ARCHIVE/i })).toHaveAttribute("href", /projects\/?$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("STEP INTO");
+  await expect(page.getByText("AN INTERACTIVE FILM / 001")).toBeVisible();
+  await expect(page.locator(".cinematic-story-track")).toBeVisible();
+
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", "/projects");
+  await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", "/journey");
 });
 
 test("primary navigation reaches every top-level page", async ({ page }) => {
@@ -94,55 +98,66 @@ test("mobile navigation exposes its state and closes after route selection", asy
   await expect(page.getByRole("button", { name: "Open navigation" })).toHaveAttribute("aria-expanded", "false");
 });
 
-test("3D hero provides a static scene when reduced motion is requested", async ({ page }) => {
+test("3D world provides a still cave scene when reduced motion is requested", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.locator(".hero-scene .scene-static")).toBeVisible();
-  await expect(page.locator(".hero-scene canvas")).toHaveCount(0);
+  await expect(page.locator(".cinema-cave-fallback")).toBeVisible();
+  await expect(page.locator(".cinematic-story-stage canvas")).toHaveCount(0);
 });
 
-
-test("mobile chapter dock keeps the long-form story navigable", async ({ page }) => {
+test("mobile cinematic journey advances through chapters without stacked content sections", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
-  const chapters = page.locator(".chapter-rail");
-  await expect(chapters).toBeVisible();
-  await expect(chapters.getByRole("link")).toHaveCount(5);
-  await chapters.getByRole("link", { name: "Approach chapter" }).click();
-  await expect(page).toHaveURL(/#approach$/);
-  await expect(page.locator("#approach")).toHaveCount(1);
-  await expect(chapters.getByRole("link", { name: "Approach chapter" })).toHaveAttribute("aria-current", "location");
+  const track = page.locator(".cinematic-story-track");
+  await expect(track).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("STEP INTO");
+  await expect(page.locator(".cinema-progress-track")).toBeVisible();
+
+  await page.evaluate(() => {
+    const story = document.querySelector<HTMLElement>(".cinematic-story-track");
+    if (!story) return;
+    window.scrollTo(0, (story.offsetHeight - window.innerHeight) * 0.34);
+  });
+  await expect(track).toHaveAttribute("data-chapter", "approach");
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("CURIOSITY");
 });
 
-test("project artwork receives pointer lighting on fine-pointer devices", async ({ page }) => {
+test("project worlds appear at their scene on the cinematic timeline", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/");
-  const art = page.locator(".cinema-project-visual").first();
-  await art.scrollIntoViewIfNeeded();
-  await art.hover({ position: { x: 40, y: 40 } });
-  await expect(art).toHaveClass(/is-pointer-card/);
 
-  await page.goto("/projects/opticode-studio");
-  const stage = page.locator(".project-stage");
-  await stage.hover({ position: { x: 75, y: 60 } });
-  await expect(stage).toHaveClass(/is-pointer-card/);
+  const track = page.locator(".cinematic-story-track");
+  await page.evaluate(() => {
+    const story = document.querySelector<HTMLElement>(".cinematic-story-track");
+    if (!story) return;
+    window.scrollTo(0, (story.offsetHeight - window.innerHeight) * 0.55);
+  });
+  await expect(track).toHaveAttribute("data-chapter", "opticode");
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("OPTICODE");
+  await expect(page.getByRole("link", { name: /ENTER PROJECT/i }).first()).toHaveAttribute(
+    "href",
+    "https://github.com/Mahin98250/OptiCode-Studio",
+  );
 });
 
-test("cinematic CTAs respond to pointer magnetism on desktop", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 960 });
+test("cinematic ending exposes journey, project, and contact actions", async ({ page }) => {
   await page.goto("/");
-  const cta = page.locator(".cinema-button").first();
-  await cta.hover({ position: { x: 18, y: 16 } });
-  await expect(cta).toHaveClass(/is-magnetic/);
+  await page.evaluate(() => {
+    const story = document.querySelector<HTMLElement>(".cinematic-story-track");
+    if (!story) return;
+    window.scrollTo(0, (story.offsetHeight - window.innerHeight) * 0.94);
+  });
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("BUILD WHAT’S");
+  await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", "/projects");
+  await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", "/journey");
+  await expect(page.getByRole("link", { name: /GET IN TOUCH/i })).toHaveAttribute("href", "/contact");
 });
 
-test("cinematic homepage exposes its main chapters and project archive CTA", async ({ page }) => {
+test("cinematic homepage keeps a single persistent stage and story chapters", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("BEGINNING");
-  for (const id of ["origin", "approach", "disciplines", "selected-work", "next"]) {
-    await expect(page.locator("#" + id)).toHaveCount(1);
-  }
-  await expect(page.getByRole("link", { name: /OPEN PROJECT ARCHIVE/i })).toHaveAttribute("href", /\/projects\/?$/);
-  await expect(page.getByRole("link", { name: /VIEW THE JOURNEY/i })).toHaveAttribute("href", /\/journey\/?$/);
+  await expect(page.locator(".cinematic-story-track")).toHaveCount(1);
+  await expect(page.locator(".cinematic-story-stage")).toHaveCount(1);
+  await expect(page.locator("[data-story-scene]")).toHaveCount(9);
+  await expect(page.locator(".cinema-progress-track span")).toBeVisible();
 });
