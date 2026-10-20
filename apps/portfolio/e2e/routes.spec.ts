@@ -1,4 +1,15 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function scrubStory(page: Page, progress: number) {
+  await page.evaluate((targetProgress) => {
+    const scroller = document.querySelector<HTMLElement>(".cinematic-story-scroll");
+    const track = document.querySelector<HTMLElement>(".cinematic-story-track");
+    if (!scroller || !track) throw new Error("Cinematic scroll surface was not mounted");
+    const maxScroll = Math.max(1, track.offsetHeight - scroller.clientHeight);
+    scroller.scrollTo({ top: maxScroll * targetProgress, behavior: "instant" });
+  }, progress);
+}
+
 
 test("home opens in the cave and reveals the selected work at the end of the story", async ({ page }) => {
   await page.goto("/");
@@ -114,11 +125,7 @@ test("mobile cinematic journey advances through chapters without stacked content
   await expect(page.getByRole("heading", { level: 1 })).toContainText("STEP INTO");
   await expect(page.locator(".cinema-progress-track")).toBeVisible();
 
-  await page.evaluate(() => {
-    const story = document.querySelector<HTMLElement>(".cinematic-story-track");
-    if (!story) return;
-    window.scrollTo(0, (story.offsetHeight - window.innerHeight) * 0.34);
-  });
+  await scrubStory(page, 0.34);
   await expect(track).toHaveAttribute("data-chapter", "approach");
   await expect(page.getByRole("heading", { level: 2 })).toContainText("CURIOSITY");
 });
@@ -128,11 +135,7 @@ test("project worlds appear at their scene on the cinematic timeline", async ({ 
   await page.goto("/");
 
   const track = page.locator(".cinematic-story-track");
-  await page.evaluate(() => {
-    const story = document.querySelector<HTMLElement>(".cinematic-story-track");
-    if (!story) return;
-    window.scrollTo(0, (story.offsetHeight - window.innerHeight) * 0.55);
-  });
+  await scrubStory(page, 0.55);
   await expect(track).toHaveAttribute("data-chapter", "opticode");
   await expect(page.getByRole("heading", { level: 2 })).toContainText("OPTICODE");
   await expect(page.getByRole("link", { name: /ENTER PROJECT/i }).first()).toHaveAttribute(
@@ -143,11 +146,7 @@ test("project worlds appear at their scene on the cinematic timeline", async ({ 
 
 test("cinematic ending exposes journey, project, and contact actions", async ({ page }) => {
   await page.goto("/");
-  await page.evaluate(() => {
-    const story = document.querySelector<HTMLElement>(".cinematic-story-track");
-    if (!story) return;
-    window.scrollTo(0, (story.offsetHeight - window.innerHeight) * 0.94);
-  });
+  await scrubStory(page, 0.94);
   await expect(page.getByRole("heading", { level: 2 })).toContainText("BUILD WHAT’S");
   await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", "/projects");
   await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", "/journey");

@@ -282,6 +282,7 @@ const scenes = [
 ] as const;
 
 export function CinematicStory() {
+  const scrollRootRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLElement>(null);
   const sceneProgress = useRef(0);
   const [motionAllowed, setMotionAllowed] = useState(true);
@@ -301,9 +302,12 @@ export function CinematicStory() {
     const update = () => {
       const track = trackRef.current;
       if (!track) return;
-      const rect = track.getBoundingClientRect();
-      const scrollable = Math.max(1, track.offsetHeight - window.innerHeight);
-      const progress = MathUtils.clamp(-rect.top / scrollable, 0, 1);
+      const scrollRoot = scrollRootRef.current;
+      if (!scrollRoot) return;
+      // A dedicated full-screen scroll surface keeps the sticky camera rail deterministic
+      // across desktop browsers, mobile address-bar changes, and static GitHub Pages exports.
+      const scrollable = Math.max(1, track.offsetHeight - scrollRoot.clientHeight);
+      const progress = MathUtils.clamp(scrollRoot.scrollTop / scrollable, 0, 1);
       sceneProgress.current = progress;
       track.style.setProperty("--story-progress", progress.toFixed(4));
       storyScenes.forEach((panel) => {
@@ -335,19 +339,21 @@ export function CinematicStory() {
       raf = window.requestAnimationFrame(() => { raf = 0; update(); });
     };
     update();
-    window.addEventListener("scroll", queueUpdate, { passive: true });
+    const scrollRoot = scrollRootRef.current;
+    scrollRoot?.addEventListener("scroll", queueUpdate, { passive: true });
     window.addEventListener("resize", queueUpdate, { passive: true });
     return () => {
       reduceMotion.removeEventListener?.("change", onMotion);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("scroll", queueUpdate);
+      scrollRoot?.removeEventListener("scroll", queueUpdate);
       window.removeEventListener("resize", queueUpdate);
       if (raf) window.cancelAnimationFrame(raf);
     };
   }, []);
 
   return (
-    <section ref={trackRef} className="cinematic-story-track" aria-label="Mahin Patel — a cinematic journey through code, systems, and robotics">
+    <div ref={scrollRootRef} className="cinematic-story-scroll">
+    <section ref={trackRef} className="cinematic-story-track" aria-label="Mahin Patel — a cinematic journey through code, systems, and robotics" data-chapter="opening">
       <div className="cinematic-story-stage">
         {motionAllowed ? (
           <Canvas
@@ -441,5 +447,6 @@ export function CinematicStory() {
         <div className="cinema-progress-track"><span data-progress-bar /></div>
       </div>
     </section>
+    </div>
   );
 }
