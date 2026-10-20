@@ -51,18 +51,19 @@ function SceneContent() {
 export function HeroScene() {
   const sceneRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
-  const [documentVisible, setDocumentVisible] = useState(
-    () => typeof document === "undefined" || !document.hidden,
-  );
-  const [motionAllowed, setMotionAllowed] = useState(
-    () => typeof window === "undefined" || !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
+  // Keep server and first client render identical; preferences are synchronized after hydration.
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const [motionAllowed, setMotionAllowed] = useState(true);
 
   useEffect(() => {
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const syncMotionPreference = () => setMotionAllowed(!motionPreference.matches);
     const syncDocumentVisibility = () => setDocumentVisible(!document.hidden);
 
+    const preferenceSyncFrame = window.requestAnimationFrame(() => {
+      syncMotionPreference();
+      syncDocumentVisibility();
+    });
     const supportsMediaChangeEvent = typeof motionPreference.addEventListener === "function";
     if (supportsMediaChangeEvent) {
       motionPreference.addEventListener("change", syncMotionPreference);
@@ -89,6 +90,7 @@ export function HeroScene() {
         motionPreference.removeListener(syncMotionPreference);
       }
       document.removeEventListener("visibilitychange", syncDocumentVisibility);
+      window.cancelAnimationFrame(preferenceSyncFrame);
       observer?.disconnect();
     };
   }, []);
