@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
+import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, TubeGeometry, Vector3, CatmullRomCurve3 } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -467,6 +467,29 @@ function CaveFormations() {
   </group>;
 }
 
+function CaveBranch({ side }: { side: -1 | 1 }) {
+  const geometry = useMemo(() => {
+    // Open-ended passages peel away from the central chamber. Their separate
+    // axes give the later camera choice real geometry to travel into.
+    const points = [
+      new Vector3(0, 0, 0),
+      new Vector3(side * 1.0, 0.08, -0.25),
+      new Vector3(side * 2.2, 0.28, -0.72),
+      new Vector3(side * 3.7, 0.42, -1.55),
+      new Vector3(side * 5.5, 0.3, -2.75),
+      new Vector3(side * 7.4, 0.05, -4.1),
+      new Vector3(side * 9.5, -0.12, -5.5),
+    ];
+    return new TubeGeometry(new CatmullRomCurve3(points), 72, 2.05, 28, false);
+  }, [side]);
+  const material = useMemo(() => new MeshStandardMaterial({
+    color: side < 0 ? "#51463c" : "#625343",
+    roughness: 0.99, metalness: 0, side: DoubleSide,
+  }), [side]);
+  const mesh = useMemo(() => new Mesh(geometry, material), [geometry, material]);
+  return <primitive object={mesh as unknown as Object3D} dispose={null} />;
+}
+
 function CaveTunnel() {
   return (
     <group>
@@ -474,6 +497,10 @@ function CaveTunnel() {
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
+      <group position={[0.1, 0.15, -22]} rotation={[0, Math.PI / 2, 0]}>
+        <CaveBranch side={-1} />
+        <CaveBranch side={1} />
+      </group>
     </group>
   );
 }
