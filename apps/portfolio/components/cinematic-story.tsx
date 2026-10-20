@@ -486,16 +486,20 @@ function CaveBranch({ side }: { side: -1 | 1 }) {
   const geometry = useMemo(() => {
     // Open-ended passages peel away from the central chamber. Their separate
     // axes give the later camera choice real geometry to travel into.
+    // Begin at the side-wall portal, not at the middle of the chamber.
+    // The passage then sweeps outward and forward, so the camera can turn
+    // through the opening without crossing the solid outside of the main shell.
     const points = [
-      new Vector3(0, 0, 0),
-      new Vector3(side * 1.0, 0.08, -0.25),
-      new Vector3(side * 2.2, 0.28, -0.72),
-      new Vector3(side * 3.7, 0.42, -1.55),
-      new Vector3(side * 5.5, 0.3, -2.75),
-      new Vector3(side * 7.4, 0.05, -4.1),
-      new Vector3(side * 9.5, -0.12, -5.5),
+      new Vector3(side * 2.25, 0.02, 0),
+      new Vector3(side * 2.8, 0.08, -0.45),
+      new Vector3(side * 3.8, 0.18, -1.25),
+      new Vector3(side * 5.1, 0.22, -2.5),
+      new Vector3(side * 6.4, 0.12, -4.1),
+      new Vector3(side * 7.5, -0.02, -6.0),
+      new Vector3(side * 8.2, -0.12, -8.2),
+      new Vector3(side * 8.5, -0.16, -10.4),
     ];
-    return new TubeGeometry(new CatmullRomCurve3(points), 72, 2.05, 28, false);
+    return new TubeGeometry(new CatmullRomCurve3(points), 96, 1.78, 32, false);
   }, [side]);
   const material = useMemo(() => new MeshStandardMaterial({
     color: side < 0 ? "#51463c" : "#625343",
@@ -534,13 +538,18 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     const [baseX, pathY] = caveCenter(routeT);
     const [aheadBaseX, aheadY] = caveCenter(Math.min(1, routeT + 0.075));
     const [farBaseX, farY] = caveCenter(Math.min(1, routeT + 0.12));
-    const branchBlend = branchChoice.current && routeT > 0.43
-      ? MathUtils.smoothstep(routeT, 0.43, 0.62) : 0;
     const branchOffset = branchChoice.current === "left" ? -1 : branchChoice.current === "right" ? 1 : 0;
-    const pathX = baseX + branchOffset * branchBlend * 3.8;
-    const aheadX = aheadBaseX + branchOffset * MathUtils.smoothstep(routeT + 0.075, 0.43, 0.62) * 4.8;
-    const farX = farBaseX + branchOffset * MathUtils.smoothstep(routeT + 0.12, 0.43, 0.62) * 5.8;
-    const bendStrength = MathUtils.clamp((aheadX - pathX) * 1.45, -0.82, 0.82);
+    // The fork is at world z=-22 (routeT≈0.492). Keep the camera centered
+    // until it reaches that junction, then ease it through the side-wall
+    // portal and along the chosen passage's real centreline.
+    const branchBlend = branchOffset === 0 ? 0 : MathUtils.smoothstep(routeT, 0.492, 0.635);
+    const branchDistance = MathUtils.clamp((routeT - 0.492) / 0.143, 0, 1);
+    const branchX = branchOffset * (2.35 + branchDistance * 5.95);
+    const pathX = baseX + branchOffset * branchBlend * 2.35 + (branchOffset === 0 ? 0 : branchOffset * branchDistance * 5.95);
+    const aheadBranchBlend = branchOffset === 0 ? 0 : MathUtils.smoothstep(routeT + 0.075, 0.492, 0.635);
+    const aheadX = aheadBaseX + branchOffset * aheadBranchBlend * 2.35 + (branchOffset === 0 ? 0 : branchOffset * MathUtils.clamp((routeT + 0.075 - 0.492) / 0.143, 0, 1) * 5.95);
+    const farX = farBaseX + branchOffset * MathUtils.smoothstep(routeT + 0.12, 0.492, 0.635) * 2.35 + (branchOffset === 0 ? 0 : branchOffset * MathUtils.clamp((routeT + 0.12 - 0.492) / 0.143, 0, 1) * 5.95);
+    const bendStrength = MathUtils.clamp((aheadX - pathX) * 0.8, -0.95, 0.95);
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
     camera.position.x = MathUtils.damp(camera.position.x, pathX, 2.15, step);
     camera.position.y = MathUtils.damp(camera.position.y, pathY, 3.0, step);
