@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { MathUtils, type Group, type InstancedMesh, Object3D, IcosahedronGeometry, MeshStandardMaterial } from "three";
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
 
 function CaveRocks() {
-  const ref = useRef<InstancedMesh>(null);
   const geometry = useMemo(() => new IcosahedronGeometry(1, 1), []);
   const material = useMemo(() => new MeshStandardMaterial({ color: "#30252f", roughness: 0.98, metalness: 0.02, flatShading: true }), []);
   const rocks = useMemo(() => Array.from({ length: 230 }, (_, i) => {
@@ -22,21 +21,22 @@ function CaveRocks() {
       rotation: [angle * 0.8, angle * 0.43, angle * 0.27] as [number, number, number],
     };
   }), []);
-
-  useLayoutEffect(() => {
-    if (!ref.current) return;
+  const rockMesh = useMemo(() => {
+    const mesh = new InstancedMesh(geometry, material, rocks.length);
     const dummy = new Object3D();
     rocks.forEach((rock, index) => {
       dummy.position.set(...rock.position);
       dummy.rotation.set(...rock.rotation);
       dummy.scale.set(...rock.scale);
       dummy.updateMatrix();
-      ref.current?.setMatrixAt(index, dummy.matrix);
+      mesh.setMatrixAt(index, dummy.matrix);
     });
-    if (ref.current) ref.current.instanceMatrix.needsUpdate = true;
-  }, [rocks]);
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    return mesh;
+  }, [geometry, material, rocks]);
 
-  return <instancedMesh ref={ref} args={[geometry, material, rocks.length]} frustumCulled={false} />;
+  return <primitive object={rockMesh as unknown as Object3D} dispose={null} />;
 }
 
 function CaveTunnel() {
@@ -45,7 +45,7 @@ function CaveTunnel() {
     radius: 2.15 + Math.sin(i * 1.71) * 0.22 + Math.cos(i * 0.51) * 0.12,
     rotation: [Math.sin(i * 0.87) * 0.12, Math.cos(i * 0.53) * 0.14, Math.sin(i * 1.11) * 0.16] as [number, number, number],
     size: 0.16 + (i % 4) * 0.035,
-    shade: ["#3b303c", "#4a3949", "#28222e", "#594253"][i % 4],
+    shade: (["#3b303c", "#4a3949", "#28222e", "#594253"] as const)[i % 4] ?? "#30252f",
   })), []);
 
   return (
