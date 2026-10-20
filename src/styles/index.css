@@ -112,7 +112,7 @@
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
 }
 .portfolio .cinema-rail:before{content:"";position:absolute;left:22px;top:24px;bottom:24px;width:1px;background:#c4a3ff25}
-.portfolio .cinema-rail:after{content:"";position:absolute;pointer-events:none;left:22px;top:24px;width:1px;height:calc((100% - 48px)*var(--story-progress,0));background:linear-gradient(#c4a3ff,#e8bd86);box-shadow:0 0 8px #c4a3ff65}
+.portfolio .cinema-rail:after{content:"";position:absolute;pointer-events:none;left:22px;top:24px;width:1px;height:calc(100% - 48px);transform:scaleY(var(--story-progress,0));transform-origin:top;background:linear-gradient(#c4a3ff,#e8bd86);box-shadow:0 0 8px #c4a3ff65}
 .portfolio .cinema-rail a{position:relative;z-index:1;display:flex;align-items:center;gap:10px;min-height:31px;padding:0 8px 0 0;color:#a998bb}
 .portfolio .cinema-rail a span{display:grid;place-items:center;width:29px;height:29px;border:1px solid #c4a3ff20;border-radius:50%;background:#100b18;color:#bba7d1;font:8px var(--mono)}
 .portfolio .cinema-rail a i{font:8px var(--mono);font-style:normal;letter-spacing:1px;opacity:0;transform:translateX(-5px);transition:opacity .2s,transform .2s}
