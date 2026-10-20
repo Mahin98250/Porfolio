@@ -20,6 +20,15 @@ const revealSelector = [
   ".project-story-main",
   ".project-learning-card",
   ".project-bottom-panel",
+  ".manifesto-main",
+  ".manifesto-columns article",
+  ".discipline-row",
+  ".disciplines-heading",
+  ".work-heading",
+  ".cinema-project",
+  ".next-chapter-bottom",
+  ".chapter-label",
+  ".cinema-footer-cta",
 ].join(",");
 
 const pointerCardSelector = [
