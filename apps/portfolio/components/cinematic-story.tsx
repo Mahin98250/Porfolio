@@ -101,6 +101,16 @@ function CaveTunnel() {
   return (
     <group>
       <CaveShell />
+      <mesh position={[0, 0, 8.65]} rotation={[0.035, -0.02, 0.08]}>
+        <torusGeometry args={[2.72, 0.2, 10, 84]} />
+        <meshStandardMaterial color="#51414f" roughness={0.98} metalness={0.015} />
+      </mesh>
+      {Array.from({ length: 7 }, (_, i) => (
+        <mesh key={"stalactite-" + i} position={[-2.05 + i * 0.67, 2.05 + Math.sin(i * 1.3) * 0.18, 6.8 - (i % 3) * 1.45]} rotation={[Math.PI, 0.08 * Math.sin(i), 0.12 * Math.cos(i)]} scale={[0.72 + (i % 2) * 0.3, 0.85 + (i % 3) * 0.35, 0.72 + (i % 2) * 0.25]}>
+          <coneGeometry args={[0.24, 0.9, 6, 1]} />
+          <meshStandardMaterial color="#493947" roughness={0.99} flatShading />
+        </mesh>
+      ))}
       <CaveRocks />
       {Array.from({ length: 13 }, (_, i) => (
         <mesh key={"crystal-" + i} position={[Math.sin(i * 2.4) * 1.65, Math.cos(i * 1.37) * 1.8, 2 - i * 1.65]} rotation={[i * 0.51, i * 0.29, i * 0.7]}>
@@ -221,7 +231,7 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
     const step = Math.min(delta, 0.045);
     const progress = MathUtils.clamp(progressRef.current, 0, 1);
     const camera = state.camera;
-    const targetZ = 8 - progress * 48;
+    const targetZ = 14 - progress * 54;
     const pathX = Math.sin(progress * Math.PI * 2.25) * 0.34;
     const pathY = Math.sin(progress * Math.PI * 2.9) * 0.16;
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 6.2, step);
@@ -342,7 +352,7 @@ export function CinematicStory() {
         {motionAllowed ? (
           <Canvas
             dpr={[1, 1.35]}
-            camera={{ position: [0, 0, 8], fov: 67, near: 0.1, far: 100 }}
+            camera={{ position: [0, 0, 14], fov: 67, near: 0.1, far: 100 }}
             gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
             frameloop={visible ? "always" : "never"}
             fallback={<div className="cinema-cave-fallback" aria-hidden="true" />}
