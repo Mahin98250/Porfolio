@@ -288,7 +288,7 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
 
   for (let row = 0; row <= axialSegments; row++) {
     const u = row / axialSegments;
-    const base = profile[row];
+    const base = profile[row] ?? 0.01;
     const taper = length * u;
     for (let segment = 0; segment <= radialSegments; segment++) {
       const angle = (segment / radialSegments) * Math.PI * 2;
@@ -347,7 +347,8 @@ function CaveFormations() {
   }), []);
   return <group>
     {formations.map((formation, i) => (
-      <mesh key={i} geometry={formation.geometry} position={formation.position} rotation={formation.rotation} scale={formation.scale}>
+      <mesh key={i} position={formation.position} rotation={formation.rotation} scale={formation.scale}>
+        <primitive object={formation.geometry} attach="geometry" />
         <meshStandardMaterial color={formation.color} roughness={0.99} metalness={0} flatShading />
       </mesh>
     ))}
