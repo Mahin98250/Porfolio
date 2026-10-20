@@ -2,11 +2,12 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, MeshDistortMaterial, Sparkles } from "@react-three/drei";
-import { Suspense, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { Mesh } from "three";
 
 function GlassCore() {
   const mesh = useRef<Mesh>(null);
+
   useFrame((state, delta) => {
     if (!mesh.current) return;
     mesh.current.rotation.x += delta * (0.12 + state.pointer.y * 0.035);
@@ -46,12 +47,61 @@ function SceneContent() {
 }
 
 export function HeroScene() {
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const [motionAllowed, setMotionAllowed] = useState(true);
+
+  useEffect(() => {
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncMotionPreference = () => setMotionAllowed(!motionPreference.matches);
+    const syncDocumentVisibility = () => setDocumentVisible(!document.hidden);
+
+    syncMotionPreference();
+    syncDocumentVisibility();
+    motionPreference.addEventListener("change", syncMotionPreference);
+    document.addEventListener("visibilitychange", syncDocumentVisibility);
+
+    const sceneElement = sceneRef.current;
+    let observer: IntersectionObserver | undefined;
+
+    if (sceneElement && "IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        (entries) => setInView(entries.some((entry) => entry.isIntersecting)),
+        { rootMargin: "100px 0px" },
+      );
+      observer.observe(sceneElement);
+    } else {
+      setInView(true);
+    }
+
+    return () => {
+      motionPreference.removeEventListener("change", syncMotionPreference);
+      document.removeEventListener("visibilitychange", syncDocumentVisibility);
+      observer?.disconnect();
+    };
+  }, []);
+
+  const shouldAnimate = motionAllowed && inView && documentVisible;
+
   return (
-    <div className="hero-scene" aria-label="Interactive 3D glass sculpture" role="img">
-      <Canvas dpr={[1, 1.5]} camera={{ position: [0, 0, 5.6], fov: 40 }} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }} fallback={<div className="scene-fallback" aria-hidden="true" />}>
-        <Suspense fallback={null}><SceneContent /></Suspense>
-      </Canvas>
-      <span className="scene-label">INTERACTIVE 3D / REAL-TIME LIGHT</span>
+    <div ref={sceneRef} className="hero-scene" aria-label="Interactive 3D glass sculpture" role="img">
+      {motionAllowed ? (
+        <Canvas
+          dpr={[1, 1.5]}
+          camera={{ position: [0, 0, 5.6], fov: 40 }}
+          gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
+          frameloop={shouldAnimate ? "always" : "never"}
+          fallback={<div className="scene-fallback scene-static" aria-hidden="true" />}
+        >
+          <Suspense fallback={null}><SceneContent /></Suspense>
+        </Canvas>
+      ) : (
+        <div className="scene-fallback scene-static" aria-hidden="true" />
+      )}
+      <span className="scene-label">
+        {motionAllowed ? (shouldAnimate ? "INTERACTIVE 3D / REAL-TIME LIGHT" : "3D SCENE PAUSED / PERFORMANCE SAVING") : "STATIC PREVIEW / REDUCED MOTION"}
+      </span>
     </div>
   );
 }
