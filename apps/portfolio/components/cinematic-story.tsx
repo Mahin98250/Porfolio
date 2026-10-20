@@ -428,14 +428,15 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
     // made it drift away from the newly sculpted route.
     const routeT = MathUtils.clamp((9 - targetZ) / 63, 0, 1);
     const [pathX, pathY] = caveCenter(routeT);
-    const [aheadX, aheadY] = caveCenter(Math.min(1, routeT + 0.055));
+    const [aheadX, aheadY] = caveCenter(Math.min(1, routeT + 0.075));
+    const [farX, farY] = caveCenter(Math.min(1, routeT + 0.12));
     const bendStrength = MathUtils.clamp((aheadX - pathX) * 1.45, -0.82, 0.82);
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
     camera.position.x = MathUtils.damp(camera.position.x, pathX, 3.2, step);
     camera.position.y = MathUtils.damp(camera.position.y, pathY, 3.0, step);
     // Look through the next section of the passage, so the camera visibly banks
     // into each dogleg instead of staring down an endless straight tube.
-    camera.lookAt(aheadX + bendStrength * 0.72, aheadY + (aheadY - pathY) * 2.0, camera.position.z - 7.8);
+    camera.lookAt(aheadX * 0.62 + farX * 0.38 + bendStrength * 0.45, aheadY * 0.62 + farY * 0.38 + (aheadY - pathY) * 1.4, camera.position.z - 8.6);
     camera.rotation.z = MathUtils.damp(camera.rotation.z, -bendStrength * 0.13, 2.2, step);
     if (world.current) {
       world.current.rotation.z = MathUtils.damp(world.current.rotation.z, Math.sin(progress * Math.PI * 3) * 0.012, 1.8, step);
@@ -444,14 +445,21 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
 
   return (
     <>
-      <color attach="background" args={["#090806"]} />
-      <fog attach="fog" args={["#090806", 7, 32]} />
-      <ambientLight intensity={0.22} color="#c5b9a7" />
-      <directionalLight position={[4, 5, 3]} intensity={1.05} color="#e0d0b8" />
-      <pointLight position={[0, 0, 5]} intensity={4.3} distance={13} color="#c9ab81" />
-      <pointLight position={[-3, 1.8, -11]} intensity={2.2} distance={13} color="#b1a18b" />
-      <pointLight position={[2.8, -1.4, -25]} intensity={1.8} distance={11} color="#9da69d" />
-      <pointLight position={[-1.8, 2.5, -43]} intensity={3.0} distance={14} color="#c5ad87" />
+      <color attach="background" args={["#100d09"]} />
+      <fog attach="fog" args={["#100d09", 10, 42]} />
+      {/* Broad, low-level bounce keeps the limestone readable without flattening shadows. */}
+      <ambientLight intensity={0.42} color="#c7b9a5" />
+      <hemisphereLight args={["#d8d0c2", "#241b14", 0.72]} />
+      <directionalLight position={[4, 5, 3]} intensity={1.35} color="#ead8bd" />
+      {/* Warm entrance spill: a broad, visible source rather than a glowing ring. */}
+      <pointLight position={[0.1, 1.1, 5.4]} intensity={8.5} distance={22} decay={1.65} color="#ffd39a" />
+      <pointLight position={[-2.5, 1.0, -4.5]} intensity={4.2} distance={17} decay={1.8} color="#e8bd85" />
+      {/* Soft pools of reflected light reveal the side chambers along the route. */}
+      <pointLight position={[2.2, 1.0, -12.5]} intensity={4.8} distance={18} decay={1.9} color="#e7d1ad" />
+      <pointLight position={[-2.8, -0.3, -23.5]} intensity={4.4} distance={18} decay={1.9} color="#c8c6b1" />
+      <pointLight position={[1.6, 1.3, -34.5]} intensity={4.8} distance={18} decay={1.8} color="#e7c99c" />
+      <pointLight position={[-1.2, 0.8, -45.5]} intensity={5.2} distance={20} decay={1.8} color="#f0d2a0" />
+      <pointLight position={[0.4, -0.2, -53.5]} intensity={3.6} distance={15} decay={1.9} color="#c9c2ae" />
       <group ref={world}>
         <CaveTunnel />
       </group>
