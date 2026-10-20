@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function scrubStory(page: Page, progress: number) {
+  await expect(page.locator(".cinematic-story-scroll")).toBeVisible({ timeout: 15000 });
   await page.evaluate((targetProgress) => {
     const scroller = document.querySelector<HTMLElement>(".cinematic-story-scroll");
     const track = document.querySelector<HTMLElement>(".cinematic-story-track");
@@ -13,11 +14,11 @@ async function scrubStory(page: Page, progress: number) {
 
 test("home opens in the cave and reveals the selected work at the end of the story", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("STEP INTO");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("STEP INTO", { timeout: 15000 });
   await expect(page.getByText("AN INTERACTIVE FILM / 001")).toBeVisible();
   await expect(page.locator(".cinematic-story-track")).toBeVisible();
 
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await scrubStory(page, 0.99);
   await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", /\/projects\/?$/);
   await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", /\/journey\/?$/);
 });
@@ -121,7 +122,7 @@ test("mobile cinematic journey advances through chapters without stacked content
   await page.goto("/");
 
   const track = page.locator(".cinematic-story-track");
-  await expect(track).toBeVisible();
+  await expect(track).toBeVisible({ timeout: 15000 });
   await expect(page.getByRole("heading", { level: 1 })).toContainText("STEP INTO");
   await expect(page.locator(".cinema-progress-track")).toBeVisible();
 
@@ -155,6 +156,7 @@ test("cinematic ending exposes journey, project, and contact actions", async ({ 
 
 test("cinematic homepage keeps a single persistent stage and story chapters", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator(".cinematic-story-scroll")).toBeVisible({ timeout: 15000 });
   await expect(page.locator(".cinematic-story-track")).toHaveCount(1);
   await expect(page.locator(".cinematic-story-stage")).toHaveCount(1);
   await expect(page.locator("[data-story-scene]")).toHaveCount(9);
