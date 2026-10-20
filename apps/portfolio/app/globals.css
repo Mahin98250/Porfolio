@@ -246,3 +246,25 @@ body{background-attachment:fixed}
 @keyframes page-orb-drift{from{transform:perspective(700px) rotateY(-18deg) rotateX(12deg) translateY(0)}to{transform:perspective(700px) rotateY(12deg) rotateX(-7deg) translateY(-13px)}}
 @media(max-width:760px){.page-hero{padding:65px 0 34px}.page-hero::before{right:-8%;top:2%;width:200px;opacity:.7}.experience-heading{flex-direction:column}.experience-metrics{grid-template-columns:1fr}.skill-group-grid{grid-template-columns:1fr;margin-bottom:55px}.journey-track::before{left:27px}.journey-card{grid-template-columns:54px 1fr;gap:14px}.journey-number{width:40px;height:40px}.page-experience{margin-bottom:55px}}
 @media(prefers-reduced-motion:reduce){.page-hero,.content-grid .content-card,.page-content .section-heading{animation:none!important}.page-hero::before{animation:none!important}.content-card,.skill-group-card,.experience-metric,.journey-card{transition:none!important}.content-card:hover,.skill-group-card:hover,.experience-metric:hover,.journey-card:hover{transform:none!important}}
+
+
+/* Interaction coverage for immersive detail and roadmap cards */
+.project-detail-hero{animation:page-enter .75s cubic-bezier(.2,.7,.2,1) both}
+.project-story-main,.project-learning-card,.project-bottom-panel,.page-experience,.experience-metric,.skill-group-card,.journey-card,.project-signal-row>div{position:relative;transform-style:preserve-3d;transition:transform .38s cubic-bezier(.2,.7,.2,1),border-color .3s,box-shadow .35s,background .3s;will-change:auto}
+.project-story-main,.project-learning-card,.project-bottom-panel,.page-experience,.experience-metric,.skill-group-card,.journey-card,.project-signal-row>div{overflow:hidden}
+.project-story-main::before,.project-learning-card::before,.project-bottom-panel::before,.page-experience::before,.experience-metric::before,.skill-group-card::before,.journey-card::before,.project-signal-row>div::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(320px circle at var(--card-x,50%) var(--card-y,0%),rgba(168,206,255,.13),transparent 46%);opacity:0;transition:opacity .35s ease}
+.project-story-main:hover::before,.project-learning-card:hover::before,.project-bottom-panel:hover::before,.page-experience:hover::before,.experience-metric:hover::before,.skill-group-card:hover::before,.journey-card:hover::before,.project-signal-row>div:hover::before{opacity:1}
+.project-story-main>*,.project-learning-card>*,.project-bottom-panel>*,.page-experience>*,.experience-metric>*,.skill-group-card>*,.journey-card>*,.project-signal-row>div>*{position:relative;z-index:1}
+@media(hover:hover) and (pointer:fine){
+  .project-story-main:hover,.project-learning-card:hover,.project-bottom-panel:hover,.page-experience:hover,.experience-metric:hover,.skill-group-card:hover,.journey-card:hover,.project-signal-row>div:hover{transform:perspective(1000px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateY(-4px);border-color:#b8d5ff45;box-shadow:inset 0 1px 0 #ffffff18,0 27px 70px #0003}
+}
+@media(max-width:580px){
+  .project-detail-hero{animation:none}
+  .project-story-main,.project-learning-card,.project-bottom-panel,.page-experience,.experience-metric,.skill-group-card,.journey-card,.project-signal-row>div{will-change:auto}
+}
+@media(prefers-reduced-motion:reduce){
+  .project-detail-hero{animation:none!important}
+  .project-story-main,.project-learning-card,.project-bottom-panel,.page-experience,.experience-metric,.skill-group-card,.journey-card,.project-signal-row>div{transition:none!important}
+  .project-story-main:hover,.project-learning-card:hover,.project-bottom-panel:hover,.page-experience:hover,.experience-metric:hover,.skill-group-card:hover,.journey-card:hover,.project-signal-row>div:hover{transform:none!important}
+  .project-story-main::before,.project-learning-card::before,.project-bottom-panel::before,.page-experience::before,.experience-metric::before,.skill-group-card::before,.journey-card::before,.project-signal-row>div::before{display:none}
+}
