@@ -39,10 +39,20 @@ function CaveRocks() {
   return <primitive object={rockMesh as unknown as Object3D} dispose={null} />;
 }
 
+function caveCenter(t: number): [number, number] {
+  // A hand-shaped cave spline: a broad left bend, a right-hand dogleg, then a
+  // subtle vertical drop. The same curve drives the rock shell and camera rail.
+  const p = MathUtils.clamp(t, 0, 1);
+  return [
+    Math.sin(p * Math.PI * 2.05) * 1.08 + Math.sin(p * Math.PI * 5.1 + 0.45) * 0.22,
+    Math.sin(p * Math.PI * 3.1 - 0.3) * 0.34 + Math.sin(p * Math.PI * 7.0) * 0.09,
+  ];
+}
+
 function CaveShell() {
   const shell = useMemo(() => {
-    const radialSegments = 52;
-    const axialSegments = 88;
+    const radialSegments = 88;
+    const axialSegments = 156;
     const positions: number[] = [];
     const colors: number[] = [];
     const uvs: number[] = [];
@@ -50,22 +60,43 @@ function CaveShell() {
 
     for (let row = 0; row <= axialSegments; row++) {
       const t = row / axialSegments;
-      const z = 9 - t * 35;
+      const z = 9 - t * 63;
+      const [cx, cy] = caveCenter(t);
+      const [nextX, nextY] = caveCenter(Math.min(1, t + 0.002));
+      const tangentX = nextX - cx;
+      const tangentY = nextY - cy;
+      const yaw = Math.atan2(tangentX, 1);
+      const pitch = Math.atan2(tangentY, 1);
+      const baseRadius = 3.12 + Math.sin(t * 15.2) * 0.16 + Math.sin(t * 33.7 + 0.8) * 0.08;
+
       for (let segment = 0; segment <= radialSegments; segment++) {
         const u = segment / radialSegments;
         const angle = u * Math.PI * 2;
-        const strata =
-          Math.sin(angle * 3.2 + row * 0.19) * 0.19 +
-          Math.sin(angle * 7.1 - row * 0.43) * 0.09 +
-          Math.sin(row * 0.29 + angle * 1.4) * 0.11 +
-          Math.cos(angle * 10 + row * 0.62) * 0.035;
-        const radius = 2.72 + strata;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius * 0.84 + Math.sin(angle * 2 + row * 0.31) * 0.075;
+        const broadRock = Math.sin(angle * 3.0 + t * 11.0) * 0.27
+          + Math.sin(angle * 5.0 - t * 18.0 + 0.8) * 0.16
+          + Math.cos(angle * 8.0 + t * 27.0) * 0.075;
+        const fracturedRock = Math.sin(angle * 17.0 + t * 47.0) * 0.032
+          + Math.sin(angle * 29.0 - t * 69.0) * 0.014;
+        const strata = Math.sin(t * 52 + Math.sin(angle * 2.0) * 1.8) * 0.055;
+        const radius = baseRadius + broadRock + fracturedRock + strata;
+        const localX = Math.cos(angle) * radius;
+        const localY = Math.sin(angle) * radius * (0.78 + Math.sin(angle * 2.0 + t * 6.0) * 0.035);
+        // Slightly rotate the tunnel cross-section through each bend, avoiding a
+        // uniform cylindrical pipe silhouette.
+        const x = cx + localX * Math.cos(yaw) - localY * Math.sin(yaw);
+        const y = cy + localX * Math.sin(pitch) + localY * Math.cos(pitch);
         positions.push(x, y, z);
-        uvs.push(u, t * 3.2);
-        const variation = Math.max(0.14, Math.min(0.92, 0.48 + strata * 1.2 + Math.sin(row * 0.9 + angle * 5) * 0.12));
-        colors.push(0.10 + variation * 0.15, 0.075 + variation * 0.105, 0.105 + variation * 0.15);
+        uvs.push(u * 3.8, t * 7.5);
+
+        const mineral = Math.sin(angle * 2.7 + t * 18.0) * 0.5 + 0.5;
+        const damp = Math.max(0, Math.sin(angle + 0.6) * 0.5 + 0.5);
+        const roughness = Math.max(0.08, Math.min(0.95, 0.32 + broadRock * 0.6 + fracturedRock * 1.5 + mineral * 0.16));
+        const shadowPocket = Math.max(0, Math.sin(angle * 6.0 + t * 38.0) * Math.cos(t * 91.0)) * 0.08;
+        colors.push(
+          0.105 + roughness * 0.14 + mineral * 0.025 - shadowPocket,
+          0.075 + roughness * 0.105 + damp * 0.018 - shadowPocket * 0.7,
+          0.068 + roughness * 0.092 + mineral * 0.045 - shadowPocket * 0.5,
+        );
       }
     }
 
@@ -89,18 +120,41 @@ function CaveShell() {
   const material = useMemo(() => new MeshStandardMaterial({
     color: "#ffffff",
     vertexColors: true,
-    roughness: 0.98,
-    metalness: 0.015,
+    roughness: 0.99,
+    metalness: 0.005,
     side: DoubleSide,
   }), []);
   const mesh = useMemo(() => new Mesh(shell, material), [shell, material]);
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
+function CaveGuideDots() {
+  const dots = useMemo(() => Array.from({ length: 96 }, (_, i) => {
+    const t = 0.025 + (i / 95) * 0.94;
+    const [cx, cy] = caveCenter(t);
+    const z = 9 - t * 63;
+    // A subtle dotted bioluminescent seam sits low on the cave wall/floor.
+    const side = i % 2 === 0 ? -1 : 1;
+    return {
+      position: [cx + side * (1.55 + Math.sin(t * 34) * 0.18), cy - 1.78 + Math.sin(t * 19) * 0.08, z] as [number, number, number],
+      size: 0.018 + (i % 5) * 0.004,
+      opacity: 0.22 + (i % 4) * 0.08,
+    };
+  }), []);
+  return <group>
+    {dots.map((dot, i) => (
+      <mesh key={i} position={dot.position} scale={dot.size}>
+        <sphereGeometry args={[1, 7, 6]} />
+        <meshBasicMaterial color={i % 7 === 0 ? "#d8b98c" : "#8bbfc4"} transparent opacity={dot.opacity} />
+      </mesh>
+    ))}
+  </group>;
+}
 function CaveTunnel() {
   return (
     <group>
       <CaveShell />
+      <CaveGuideDots />
       <mesh position={[0, 0, 8.65]} rotation={[0.035, -0.02, 0.08]}>
         <torusGeometry args={[2.72, 0.2, 10, 84]} />
         <meshStandardMaterial color="#51414f" roughness={0.98} metalness={0.015} />
@@ -232,12 +286,16 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
     const progress = MathUtils.clamp(progressRef.current, 0, 1);
     const camera = state.camera;
     const targetZ = 14 - progress * 54;
-    const pathX = Math.sin(progress * Math.PI * 2.25) * 0.34;
-    const pathY = Math.sin(progress * Math.PI * 2.9) * 0.16;
-    camera.position.z = MathUtils.damp(camera.position.z, targetZ, 6.2, step);
-    camera.position.x = MathUtils.damp(camera.position.x, pathX, 4.4, step);
-    camera.position.y = MathUtils.damp(camera.position.y, pathY, 4.4, step);
-    camera.lookAt(pathX * 0.55, pathY * 0.55, camera.position.z - 8);
+    const [pathX, pathY] = caveCenter(progress);
+    const [aheadX, aheadY] = caveCenter(Math.min(1, progress + 0.035));
+    const bendStrength = MathUtils.clamp((aheadX - pathX) * 0.9, -0.62, 0.62);
+    camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
+    camera.position.x = MathUtils.damp(camera.position.x, pathX, 3.2, step);
+    camera.position.y = MathUtils.damp(camera.position.y, pathY, 3.0, step);
+    // Look through the next section of the passage, so the camera visibly banks
+    // into each dogleg instead of staring down an endless straight tube.
+    camera.lookAt(aheadX + bendStrength, aheadY + (aheadY - pathY) * 1.8, camera.position.z - 8.5);
+    camera.rotation.z = MathUtils.damp(camera.rotation.z, -bendStrength * 0.18, 2.2, step);
     if (world.current) {
       world.current.rotation.z = MathUtils.damp(world.current.rotation.z, Math.sin(progress * Math.PI * 3) * 0.012, 1.8, step);
     }
