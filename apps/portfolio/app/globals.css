@@ -1021,3 +1021,19 @@ html:has(.cinematic-story-track),body:has(.cinematic-story-track){background:#08
   .cinematic-story-track{height:100svh!important;min-height:100svh}
   .cinematic-story-stage{position:relative;top:auto}
 }
+
+
+/* Cave geometry prototype — isolated from the production story styles. */
+.cave-lab{min-height:100vh;background:#080a0c;color:#e9e3da;padding:clamp(18px,3vw,42px);font-family:var(--sans,Arial,sans-serif)}
+.cave-lab-header{display:flex;justify-content:space-between;gap:16px;align-items:center;font:10px/1.4 var(--mono,monospace);letter-spacing:.13em;color:#a8a097;border-bottom:1px solid #34312d;padding-bottom:16px}
+.cave-lab-header a{color:#e0d7ca}
+.cave-lab-copy{max-width:760px;padding:clamp(30px,6vw,72px) 0 24px}
+.cave-lab-copy p{font:10px var(--mono,monospace);letter-spacing:.16em;color:#a9977e}
+.cave-lab-copy h1{font-size:clamp(42px,8vw,92px);line-height:.94;letter-spacing:-.065em;margin:15px 0 20px}
+.cave-lab-copy h1 em{font-family:Georgia,serif;font-weight:400;color:#b7a58f}
+.cave-lab-copy>span{display:block;max-width:580px;font-size:14px;line-height:1.8;color:#a9a49d}
+.cave-lab-view{height:min(68vh,720px);min-height:420px;border:1px solid #3a332c;position:relative;background:#080a0c;overflow:hidden}
+.cave-lab-view canvas{display:block}
+.cave-lab-view-label{position:absolute;bottom:16px;left:18px;color:#aaa096;font:9px var(--mono,monospace);letter-spacing:.12em;pointer-events:none}
+.cave-lab-footer{display:flex;justify-content:space-between;gap:14px;padding-top:17px;color:#8e877f;font:9px var(--mono,monospace);letter-spacing:.09em}
+@media(max-width:650px){.cave-lab-header{flex-wrap:wrap}.cave-lab-header span:last-child{width:100%}.cave-lab-view{height:58vh;min-height:360px}.cave-lab-footer{flex-direction:column;gap:8px}}

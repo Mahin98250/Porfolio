@@ -1,0 +1,135 @@
+"use client";
+
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { useMemo } from "react";
+import { BufferGeometry, Float32BufferAttribute, MeshStandardMaterial, DoubleSide, Vector3, Color } from "three";
+
+type V3 = [number, number, number];
+const NX = 30, NY = 26, NZ = 82;
+const BOUNDS = { minX: -7, maxX: 7, minY: -6, maxY: 6, minZ: -31, maxZ: 9 };
+const TETS = [[0, 5, 1, 6], [0, 1, 2, 6], [0, 2, 3, 6], [0, 3, 7, 6], [0, 7, 4, 6], [0, 4, 5, 6]];
+const CORNERS: V3[] = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+
+function centerAt(t: number): [number, number] {
+  return [Math.sin(t * Math.PI * 2.15) * 1.6 + Math.sin(t * Math.PI * 4.7) * 0.45,
+    Math.sin(t * Math.PI * 2.8) * 0.38 + Math.sin(t * Math.PI * 5.2) * 0.18];
+}
+function radiusAt(t: number): number {
+  const bell = (c: number, w: number) => Math.exp(-0.5 * ((t - c) / w) ** 2);
+  return 2.15 + 1.25 * bell(0.28, 0.085) + 2.05 * bell(0.61, 0.105) + 0.85 * bell(0.84, 0.065)
+    - 0.42 * bell(0.46, 0.04) - 0.32 * bell(0.75, 0.035);
+}
+function hash(x: number, y: number, z: number) {
+  const n = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453;
+  return (n - Math.floor(n)) * 2 - 1;
+}
+function field(x: number, y: number, z: number): number {
+  const t = (BOUNDS.maxZ - z) / (BOUNDS.maxZ - BOUNDS.minZ);
+  const [cx, cy] = centerAt(Math.max(0, Math.min(1, t)));
+  const r = radiusAt(Math.max(0, Math.min(1, t)));
+  const dx = (x - cx) * (1 + 0.055 * Math.sin(y * 1.7 + z * 0.32));
+  const dy = y - cy;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const broad = hash(Math.floor(x * 0.7), Math.floor(y * 0.7), Math.floor(z * 0.35)) * 0.22;
+  const medium = hash(Math.floor(x * 1.9), Math.floor(y * 1.9), Math.floor(z * 1.05)) * 0.095;
+  const ridges = Math.sin(x * 1.35 + z * 0.23) * Math.sin(y * 1.1 - z * 0.19) * 0.075;
+  // Positive is open air. The zero surface is the boundary between the passage and solid rock.
+  let air = r - distance + broad + medium + ridges;
+  // A side chamber is carved as an overlapping ellipsoid, not a decorative ring.
+  const pocketX = x - (cx + (t > 0.33 ? -2.6 : 2.55));
+  const pocketY = (y - cy) * 0.9;
+  const pocketZ = (z - (t > 0.33 ? -7.5 : -18.5)) * 0.38;
+  const pocket = 1.15 - Math.sqrt(pocketX * pocketX + pocketY * pocketY + pocketZ * pocketZ);
+  air = Math.max(air, pocket);
+  return air;
+}
+function interpolate(a: V3, b: V3, va: number, vb: number): V3 {
+  const denom = va - vb;
+  const t = Math.abs(denom) < 1e-6 ? 0.5 : Math.max(0, Math.min(1, va / denom));
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+}
+function polygoniseTet(points: V3[], values: number[], out: number[]) {
+  const inside = [0,1,2,3].filter(i => values[i] >= 0);
+  const outside = [0,1,2,3].filter(i => values[i] < 0);
+  if (inside.length === 0 || inside.length === 4) return;
+  const edge = (a: number, b: number) => interpolate(points[a], points[b], values[a], values[b]);
+  const pushTri = (a: V3, b: V3, c: V3) => { out.push(...a, ...b, ...c); };
+  if (inside.length === 1) {
+    pushTri(edge(inside[0], outside[0]), edge(inside[0], outside[1]), edge(inside[0], outside[2]));
+  } else if (inside.length === 3) {
+    pushTri(edge(outside[0], inside[0]), edge(outside[0], inside[2]), edge(outside[0], inside[1]));
+  } else {
+    const a = edge(inside[0], outside[0]), b = edge(inside[0], outside[1]);
+    const c = edge(inside[1], outside[0]), d = edge(inside[1], outside[1]);
+    pushTri(a, b, c); pushTri(b, d, c);
+  }
+}
+function buildCaveGeometry() {
+  const values = new Float32Array((NX + 1) * (NY + 1) * (NZ + 1));
+  const strideY = NX + 1, strideZ = (NX + 1) * (NY + 1);
+  const index = (x: number, y: number, z: number) => z * strideZ + y * strideY + x;
+  const point = (x: number, y: number, z: number): V3 => [
+    BOUNDS.minX + (BOUNDS.maxX - BOUNDS.minX) * x / NX,
+    BOUNDS.minY + (BOUNDS.maxY - BOUNDS.minY) * y / NY,
+    BOUNDS.minZ + (BOUNDS.maxZ - BOUNDS.minZ) * z / NZ,
+  ];
+  for (let z = 0; z <= NZ; z++) for (let y = 0; y <= NY; y++) for (let x = 0; x <= NX; x++) {
+    const p = point(x, y, z); values[index(x,y,z)] = field(...p);
+  }
+  const vertices: number[] = [];
+  for (let z = 0; z < NZ; z++) for (let y = 0; y < NY; y++) for (let x = 0; x < NX; x++) {
+    const cubePoints = CORNERS.map(([dx,dy,dz]) => point(x+dx,y+dy,z+dz));
+    const cubeValues = CORNERS.map(([dx,dy,dz]) => values[index(x+dx,y+dy,z+dz)]);
+    if (cubeValues.every(v => v >= 0) || cubeValues.every(v => v < 0)) continue;
+    for (const tet of TETS) polygoniseTet(tet.map(i => cubePoints[i]), tet.map(i => cubeValues[i]), vertices);
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function CaveMesh() {
+  const geometry = useMemo(() => buildCaveGeometry(), []);
+  const material = useMemo(() => new MeshStandardMaterial({
+    color: new Color("#82766a"), roughness: 0.97, metalness: 0,
+    side: DoubleSide, flatShading: false,
+  }), []);
+  return <mesh geometry={geometry} material={material} />;
+}
+
+export default function CaveLabPrototype() {
+  return <main className="cave-lab">
+    <header className="cave-lab-header">
+      <a href="/">← BACK TO PORTFOLIO</a>
+      <span>GEOMETRY LAB / 001</span>
+      <span>PROTOTYPE — NOT FINAL ART</span>
+    </header>
+    <section className="cave-lab-copy">
+      <p>PROCEDURAL ENVIRONMENT STUDY</p>
+      <h1>Beyond the <em>pipe.</em></h1>
+      <span>A volumetric cave boundary with a winding passage, variable chambers and a carved side pocket. Drag to inspect the geometry.</span>
+    </section>
+    <div className="cave-lab-view">
+      <Canvas camera={{ position: [0, 1.2, 5.5], fov: 57, near: 0.1, far: 120 }}
+        dpr={[1, 1.35]} gl={{ antialias: true, powerPreference: "high-performance" }}>
+        <color attach="background" args={["#080a0c"]} />
+        <fog attach="fog" args={["#080a0c", 10, 39]} />
+        <ambientLight intensity={0.17} />
+        <hemisphereLight args={["#a9b5c1", "#19110c", 0.8]} />
+        <directionalLight position={[3, 6, 4]} intensity={1.15} />
+        <pointLight position={[-2, 1, -8]} color="#e4c49a" intensity={5} distance={13} decay={2} />
+        <pointLight position={[2, -1, -20]} color="#8da9c1" intensity={2.2} distance={10} decay={2} />
+        <CaveMesh />
+        <OrbitControls makeDefault enableDamping dampingFactor={0.08} rotateSpeed={0.55}
+          minDistance={2.5} maxDistance={26} target={[0, 0, -11]} />
+      </Canvas>
+      <div className="cave-lab-view-label">DRAG TO ORBIT · SCROLL TO ZOOM</div>
+    </div>
+    <footer className="cave-lab-footer">
+      <span>01 / VOLUMETRIC BOUNDARY</span><span>02 / VARIABLE PASSAGE WIDTH</span><span>03 / CHAMBER TRANSITION</span>
+    </footer>
+  </main>;
+}
