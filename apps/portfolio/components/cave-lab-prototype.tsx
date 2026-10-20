@@ -140,7 +140,26 @@ function polygoniseTet(points: V3[], values: number[], out: number[], outUvs: nu
   if (inside.length === 0 || inside.length === 4) return;
   const edge = (a: number, b: number) => interpolate(at(points, a), at(points, b), at(values, a), at(values, b));
   const pushTri = (a: V3, b: V3, c: V3) => {
-    for (const p of [a, b, c]) { out.push(...p); outUvs.push(p[0] * 0.34, p[2] * 0.34); }
+    // Marching tetrahedra can emit triangles in either winding order. Orient
+    // each face toward the positive (open-air) side of the scalar field so
+    // computed normals respond consistently to the cave lighting.
+    const ab: V3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const ac: V3 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const normal: V3 = [
+      ab[1] * ac[2] - ab[2] * ac[1],
+      ab[2] * ac[0] - ab[0] * ac[2],
+      ab[0] * ac[1] - ab[1] * ac[0],
+    ];
+    const center: V3 = [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3];
+    const eps = 0.025;
+    const gradient: V3 = [
+      field(center[0] + eps, center[1], center[2]) - field(center[0] - eps, center[1], center[2]),
+      field(center[0], center[1] + eps, center[2]) - field(center[0], center[1] - eps, center[2]),
+      field(center[0], center[1], center[2] + eps) - field(center[0], center[1], center[2] - eps),
+    ];
+    const orientToAir = normal[0] * gradient[0] + normal[1] * gradient[1] + normal[2] * gradient[2] >= 0;
+    const triangle = orientToAir ? [a, b, c] : [a, c, b];
+    for (const p of triangle) { out.push(...p); outUvs.push(p[0] * 0.34, p[2] * 0.34); }
   };
   if (inside.length === 1) {
     pushTri(edge(at(inside, 0), at(outside, 0)), edge(at(inside, 0), at(outside, 1)), edge(at(inside, 0), at(outside, 2)));
