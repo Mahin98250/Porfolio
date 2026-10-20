@@ -34,3 +34,21 @@ test("unknown project slugs return a not-found page", async ({ page }) => {
   const response = await page.goto("/projects/not-a-real-project");
   expect(response?.status()).toBe(404);
 });
+
+test("project detail panels reveal instead of remaining hidden below the hero", async ({ page }) => {
+  await page.goto("/projects/opticode-studio");
+
+  const ideaPanel = page.locator(".project-story-main");
+  await ideaPanel.scrollIntoViewIfNeeded();
+  await expect(ideaPanel).toHaveClass(/is-visible/);
+  await expect(ideaPanel.getByRole("heading", { level: 2 })).toContainText("Moving information through light");
+
+  const learningPanel = page.locator(".project-learning-card");
+  await learningPanel.scrollIntoViewIfNeeded();
+  await expect(learningPanel).toHaveClass(/is-visible/);
+  await expect(learningPanel.getByRole("heading", { level: 3 })).toContainText("Skills grow one iteration at a time");
+
+  const closingPanel = page.locator(".project-bottom-panel");
+  await closingPanel.scrollIntoViewIfNeeded();
+  await expect(closingPanel).toHaveClass(/is-visible/);
+});
