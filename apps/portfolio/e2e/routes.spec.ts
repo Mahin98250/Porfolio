@@ -101,6 +101,28 @@ test("3D hero provides a static scene when reduced motion is requested", async (
   await expect(page.locator(".hero-scene canvas")).toHaveCount(0);
 });
 
+
+test("mobile chapter dock keeps the long-form story navigable", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  const chapters = page.locator(".chapter-rail");
+  await expect(chapters).toBeVisible();
+  await expect(chapters.getByRole("link")).toHaveCount(5);
+  await chapters.getByRole("link", { name: "Approach chapter" }).click();
+  await expect(page).toHaveURL(/#approach$/);
+  await expect(page.locator("#approach")).toHaveCount(1);
+});
+
+test("project artwork receives pointer lighting on fine-pointer devices", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/");
+  const art = page.locator(".cinema-project-visual").first();
+  await art.scrollIntoViewIfNeeded();
+  await art.hover({ position: { x: 40, y: 40 } });
+  await expect(art).toHaveClass(/is-pointer-card/);
+});
+
 test("cinematic homepage exposes its main chapters and project archive CTA", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("BEGINNING");
