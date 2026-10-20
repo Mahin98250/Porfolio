@@ -579,7 +579,9 @@ const scenes = [
 export function CinematicStory() {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLElement>(null);
-  const sceneProgress = useRef(0);\n  const branchChoice = useRef<"left" | "right" | null>(null);\n  const [selectedBranch, setSelectedBranch] = useState<"left" | "right" | null>(null);
+  const sceneProgress = useRef(0);
+  const branchChoice = useRef<"left" | "right" | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<"left" | "right" | null>(null);
   const [motionAllowed, setMotionAllowed] = useState(true);
   const [visible, setVisible] = useState(true);
 
