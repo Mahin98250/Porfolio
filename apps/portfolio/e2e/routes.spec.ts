@@ -147,11 +147,15 @@ test("project worlds appear at their scene on the cinematic timeline", async ({ 
 
 test("cinematic ending exposes journey, project, and contact actions", async ({ page }) => {
   await page.goto("/");
-  await scrubStory(page, 0.94);
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("BUILD WHAT’S");
-  await expect(page.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", "/projects");
-  await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", "/journey");
-  await expect(page.getByRole("link", { name: /GET IN TOUCH/i })).toHaveAttribute("href", /\/contact\/?$/);
+  await scrubStory(page, 0.99);
+  const track = page.locator(".cinematic-story-track");
+  await expect(track).toHaveAttribute("data-chapter", "ending");
+  const ending = page.locator(".cinema-copy-ending");
+  await expect(ending).toHaveAttribute("aria-hidden", "false");
+  await expect(ending.getByRole("heading", { level: 2 })).toContainText("BUILD WHAT’S");
+  await expect(ending.getByRole("link", { name: /EXPLORE THE WORK/i })).toHaveAttribute("href", /\/projects\/?$/);
+  await expect(ending.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", /\/journey\/?$/);
+  await expect(ending.getByRole("link", { name: /GET IN TOUCH/i })).toHaveAttribute("href", /\/contact\/?$/);
 });
 
 test("cinematic homepage keeps a single persistent stage and story chapters", async ({ page }) => {
