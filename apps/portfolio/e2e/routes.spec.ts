@@ -136,5 +136,5 @@ test("cinematic homepage exposes its main chapters and project archive CTA", asy
     await expect(page.locator("#" + id)).toHaveCount(1);
   }
   await expect(page.getByRole("link", { name: /OPEN PROJECT ARCHIVE/i })).toHaveAttribute("href", /\/projects\/?$/);
-  await expect(page.getByRole("link", { name: /VIEW THE JOURNEY/i })).toHaveAttribute("href", "/journey");
+  await expect(page.getByRole("link", { name: /VIEW THE JOURNEY/i })).toHaveAttribute("href", /\/journey\/?$/);
 });
