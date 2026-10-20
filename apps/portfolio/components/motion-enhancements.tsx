@@ -166,6 +166,33 @@ export function MotionEnhancements() {
     };
 
     revealNodes();
+
+    let chapterObserver: IntersectionObserver | undefined;
+    const chapterLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".chapter-rail a"));
+    if ("IntersectionObserver" in window && chapterLinks.length) {
+      chapterObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const activeId = (entry.target as HTMLElement).id;
+          chapterLinks.forEach((link) => {
+            const active = link.hash === "#" + activeId;
+            if (active) {
+              link.classList.add("chapter-active");
+              link.setAttribute("aria-current", "location");
+            } else {
+              link.classList.remove("chapter-active");
+              link.removeAttribute("aria-current");
+            }
+          });
+        });
+      }, { threshold: 0.05, rootMargin: "-32% 0px -48% 0px" });
+
+      chapterLinks.forEach((link) => {
+        const target = document.querySelector<HTMLElement>(link.hash);
+        if (target) chapterObserver?.observe(target);
+      });
+    }
+
     const mutationObserver = new MutationObserver(() => revealNodes());
     mutationObserver.observe(document.querySelector(".page-content") ?? document.body, { childList: true, subtree: true });
 
@@ -185,6 +212,7 @@ export function MotionEnhancements() {
       window.removeEventListener("blur", resetInteractions);
       if (frame) window.cancelAnimationFrame(frame);
       observer?.disconnect();
+      chapterObserver?.disconnect();
       mutationObserver.disconnect();
       progress.remove();
       glow.remove();
