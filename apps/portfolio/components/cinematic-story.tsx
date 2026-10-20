@@ -516,7 +516,7 @@ function World({ progressRef }: { progressRef: ProgressRef }) {
       {/* Warm entrance spill: a broad, visible source rather than a glowing ring. */}
       <pointLight position={[0.1, 1.1, 5.4]} intensity={8.5} distance={22} decay={1.65} color="#ffd39a" />
       {/* Entrance key light grazes the chipped rock lip from outside the cave. */}
-      <spotLight position={[-1.8, 3.4, 11.5]} target-position={[0, 0.1, 1.4]} intensity={95} distance={24} angle={0.72} penumbra={0.82} decay={1.8} color="#ffd9a6" />
+      <spotLight position={[-1.8, 3.4, 11.5]} intensity={95} distance={24} angle={0.72} penumbra={0.82} decay={1.8} color="#ffd9a6" />
       <pointLight position={[-2.5, 1.0, -4.5]} intensity={4.2} distance={17} decay={1.8} color="#e8bd85" />
       {/* Soft pools of reflected light reveal the side chambers along the route. */}
       <pointLight position={[2.2, 1.0, -12.5]} intensity={4.8} distance={18} decay={1.9} color="#e7d1ad" />
