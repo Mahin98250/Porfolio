@@ -56,6 +56,34 @@ jobs:
       - name: Run shared package unit tests
         run: npm test
 
+  portfolio-build:
+    name: Build and verify deployable portfolio
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build the Vite portfolio entry point
+        run: npm run build
+      - name: Build the GitHub Pages portfolio
+        env:
+          PORTFOLIO_STATIC_EXPORT: "true"
+          PORTFOLIO_BASE_PATH: "/Porfolio"
+          NEXT_PUBLIC_SITE_URL: "https://mahin98250.github.io/Porfolio"
+        run: npm run build --workspace=@mahin/portfolio-next
+      - name: Assemble and verify the published static site
+        env:
+          PORTFOLIO_BASE_PATH: "/Porfolio"
+        run: node scripts/prepare-doodhwala-pages.mjs && node scripts/verify-pages-export.mjs
+
   browser-regression:
     name: Playwright route regression
     runs-on: ubuntu-latest
@@ -144,7 +172,7 @@ jobs:
   deploy:
     name: Deploy verified portfolio to GitHub Pages
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [build-and-typecheck, browser-regression, dependency-audit, config-format]
+    needs: [portfolio-build, browser-regression, config-format]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
