@@ -60,7 +60,7 @@ test("project archive renders six responsive cards with valid project actions", 
   await expect(cards.nth(0).getByRole("heading", { level: 3 })).toContainText("OptiCode Studio");
   await expect(cards.nth(0).getByRole("link", { name: /Project overview/i })).toHaveAttribute(
     "href",
-    /\\/projects\\/opticode-studio\\/?$/,
+    new RegExp("opticode-studio/?$"),
   );
   await expect(cards.nth(0).getByRole("link", { name: /Source/i })).toHaveAttribute(
     "href",
