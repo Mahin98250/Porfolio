@@ -115,6 +115,30 @@ function caveShelfAt(t: number, angle: number): number {
   return shelf;
 }
 
+function caveOverhangAt(t: number, angle: number): number {
+  // Heavy, uneven roof and wall masses distort the silhouette over several
+  // metres instead of adding another repeated ring around the passage.
+  const masses: Array<[number, number, number, number, number]> = [
+    [0.185, 1.62, 0.082, 0.56, 0.54],
+    [0.325, 1.18, 0.061, 0.48, 0.38],
+    [0.455, 2.05, 0.088, 0.62, 0.62],
+    [0.605, 1.42, 0.072, 0.52, 0.47],
+    [0.705, 2.22, 0.066, 0.50, 0.43],
+    [0.825, 1.02, 0.082, 0.57, 0.51],
+    [0.915, 2.42, 0.047, 0.44, 0.34],
+  ];
+  let mass = 0;
+  for (const [centerT, centerAngle, spreadT, spreadAngle, depth] of masses) {
+    const dt = (t - centerT) / spreadT;
+    const da = Math.atan2(Math.sin(angle - centerAngle), Math.cos(angle - centerAngle)) / spreadAngle;
+    const patch = Math.exp(-0.5 * (dt * dt + da * da));
+    // A small directional variation gives each lip a less uniform edge.
+    const edge = 0.82 + 0.18 * Math.sin(da * 2.7 + dt * 1.8);
+    mass += depth * patch * edge;
+  }
+  return mass;
+}
+
 function caveSurfacePoint(t: number, angle: number): [number, number] {
   const [cx, cy] = caveCenter(t);
   const radiusAt = caveRadiusAt(t);
@@ -125,7 +149,7 @@ function caveSurfacePoint(t: number, angle: number): [number, number] {
   const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
   const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
   const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038)
-    + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + fine * 0.045;
+    + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle) + fine * 0.045;
   const floorRidge = Math.max(0, -aroundY) * Math.sin(t * 31 + aroundX * 5.7 + coarse) * 0.105;
   return [
     cx + aroundX * radius * (0.98 + medium * 0.045),
@@ -266,7 +290,7 @@ function CaveShell() {
         const medium = noise3(aroundX * 5.2 - 2, aroundY * 5.2 + 6, t * 23);
         const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
         const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
-        const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038) + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + fine * 0.045;
+        const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038) + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle) + fine * 0.045;
 
         // The floor is lower and flatter than the roof; upper surfaces have
         // more headroom and uneven overhangs. This deliberately avoids a
