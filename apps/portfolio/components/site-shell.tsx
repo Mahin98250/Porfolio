@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MotionEnhancements } from "./motion-enhancements";
 
 const links = [
@@ -18,10 +18,6 @@ const links = [
 export function SiteShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
 
   return (
     <div className="site-root">
