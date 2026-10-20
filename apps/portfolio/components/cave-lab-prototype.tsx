@@ -3,7 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useMemo } from "react";
-import { BufferGeometry, Float32BufferAttribute, MeshStandardMaterial, DoubleSide, Color, Mesh } from "three";
+import { BufferGeometry, Float32BufferAttribute, MeshStandardMaterial, DoubleSide, Color, Mesh, DataTexture, LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, SRGBColorSpace } from "three";
 
 type V3 = [number, number, number];
 const NX = 30, NY = 26, NZ = 82;
@@ -65,6 +65,39 @@ function field(x: number, y: number, z: number): number {
   air = Math.max(air, pocket);
   return air;
 }
+function makeCaveMaps() {
+  const size = 256;
+  const colorData = new Uint8Array(size * size * 4);
+  const heightData = new Uint8Array(size * size * 4);
+  const fade = (v: number) => v * v * (3 - 2 * v);
+  const valueNoise = (x: number, y: number) => {
+    const ix = Math.floor(x), iy = Math.floor(y), fx = fade(x - Math.floor(x)), fy = fade(y - Math.floor(y));
+    const a = hash(ix, iy, 0), b = hash(ix + 1, iy, 0), c = hash(ix, iy + 1, 0), d = hash(ix + 1, iy + 1, 0);
+    return (a + (b - a) * fx) + ((c + (d - c) * fx) - (a + (b - a) * fx)) * fy;
+  };
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const broad = valueNoise(x / 76, y / 76);
+    const medium = valueNoise(x / 25, y / 25);
+    const fine = valueNoise(x / 7, y / 7);
+    const grain = valueNoise(x / 2.2, y / 2.2);
+    const strata = Math.sin(y / 17 + valueNoise(x / 45, y / 37) * 2.6) * 0.08;
+    const v = Math.max(0, Math.min(1, 0.52 + broad * 0.22 + medium * 0.14 + fine * 0.09 + grain * 0.035 + strata));
+    const i = (y * size + x) * 4;
+    colorData[i] = Math.round(43 + v * 47);
+    colorData[i + 1] = Math.round(39 + v * 42);
+    colorData[i + 2] = Math.round(34 + v * 36);
+    colorData[i + 3] = 255;
+    const h = Math.round(255 * Math.max(0, Math.min(1, 0.5 + broad * 0.24 + medium * 0.22 + fine * 0.11 + grain * 0.05 + strata)));
+    heightData[i] = h; heightData[i + 1] = h; heightData[i + 2] = h; heightData[i + 3] = 255;
+  }
+  const color = new DataTexture(colorData, size, size);
+  color.colorSpace = SRGBColorSpace; color.wrapS = RepeatWrapping; color.wrapT = RepeatWrapping;
+  color.magFilter = LinearFilter; color.minFilter = LinearMipmapLinearFilter; color.generateMipmaps = true; color.needsUpdate = true;
+  const height = new DataTexture(heightData, size, size);
+  height.wrapS = RepeatWrapping; height.wrapT = RepeatWrapping;
+  height.magFilter = LinearFilter; height.minFilter = LinearMipmapLinearFilter; height.generateMipmaps = true; height.needsUpdate = true;
+  return { color, height };
+}
 function interpolate(a: V3, b: V3, va: number, vb: number): V3 {
   const denom = va - vb;
   const t = Math.abs(denom) < 1e-6 ? 0.5 : Math.max(0, Math.min(1, va / denom));
@@ -114,10 +147,11 @@ function buildCaveGeometry() {
 
 function CaveMesh() {
   const geometry = useMemo(() => buildCaveGeometry(), []);
+  const maps = useMemo(() => makeCaveMaps(), []);
   const material = useMemo(() => new MeshStandardMaterial({
-    color: new Color("#82766a"), roughness: 0.97, metalness: 0,
-    side: DoubleSide, flatShading: false,
-  }), []);
+    color: new Color("#d0c3b2"), map: maps.color, bumpMap: maps.height, bumpScale: 0.12,
+    roughness: 0.98, metalness: 0, side: DoubleSide, flatShading: false,
+  }), [maps]);
   const mesh = useMemo(() => new Mesh(geometry, material), [geometry, material]);
   return <primitive object={mesh} dispose={null} />;
 }
