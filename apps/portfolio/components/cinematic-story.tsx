@@ -10,15 +10,18 @@ type ProgressRef = { current: number };
 function CaveRocks() {
   const geometry = useMemo(() => new IcosahedronGeometry(1, 1), []);
   const material = useMemo(() => new MeshStandardMaterial({ color: "#30252f", roughness: 0.98, metalness: 0.02, flatShading: true }), []);
-  const rocks = useMemo(() => Array.from({ length: 230 }, (_, i) => {
+  const rocks = useMemo(() => Array.from({ length: 420 }, (_, i) => {
     const angle = i * 2.399963;
-    const z = 7.5 - ((i * 37) % 290) / 10;
-    const radius = 2.05 + ((i * 19) % 41) / 30;
-    const size = 0.12 + ((i * 13) % 17) / 100;
+    const t = ((i * 47) % 970) / 1000 + 0.015;
+    const [cx, cy] = caveCenter(t);
+    const z = 8.2 - t * 61;
+    const wallSide = Math.cos(angle) >= 0 ? 1 : -1;
+    const radius = 2.3 + ((i * 19) % 49) / 40;
+    const size = 0.10 + ((i * 13) % 23) / 100;
     return {
-      position: [Math.cos(angle) * radius, Math.sin(angle) * radius, z] as [number, number, number],
-      scale: [size * (1 + (i % 3) * 0.45), size * (0.7 + (i % 4) * 0.2), size * (0.9 + (i % 5) * 0.14)] as [number, number, number],
-      rotation: [angle * 0.8, angle * 0.43, angle * 0.27] as [number, number, number],
+      position: [cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius * 0.78, z] as [number, number, number],
+      scale: [size * (1 + (i % 3) * 0.65), size * (0.65 + (i % 4) * 0.28), size * (0.85 + (i % 5) * 0.19)] as [number, number, number],
+      rotation: [angle * 0.8 + wallSide * t, angle * 0.43, angle * 0.27] as [number, number, number],
     };
   }), []);
   const rockMesh = useMemo(() => {
@@ -150,11 +153,45 @@ function CaveGuideDots() {
     ))}
   </group>;
 }
+ 
+function CaveFormations() {
+  const formations = useMemo(() => Array.from({ length: 52 }, (_, i) => {
+    const t = 0.055 + ((i * 19) % 875) / 1000;
+    const [cx, cy] = caveCenter(t);
+    const side = i % 2 === 0 ? -1 : 1;
+    const z = 8.2 - t * 61;
+    const hanging = i % 4 !== 0;
+    const spread = 1.78 + (i % 5) * 0.16;
+    return {
+      position: [cx + side * spread, cy + (hanging ? 1.72 : -1.62), z] as [number, number, number],
+      rotation: [hanging ? Math.PI + Math.sin(i * 1.4) * 0.22 : Math.sin(i) * 0.2, Math.sin(i * 0.7) * 0.24, Math.cos(i * 1.1) * 0.28] as [number, number, number],
+      scale: [0.45 + (i % 4) * 0.19, 0.5 + (i % 6) * 0.24, 0.42 + (i % 3) * 0.18] as [number, number, number],
+      hanging,
+      color: i % 5 === 0 ? "#55483f" : i % 3 === 0 ? "#3f3434" : "#493b39",
+    };
+  }), []);
+  return <group>
+    {formations.map((f, i) => (
+      <group key={i} position={f.position} rotation={f.rotation} scale={f.scale}>
+        <mesh>
+          <coneGeometry args={[0.48, f.hanging ? 1.45 : 1.1, 7, 2]} />
+          <meshStandardMaterial color={f.color} roughness={0.99} metalness={0.0} flatShading />
+        </mesh>
+        <mesh position={[0.08, f.hanging ? -0.22 : 0.18, 0.02]} rotation={[0.18, 0.4, 0.15]}>
+          <coneGeometry args={[0.29, f.hanging ? 0.82 : 0.66, 6, 1]} />
+          <meshStandardMaterial color="#302827" roughness={1} flatShading />
+        </mesh>
+      </group>
+    ))}
+  </group>;
+}
+
 function CaveTunnel() {
   return (
     <group>
       <CaveShell />
       <CaveGuideDots />
+      <CaveFormations />
       <mesh position={[0, 0, 8.65]} rotation={[0.035, -0.02, 0.08]}>
         <torusGeometry args={[2.72, 0.2, 10, 84]} />
         <meshStandardMaterial color="#51414f" roughness={0.98} metalness={0.015} />
