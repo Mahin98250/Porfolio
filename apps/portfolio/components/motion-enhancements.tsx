@@ -44,6 +44,7 @@ const pointerCardSelector = [
   ".project-story-main",
   ".project-learning-card",
   ".project-bottom-panel",
+  ".project-stage",
   ".cinema-project-visual",
 ].join(",");
 
