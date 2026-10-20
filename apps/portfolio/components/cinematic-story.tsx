@@ -750,8 +750,8 @@ export function CinematicStory() {
           <h2>Which way<br />will you <em>explore?</em></h2>
           <p>Two paths. Two different chapters. Choose your direction.</p>
           <div className="cinema-branch-actions">
-            <button type="button" onClick={() => { branchChoice.current = "left"; setSelectedBranch("left"); const root = scrollRootRef.current; const track = trackRef.current; if (root && track) root.scrollTo({ top: (track.offsetHeight - root.clientHeight) * 0.49, behavior: motionAllowed ? "smooth" : "auto" }); }}>← TAKE THE LEFT PASSAGE</button>
-            <button type="button" onClick={() => { branchChoice.current = "right"; setSelectedBranch("right"); const root = scrollRootRef.current; const track = trackRef.current; if (root && track) root.scrollTo({ top: (track.offsetHeight - root.clientHeight) * 0.49, behavior: motionAllowed ? "smooth" : "auto" }); }}>TAKE THE RIGHT PASSAGE →</button>
+            <button type="button" onClick={() => { branchChoice.current = "left"; setSelectedBranch("left"); const root = scrollRootRef.current; const track = trackRef.current; if (root && track) root.scrollTo({ top: (track.offsetHeight - root.clientHeight) * 0.68, behavior: motionAllowed ? "smooth" : "auto" }); }}>← TAKE THE LEFT PASSAGE</button>
+            <button type="button" onClick={() => { branchChoice.current = "right"; setSelectedBranch("right"); const root = scrollRootRef.current; const track = trackRef.current; if (root && track) root.scrollTo({ top: (track.offsetHeight - root.clientHeight) * 0.68, behavior: motionAllowed ? "smooth" : "auto" }); }}>TAKE THE RIGHT PASSAGE →</button>
           </div>
           {selectedBranch && <span className="cinema-branch-confirm">PATH SELECTED · {selectedBranch.toUpperCase()} · KEEP SCROLLING</span>}
         </div>
