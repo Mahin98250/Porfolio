@@ -158,7 +158,7 @@ export function MotionEnhancements() {
       nodes.forEach((node, index) => {
         if (node.classList.contains("is-visible")) return;
         node.setAttribute("data-reveal", "true");
-        if (node.matches(".featured-card,.content-card,.project-row,.brand-logo-card,.experience-metric,.skill-group-card,.journey-card,.project-signal-row > div")) {
+        if (node.matches(".featured-card,.content-card,.project-row,.brand-logo-card,.experience-metric,.skill-group-card,.journey-card,.project-signal-row > div,.manifesto-columns article,.discipline-row,.cinema-project")) {
           node.style.setProperty("--reveal-delay", (Math.min(index % 4, 3) * 65) + "ms");
         }
         observer?.observe(node);
