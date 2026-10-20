@@ -10,8 +10,10 @@ function GlassCore() {
 
   useFrame((state, delta) => {
     if (!mesh.current) return;
-    mesh.current.rotation.x += delta * (0.12 + state.pointer.y * 0.035);
-    mesh.current.rotation.y += delta * (0.18 + state.pointer.x * 0.05);
+    // Cap long frame gaps so resuming from a hidden tab never causes a rotation jump.
+    const frameDelta = Math.min(delta, 0.05);
+    mesh.current.rotation.x += frameDelta * (0.12 + state.pointer.y * 0.035);
+    mesh.current.rotation.y += frameDelta * (0.18 + state.pointer.x * 0.05);
     mesh.current.position.y = Math.sin(state.clock.elapsedTime * 0.65) * 0.08;
   });
 
@@ -59,7 +61,12 @@ export function HeroScene() {
 
     syncMotionPreference();
     syncDocumentVisibility();
-    motionPreference.addEventListener("change", syncMotionPreference);
+    const supportsMediaChangeEvent = typeof motionPreference.addEventListener === "function";
+    if (supportsMediaChangeEvent) {
+      motionPreference.addEventListener("change", syncMotionPreference);
+    } else {
+      motionPreference.addListener(syncMotionPreference);
+    }
     document.addEventListener("visibilitychange", syncDocumentVisibility);
 
     const sceneElement = sceneRef.current;
@@ -76,7 +83,11 @@ export function HeroScene() {
     }
 
     return () => {
-      motionPreference.removeEventListener("change", syncMotionPreference);
+      if (supportsMediaChangeEvent) {
+        motionPreference.removeEventListener("change", syncMotionPreference);
+      } else {
+        motionPreference.removeListener(syncMotionPreference);
+      }
       document.removeEventListener("visibilitychange", syncDocumentVisibility);
       observer?.disconnect();
     };
