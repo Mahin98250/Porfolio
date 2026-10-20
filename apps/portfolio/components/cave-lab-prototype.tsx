@@ -110,7 +110,9 @@ function polygoniseTet(points: V3[], values: number[], out: number[], outUvs: nu
   const outside = [0,1,2,3].filter(i => at(values, i) < 0);
   if (inside.length === 0 || inside.length === 4) return;
   const edge = (a: number, b: number) => interpolate(at(points, a), at(points, b), at(values, a), at(values, b));
-  const pushTri = (a: V3, b: V3, c: V3) => {\n    for (const p of [a, b, c]) { out.push(...p); outUvs.push(p[0] * 0.34, p[2] * 0.34); }\n  };
+  const pushTri = (a: V3, b: V3, c: V3) => {
+    for (const p of [a, b, c]) { out.push(...p); outUvs.push(p[0] * 0.34, p[2] * 0.34); }
+  };
   if (inside.length === 1) {
     pushTri(edge(at(inside, 0), at(outside, 0)), edge(at(inside, 0), at(outside, 1)), edge(at(inside, 0), at(outside, 2)));
   } else if (inside.length === 3) {
@@ -133,7 +135,8 @@ function buildCaveGeometry() {
   for (let z = 0; z <= NZ; z++) for (let y = 0; y <= NY; y++) for (let x = 0; x <= NX; x++) {
     const p = point(x, y, z); values[index(x,y,z)] = field(...p);
   }
-  const vertices: number[] = [];\n  const uvs: number[] = [];
+  const vertices: number[] = [];
+  const uvs: number[] = [];
   for (let z = 0; z < NZ; z++) for (let y = 0; y < NY; y++) for (let x = 0; x < NX; x++) {
     const cubePoints = CORNERS.map(([dx,dy,dz]) => point(x+dx,y+dy,z+dz));
     const cubeValues = CORNERS.map(([dx,dy,dz]) => values[index(x+dx,y+dy,z+dz)]!);
@@ -142,6 +145,7 @@ function buildCaveGeometry() {
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   return geometry;
