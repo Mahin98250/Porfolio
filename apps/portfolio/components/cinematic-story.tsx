@@ -928,7 +928,7 @@ function CaveTunnel() {
   );
 }
 
-function CaveExterior() {
+function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } }) {
   // Fractured cliff shoulders extend the entrance into a real landscape instead
   // of leaving a clean pipe-like mouth floating in darkness.
   const scene = useMemo(() => {
@@ -943,7 +943,7 @@ function CaveExterior() {
     }
     vertices.needsUpdate = true;
     geometry.computeVertexNormals();
-    const material = new MeshStandardMaterial({ color: "#75604a", roughness: 1, flatShading: true });
+    const material = new MeshStandardMaterial({ color: "#b9a188", map: maps.color, bumpMap: maps.height, bumpScale: 0.12, normalMap: maps.normal, normalScale: new Vector2(0.8, 0.8), roughnessMap: maps.roughness, roughness: 0.99, flatShading: true });
     const pieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
     for (const side of [-1, 1]) for (let i = 0; i < 34; i++) {
       const seed = (side + 2) * 100 + i;
@@ -973,6 +973,44 @@ function CaveExterior() {
         r: [hash01(seed * 9.7) * 0.3, hash01(seed * 10.9) * 6.2, hash01(seed * 11.1) * 0.4],
       });
     }
+    // A triangulated scree apron joins the outside ground to the cave threshold.
+    const groundPositions: number[] = [];
+    const groundUvs: number[] = [];
+    const groundIndices: number[] = [];
+    const groundX = 48;
+    const groundZ = 38;
+    for (let zi = 0; zi <= groundZ; zi++) {
+      for (let xi = 0; xi <= groundX; xi++) {
+        const x = (xi / groundX - 0.5) * 25;
+        const z = 8.6 + (zi / groundZ) * 19.5;
+        const broad = noise3(x * 0.19 + 2, z * 0.19 - 1, 2.5);
+        const broken = noise3(x * 0.62 - 4, z * 0.62 + 2, 7);
+        const sideSlope = Math.pow(Math.abs(x) / 12.5, 1.45) * 0.82;
+        const y = -2.2 + broad * 0.38 + broken * 0.12 - sideSlope;
+        groundPositions.push(x, y, z);
+        groundUvs.push(x / 4, z / 4);
+      }
+    }
+    for (let zi = 0; zi < groundZ; zi++) {
+      for (let xi = 0; xi < groundX; xi++) {
+        const a = zi * (groundX + 1) + xi;
+        const b = a + groundX + 1;
+        groundIndices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const groundGeometry = new BufferGeometry();
+    groundGeometry.setAttribute("position", new Float32BufferAttribute(groundPositions, 3));
+    groundGeometry.setAttribute("uv", new Float32BufferAttribute(groundUvs, 2));
+    groundGeometry.setIndex(groundIndices);
+    groundGeometry.computeVertexNormals();
+    const groundMaterial = new MeshStandardMaterial({
+      color: "#a38a6d", map: maps.color, bumpMap: maps.height, bumpScale: 0.095,
+      normalMap: maps.normal, normalScale: new Vector2(0.7, 0.7),
+      roughnessMap: maps.roughness, roughness: 1, side: DoubleSide,
+    });
+    const ground = new Mesh(groundGeometry, groundMaterial);
+    ground.frustumCulled = false;
+
     const mesh = new InstancedMesh(geometry, material, pieces.length);
     const dummy = new Object3D();
     pieces.forEach((piece, index) => {
@@ -984,9 +1022,12 @@ function CaveExterior() {
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.frustumCulled = false;
-    return mesh;
-  }, []);
-  return <primitive object={scene as unknown as Object3D} dispose={null} />;
+    return { mesh, ground };
+  }, [maps]);
+  return <group>
+    <primitive object={scene.ground as unknown as Object3D} dispose={null} />
+    <primitive object={scene.mesh as unknown as Object3D} dispose={null} />
+  </group>;
 }
 
 function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branchChoice: { current: "left" | "right" | null } }) {
@@ -1084,7 +1125,7 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       <pointLight position={[-1.2, 0.8, -45.5]} intensity={7.4} distance={27} decay={1.3} color="#f5ddb4" />
       <pointLight position={[0.4, -0.2, -53.5]} intensity={5.8} distance={22} decay={1.35} color="#d9d5c6" />
       <group ref={world}>
-        <CaveExterior />
+        <CaveExterior maps={branchMaps} />
         <CaveTunnel />
       </group>
     </>
