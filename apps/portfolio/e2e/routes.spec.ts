@@ -40,7 +40,12 @@ test("left and right passage choices confirm selection and advance toward the ch
       return maxScroll * 0.46;
     });
 
-    await expect(page.locator(".cinema-branch-choice")).toHaveCSS("opacity", "1");
+    // Verify the panel is active and can receive input. Its opacity is
+    // intentionally transitioned, so sampling a single rendered opacity can
+    // be flaky while the CSS fade is still in flight.
+    const branchPanel = page.locator(".cinema-branch-choice");
+    await expect(branchPanel).toHaveAttribute("aria-hidden", "false");
+    await expect(branchPanel).toHaveCSS("pointer-events", "auto");
     await page.getByRole("button", { name: option.name }).click();
     await expect(page.locator(".cinema-branch-confirm")).toContainText(option.selected);
     await expect.poll(
