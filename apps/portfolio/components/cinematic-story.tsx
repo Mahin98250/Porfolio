@@ -158,7 +158,7 @@ function caveSurfacePoint(t: number, angle: number): [number, number] {
 }
 
 function makeRockTextures(): { color: DataTexture; height: DataTexture } {
-  const size = 384;
+  const size = 512;
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
 
@@ -226,7 +226,7 @@ function CaveRocks() {
   }), []);
   // Wall dressing should read as fractured limestone, not boulders floating
   // through the camera path. Use fewer, smaller pieces and sink them further.
-  const rocks = useMemo(() => Array.from({ length: 102 }, (_, i) => {
+  const rocks = useMemo(() => Array.from({ length: 180 }, (_, i) => {
     const t = 0.025 + hash01(i * 23.91 + 5.3) * 0.93;
     const angle = hash01(i * 61.17 + 1.7) * Math.PI * 2;
     const [cx, cy] = caveCenter(t);
@@ -407,8 +407,8 @@ function CaveGuideDots() {
 function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: number }) {
   const elapsed = useRef(0);
   const dust = useMemo(() => {
-    const mainCount = 132;
-    const branchCount = 36;
+    const mainCount = 520;
+    const branchCount = 80;
     const count = mainCount + branchCount * 2;
     const positions = new Float32Array(count * 3);
     const phases = new Float32Array(count);
@@ -420,7 +420,7 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
       if (i < mainCount) {
         const t = 0.035 + hash01(i * 19.37 + 5.4) * 0.93;
         const angle = hash01(i * 43.71 + 3.8) * Math.PI * 2;
-        const radial = 0.16 + hash01(i * 11.13 + 6.2) * 0.50;
+        const radial = 0.12 + hash01(i * 11.13 + 6.2) * 0.72;
         const [cx, cy] = caveCenter(t);
         const radius = caveRadiusAt(t);
         // Keep dust suspended within the walkable void, never on the rock skin.
@@ -473,10 +473,10 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
     const material = new PointsMaterial({
       color: "#d8c29f",
       map: sprite,
-      size: 0.07,
+      size: 0.045,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.20,
+      opacity: 0.16,
       depthWrite: false,
     });
     const object = new Points(geometry, material);
@@ -544,7 +544,7 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
 }
 
 function CaveFormations() {
-  const formations = useMemo(() => Array.from({ length: 27 }, (_, i) => {
+  const formations = useMemo(() => Array.from({ length: 42 }, (_, i) => {
     const t = 0.045 + hash01(i * 17.31 + 8.1) * 0.91;
     const choice = hash01(i * 9.73 + 2.4);
     const hanging = choice < 0.64;
