@@ -949,7 +949,7 @@ function CaveLightShafts() {
         <mesh key={shaft.key} position={shaft.position} rotation={shaft.rotation} scale={shaft.scale} renderOrder={2}>
           <planeGeometry args={[1, 1]} />
           <meshBasicMaterial
-            map={beamTexture}
+            map={beamTexture as never}
             color={shaft.color}
             transparent
             opacity={shaft.opacity}
