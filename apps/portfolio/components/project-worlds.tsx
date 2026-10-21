@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Color, type Group } from "three";
+import { type Group } from "three";
 
 type ProjectWorld = {
   id: string;
@@ -169,7 +169,7 @@ function WorldGeometry({ theme }: { theme: ProjectWorld["theme"] }) {
         return (
           <mesh key={i} position={[Math.cos(angle) * radius, -0.1 + Math.sin(i * 1.7) * 1.3, -1.6 - (i % 5) * 0.62]} scale={0.035 + (i % 3) * 0.02}>
             <sphereGeometry args={[1, 8, 6]} />
-            <meshBasicMaterial color={new Color(palette.glow)} />
+            <meshBasicMaterial color={palette.glow} />
           </mesh>
         );
       })}
@@ -209,17 +209,13 @@ export function ProjectWorlds() {
     };
   }, [active]);
 
-  const enterWorld = (world: ProjectWorld) => {
-    setLeaving(false);
-    setActive(world);
-  };
-
   return (
     <>
       {active && (
         <div className={`pw-transition pw-theme-${active.theme} ${leaving ? "pw-leaving" : "pw-entering"}`} role="dialog" aria-modal="true" aria-label={active.name}>
           <div className="pw-sky" aria-hidden="true" />
-          <div className="pw-landscape" aria-hidden="true">\n            <Canvas className="pw-three-scene" dpr={[0.7, 1.25]} camera={{ position: [0, 1.1, 11], fov: 48, near: 0.1, far: 60 }} gl={{ alpha: true, antialias: false, powerPreference: "low-power" }}><WorldGeometry theme={active.theme} /></Canvas>
+          <div className="pw-landscape" aria-hidden="true">
+            <Canvas className="pw-three-scene" dpr={[0.7, 1.25]} camera={{ position: [0, 1.1, 11], fov: 48, near: 0.1, far: 60 }} gl={{ alpha: true, antialias: false, powerPreference: "low-power" }}><WorldGeometry theme={active.theme} /></Canvas>
             <span className="pw-ridge pw-ridge-back" />
             <span className="pw-ridge pw-ridge-mid" />
             <span className="pw-ridge pw-ridge-front" />
@@ -251,7 +247,9 @@ export function ProjectWorlds() {
         .pw-transition.pw-leaving{animation:pw-depart .52s cubic-bezier(.7,0,.8,.2) both}
         .pw-sky,.pw-landscape,.pw-ridge,.pw-world-glow,.pw-world-particles{position:absolute;inset:0;pointer-events:none}
         .pw-sky{background:radial-gradient(ellipse at 72% 32%,var(--world-light),transparent 30%),linear-gradient(160deg,var(--world-sky),#08090d 78%)}
-        .pw-landscape{perspective:900px;overflow:hidden}\n        .pw-three-scene{position:absolute!important;inset:0;z-index:2;width:100%!important;height:100%!important;opacity:.96;pointer-events:none}\n        .pw-three-scene canvas{display:block}
+        .pw-landscape{perspective:900px;overflow:hidden}
+        .pw-three-scene{position:absolute!important;inset:0;z-index:2;width:100%!important;height:100%!important;opacity:.96;pointer-events:none}
+        .pw-three-scene canvas{display:block}
         .pw-ridge{inset:27% -20% -35%;border-radius:48% 52% 0 0;transform:rotate(-8deg) skewY(-5deg);filter:drop-shadow(0 -20px 40px #0005)}
         .pw-ridge-back{background:linear-gradient(150deg,var(--ridge-back),#11131a 72%);transform:translate3d(4%,3%, -100px) rotate(-9deg) scale(1.1);opacity:.8}
         .pw-ridge-mid{inset:43% -18% -35%;background:linear-gradient(145deg,var(--ridge-mid),#101116 66%);transform:rotate(7deg) skewY(8deg);box-shadow:inset 0 2px 0 #ffffff14}
