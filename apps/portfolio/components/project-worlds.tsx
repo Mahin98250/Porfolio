@@ -268,8 +268,22 @@ export function ProjectWorlds() {
   const [active, setActive] = useState<ProjectWorld | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [motionAllowed, setMotionAllowed] = useState(false);
+  const [renderTier, setRenderTier] = useState<"mobile" | "balanced" | "high">("balanced");
 
   useEffect(() => {
+    // Adapt the render budget to the device rather than forcing one expensive preset everywhere.
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    const cores = navigator.hardwareConcurrency || 4;
+    const smallViewport = window.matchMedia("(max-width: 700px)").matches;
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
+    if (saveData || (memory !== undefined && memory <= 4) || (smallViewport && cores <= 4)) {
+      setRenderTier("mobile");
+    } else if ((memory === undefined || memory >= 8) && cores >= 8 && !smallViewport) {
+      setRenderTier("high");
+    } else {
+      setRenderTier("balanced");
+    }
+
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const updateMotion = () => setMotionAllowed(!preference.matches);
     updateMotion();
@@ -317,7 +331,16 @@ export function ProjectWorlds() {
         <div className={`pw-transition pw-theme-${active.theme} ${leaving ? "pw-leaving" : "pw-entering"}`} role="dialog" aria-modal="true" aria-label={active.name}>
           <div className="pw-sky" aria-hidden="true" />
           <div className="pw-landscape" aria-hidden="true">
-            <Canvas className="pw-three-scene" frameloop={motionAllowed ? "always" : "demand"} dpr={[0.7, 1.25]} camera={{ position: [0, 1.1, 11], fov: 48, near: 0.1, far: 60 }} gl={{ alpha: true, antialias: false, powerPreference: "low-power" }}><WorldGeometry theme={active.theme} motionAllowed={motionAllowed} /></Canvas>
+            <Canvas
+              className="pw-three-scene"
+              frameloop={motionAllowed ? "always" : "demand"}
+              dpr={renderTier === "high" ? [1, 2] : renderTier === "balanced" ? [0.85, 1.35] : [0.65, 1]}
+              camera={{ position: [0, 1.1, 11], fov: 48, near: 0.1, far: 60 }}
+              gl={{ alpha: true, antialias: renderTier === "high", powerPreference: renderTier === "high" ? "high-performance" : "low-power" }}
+              performance={{ min: 0.5, max: 1, debounce: 250 }}
+            >
+              <WorldGeometry theme={active.theme} motionAllowed={motionAllowed} />
+            </Canvas>
             <span className="pw-ridge pw-ridge-back" />
             <span className="pw-ridge pw-ridge-mid" />
             <span className="pw-ridge pw-ridge-front" />
