@@ -287,7 +287,8 @@ export function ProjectWorlds() {
         @keyframes pw-arrive{from{opacity:0;clip-path:circle(0% at 50% 50%);transform:scale(1.04);filter:blur(14px)}to{opacity:1;clip-path:circle(150% at 50% 50%);transform:scale(1);filter:blur(0)}}
         @keyframes pw-depart{to{opacity:0;clip-path:circle(0% at 50% 50%);transform:scale(.97);filter:blur(12px)}}
         @keyframes pw-copy-in{from{opacity:0;transform:translateY(calc(-50% + 26px));filter:blur(8px)}to{opacity:1;transform:translateY(-50%);filter:blur(0)}}
-        @keyframes pw-float{0%,100%{translate:0 0}50%{translate:0 -14px}}\n        @keyframes pw-pulse{0%,100%{transform:scale(.94);opacity:.65}50%{transform:scale(1.08);opacity:1}}
+        @keyframes pw-float{0%,100%{translate:0 0}50%{translate:0 -14px}}
+        @keyframes pw-pulse{0%,100%{transform:scale(.94);opacity:.65}50%{transform:scale(1.08);opacity:1}}
         @keyframes pw-drift{from{transform:translate3d(-1%,0,0)}to{transform:translate3d(1%,-2%,0)}}
         @media(max-width:520px){.pw-landmark{opacity:.72}.pw-landmark-a{right:8%;top:24%}.pw-landmark-b{right:20%;top:43%}.pw-launcher{bottom:12px;padding:9px}.pw-launcher-actions{gap:5px}.pw-launcher-actions button{padding:10px 5px;font-size:8px;gap:5px;letter-spacing:0}.pw-launcher-label{font-size:9px}.pw-world-copy{top:48%}.pw-close{top:16px;left:14px}.pw-world-coordinate{left:18px;right:auto;bottom:16px;font-size:8px}}
         @media(prefers-reduced-motion:reduce){.pw-transition,.pw-transition *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
