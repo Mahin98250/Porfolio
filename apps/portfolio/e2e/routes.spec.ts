@@ -143,11 +143,13 @@ test("mobile navigation exposes its state and closes after route selection", asy
   await expect(page.getByRole("button", { name: "Open navigation" })).toHaveAttribute("aria-expanded", "false");
 });
 
-test("3D world provides a still cave scene when reduced motion is requested", async ({ page }) => {
+test("reduced motion keeps the cave still while chapters remain reachable", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator(".cinema-cave-fallback")).toBeVisible();
   await expect(page.locator(".cinematic-story-stage canvas")).toHaveCount(0);
+  await scrubStory(page, 0.34);
+  await expect(page.locator(".cinematic-story-track")).toHaveAttribute("data-chapter", "approach");
 });
 
 test("mobile cinematic journey advances through chapters without stacked content sections", async ({ page }) => {

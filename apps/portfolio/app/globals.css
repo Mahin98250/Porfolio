@@ -1003,11 +1003,8 @@ html:has(.cinematic-story-track),body:has(.cinematic-story-track){background:#08
 @media(prefers-reduced-motion:reduce){
   .cinema-film-grain{animation:none}
   .cinema-ending-actions a{transition:none}
-  .cinematic-story-track{height:auto;min-height:100svh}
-  .cinematic-story-stage{position:relative;height:100svh}
-  .cinema-scene-copy,.cinema-project-reveal{position:absolute;opacity:1!important;transform:none!important}
-  .cinema-scene-copy:not(.cinema-copy-opening),.cinema-project-reveal{display:none}
-  .cinema-progress-track span{transform:scaleX(.1)}
+  /* Keep every chapter reachable; reduce effects, not the story's scroll surface. */
+  .cinema-scene-copy,.cinema-project-reveal{transition:none!important}
 }
 
 /* The film owns a single viewport scroll surface; the scene itself stays pinned in place. */
@@ -1021,9 +1018,8 @@ html:has(.cinematic-story-track),body:has(.cinematic-story-track){background:#08
 .cinematic-story-track{width:100%;margin:0;min-height:100svh}
 .cinematic-story-stage{position:sticky;top:0}
 @media(prefers-reduced-motion:reduce){
-  .cinematic-story-scroll{position:relative;inset:auto;height:100svh;overflow:hidden}
-  .cinematic-story-track{height:100svh!important;min-height:100svh}
-  .cinematic-story-stage{position:relative;top:auto}
+  /* Preserve the dedicated scroll container so users can still reach all chapters. */
+  .cinematic-story-scroll{scroll-behavior:auto}
 }
 
 
