@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry, CircleGeometry } from "three";
+import { AdditiveBlending, BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry, CircleGeometry } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -903,6 +903,67 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
+function CaveLightShafts() {
+  // A small alpha-gradient texture fakes soft volumetric scatter without a
+  // full-screen raymarch. Multiple depth layers make the shafts feel embedded
+  // in the cave rather than like a single overlay in front of the camera.
+  const beamTexture = useMemo(() => {
+    const width = 48;
+    const height = 128;
+    const data = new Uint8Array(width * height * 4);
+    for (let y = 0; y < height; y++) {
+      const v = y / (height - 1);
+      const vertical = MathUtils.smoothstep(v, 0.02, 0.18) * (1 - MathUtils.smoothstep(v, 0.72, 0.99));
+      for (let x = 0; x < width; x++) {
+        const u = x / (width - 1);
+        const center = 0.5 + Math.sin(v * 6.4) * 0.065;
+        const distance = Math.abs(u - center);
+        const widthFade = Math.max(0, 1 - distance / 0.43);
+        const irregularity = 0.78 + 0.22 * Math.sin(v * 19 + u * 5.5);
+        const alpha = Math.pow(widthFade, 2.2) * vertical * irregularity;
+        const index = (y * width + x) * 4;
+        data[index] = 255;
+        data[index + 1] = 255;
+        data[index + 2] = 255;
+        data[index + 3] = Math.round(255 * alpha);
+      }
+    }
+    const texture = new DataTexture(data, width, height);
+    texture.magFilter = LinearFilter;
+    texture.minFilter = LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+  }, []);
+
+  const shafts = [
+    { key: "outer-blue", position: [-2.2, 1.9, 10.3] as [number, number, number], scale: [4.8, 8.4, 1] as [number, number, number], rotation: [0, 0, -0.23] as [number, number, number], color: "#b8d9ff", opacity: 0.28 },
+    { key: "outer-gold", position: [1.7, 1.4, 8.2] as [number, number, number], scale: [3.0, 7.2, 1] as [number, number, number], rotation: [0, 0, 0.16] as [number, number, number], color: "#ffe2b2", opacity: 0.22 },
+    { key: "inner-blue", position: [-0.8, 1.5, 3.3] as [number, number, number], scale: [3.8, 7.7, 1] as [number, number, number], rotation: [0, 0, -0.13] as [number, number, number], color: "#b4d5f5", opacity: 0.13 },
+    { key: "inner-amber", position: [1.3, 1.0, -5.8] as [number, number, number], scale: [3.2, 6.8, 1] as [number, number, number], rotation: [0, 0, 0.18] as [number, number, number], color: "#edc995", opacity: 0.09 },
+  ];
+
+  return (
+    <group renderOrder={2}>
+      {shafts.map((shaft) => (
+        <mesh key={shaft.key} position={shaft.position} rotation={shaft.rotation} scale={shaft.scale} renderOrder={2}>
+          <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial
+            map={beamTexture}
+            color={shaft.color}
+            transparent
+            opacity={shaft.opacity}
+            blending={AdditiveBlending}
+            depthWrite={false}
+            side={DoubleSide}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function CaveTunnel() {
   const branchMaps = useMemo(() => makeRockTextures(), []);
   const branchMaterial = useMemo(() => new MeshStandardMaterial({
@@ -926,6 +987,7 @@ function CaveTunnel() {
       <CaveFormations />
       <CaveRocks />
       <CaveFloorRubble />
+      <CaveLightShafts />
       <CaveDust junctionX={junctionX} junctionY={junctionY} />
       <group position={[junctionX, junctionY, -22]}>
         <CaveBranch side={-1} material={branchMaterial} />
