@@ -630,7 +630,10 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
 
       // Sample the exact branch centreline used by the mesh. This avoids
       // the camera drifting outside the hollow passage during the turn.
-      const localDepth = MathUtils.clamp(targetZ + 22, -20.8, 0);
+      // Use the queried route sample's depth, not this frame's depth.
+      // The look-ahead samples must advance down the branch too, otherwise
+      // both lookAt points collapse onto the camera's current cross-section.
+      const localDepth = MathUtils.clamp(31 - 63 * t, -20.8, 0);
       const point = branchPointAtDepth(branchOffset as -1 | 1, localDepth);
       return [junctionX + point.x, junctionY + point.y];
     };
