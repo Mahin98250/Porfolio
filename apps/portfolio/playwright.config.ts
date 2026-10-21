@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   // The homepage runs a procedural Three.js cave. Limit concurrent browser
   // contexts on hosted runners so animation work does not starve click/scroll tests.
-  workers: process.env.CI ? 2 : undefined,
+  ...(process.env.CI ? { workers: 2 } : {}),
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
