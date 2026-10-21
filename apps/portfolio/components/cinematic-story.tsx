@@ -35,32 +35,41 @@ function noise3(x: number, y: number, z: number): number {
   return MathUtils.lerp(MathUtils.lerp(x00, x10, fy), MathUtils.lerp(x01, x11, fy), fz);
 }
 
-function tileNoise2(x: number, y: number, size: number, cellsX: number, cellsY: number): number {
-  // Wrap the lattice itself, not only the texture sampler. This ensures the
-  // noise values meet at opposite edges instead of exposing a repeat seam.
-  const wrappedX = x >= 0 && x < size ? x : ((x % size) + size) % size;
-  const wrappedY = y >= 0 && y < size ? y : ((y % size) + size) % size;
-  const tx = wrappedX / size * cellsX;
-  const ty = wrappedY / size * cellsY;
-  const x0 = Math.floor(tx);
-  const y0 = Math.floor(ty);
-  const fx = fadeNoise(tx - x0);
-  const fy = fadeNoise(ty - y0);
-  const x0Wrapped = x0 % cellsX;
-  const x1Wrapped = (x0 + 1) % cellsX;
-  const y0Wrapped = y0 % cellsY;
-  const y1Wrapped = (y0 + 1) % cellsY;
-  const a = MathUtils.lerp(
-    hash3(x0Wrapped, y0Wrapped, 0),
-    hash3(x1Wrapped, y0Wrapped, 0),
-    fx,
-  );
-  const b = MathUtils.lerp(
-    hash3(x0Wrapped, y1Wrapped, 0),
-    hash3(x1Wrapped, y1Wrapped, 0),
-    fx,
-  );
-  return MathUtils.lerp(a, b, fy);
+function makeTileNoiseSampler(size: number, cellsX: number, cellsY: number): (x: number, y: number) => number {
+  // Precompute the periodic lattice once. Sampling millions of texture pixels
+  // then needs four array reads and lerps rather than four Math.sin hash calls.
+  const lattice = new Float32Array(cellsX * cellsY);
+  for (let y = 0; y < cellsY; y++) {
+    for (let x = 0; x < cellsX; x++) {
+      lattice[y * cellsX + x] = hash3(x, y, 0);
+    }
+  }
+
+  return (x: number, y: number) => {
+    // Wrap the lattice itself, not only the texture sampler, so opposite
+    // texture edges share the same values and do not expose a repeat seam.
+    const wrappedX = x >= 0 && x < size ? x : ((x % size) + size) % size;
+    const wrappedY = y >= 0 && y < size ? y : ((y % size) + size) % size;
+    const tx = wrappedX / size * cellsX;
+    const ty = wrappedY / size * cellsY;
+    const x0 = Math.floor(tx);
+    const y0 = Math.floor(ty);
+    const fx = fadeNoise(tx - x0);
+    const fy = fadeNoise(ty - y0);
+    const x1 = (x0 + 1) % cellsX;
+    const y1 = (y0 + 1) % cellsY;
+    const a = MathUtils.lerp(
+      lattice[y0 * cellsX + x0] ?? 0,
+      lattice[y0 * cellsX + x1] ?? 0,
+      fx,
+    );
+    const b = MathUtils.lerp(
+      lattice[y1 * cellsX + x0] ?? 0,
+      lattice[y1 * cellsX + x1] ?? 0,
+      fx,
+    );
+    return MathUtils.lerp(a, b, fy);
+  };
 }
 
 function caveCenter(t: number): [number, number] {
@@ -180,6 +189,18 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
   const roughnessData = new Uint8Array(size * size * 4);
+  // Each procedural octave gets a small periodic lattice, computed once and
+  // reused for every texel. This preserves seamless tiling without millions
+  // of repeated trigonometric hash operations on slower phones.
+  const broadNoise = makeTileNoiseSampler(size, 4, 4);
+  const midNoise = makeTileNoiseSampler(size, 13, 13);
+  const fineNoise = makeTileNoiseSampler(size, 47, 47);
+  const grainNoise = makeTileNoiseSampler(size, 160, 160);
+  const beddingNoise = makeTileNoiseSampler(size, 9, 12);
+  const poreNoise = makeTileNoiseSampler(size, 320, 320);
+  const dampNoise = makeTileNoiseSampler(size, 7, 5);
+  const strataNoise = makeTileNoiseSampler(size, 6, 8);
+  const mineralNoise = makeTileNoiseSampler(size, 24, 16);
 
   // Periodic multi-scale noise and a tileable Voronoi field create limestone
   // fractures and strata without visible seams at repeated texture edges.
@@ -196,12 +217,12 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const broad = tileNoise2(x, y, size, 4, 4);
-      const mid = tileNoise2(x, y, size, 13, 13);
-      const fine = tileNoise2(x, y, size, 47, 47);
-      const grain = tileNoise2(x, y, size, 160, 160);
-      const bedding = Math.sin((y / size) * Math.PI * 2 * 19 + tileNoise2(x, y, size, 9, 12) * 2.4) * 0.07;
-      const pore = tileNoise2(x, y, size, 320, 320) * 0.035;
+      const broad = broadNoise(x, y);
+      const mid = midNoise(x, y);
+      const fine = fineNoise(x, y);
+      const grain = grainNoise(x, y);
+      const bedding = Math.sin((y / size) * Math.PI * 2 * 19 + beddingNoise(x, y) * 2.4) * 0.07;
+      const pore = poreNoise(x, y) * 0.035;
 
       // Find the two closest fracture sites in a wrapping 3x3 cell window.
       // The difference between their distances isolates narrow, chipped seams.
@@ -236,11 +257,11 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       const crackEdge = Math.pow(MathUtils.clamp(1 - distanceGap / 0.105, 0, 1), 1.35);
 
       // Irregular damp patches read as seepage stains, not a glossy wet shader.
-      const damp = Math.pow(MathUtils.clamp((tileNoise2(x + 467.2, y - 323.2, size, 7, 5) - 0.05) * 1.55, 0, 1), 1.5);
+      const damp = Math.pow(MathUtils.clamp((dampNoise(x + 467.2, y - 323.2) - 0.05) * 1.55, 0, 1), 1.5);
 
       // Thin, wavy mineral beds break up the generic noise look and give the
       // limestone a believable sedimentary structure without regular stripes.
-      const strataSignal = Math.sin((y / size) * Math.PI * 2 * 28 + tileNoise2(x, y, size, 6, 8) * 3.6 + broad * 1.2);
+      const strataSignal = Math.sin((y / size) * Math.PI * 2 * 28 + strataNoise(x, y) * 3.6 + broad * 1.2);
       const strata = Math.sign(strataSignal) * Math.pow(Math.abs(strataSignal), 9) * 0.075;
       const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22 - crackEdge * 0.045 - damp * 0.025, 0, 1);
       const i = (y * size + x) * 4;
@@ -250,7 +271,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 - crackEdge * 10 - damp * 5, 0, 255));
       colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 - crackEdge * 8 - damp * 3, 0, 255));
       // Fine iron/mineral flecks add subtle warm/cool variation, not obvious speckles.
-      const mineralTint = Math.max(0, tileNoise2(x + 361.2, y - 168.3, size, 24, 16) - 0.16) * 7;
+      const mineralTint = Math.max(0, mineralNoise(x + 361.2, y - 168.3) - 0.16) * 7;
       colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5 - mineralTint * 0.24, 0, 255));
       colorData[i] = Math.round(MathUtils.clamp((colorData[i] ?? 0) + mineralTint, 0, 255));
       colorData[i + 3] = 255;
