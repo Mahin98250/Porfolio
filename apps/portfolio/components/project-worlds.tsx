@@ -133,6 +133,93 @@ function WorldGeometry({ theme, motionAllowed }: { theme: ProjectWorld["theme"];
             <torusGeometry args={[0.72, 0.025, 8, 64]} />
             <meshStandardMaterial color="#d8f6c7" emissive="#97d18c" emissiveIntensity={0.6} />
           </mesh>
+
+          {/* A sunlit dairy meadow: cloud volumes, a grazing cow and a farmer
+              give this world its own recognizable story instead of generic props. */}
+          <mesh position={[-4.9, 4.25, -6]} scale={0.9}>
+            <sphereGeometry args={[1.05, 24, 16]} />
+            <meshBasicMaterial color="#fff0a8" />
+          </mesh>
+          {[-6.8, -4.6, -2.7].map((x, i) => (
+            <group key={`cloud-${x}`} position={[x, 3.45 + (i % 2) * 0.42, -5.5 - i * 0.3]}>
+              <mesh position={[-0.42, 0, 0]} scale={[0.75, 0.42, 0.38]}>
+                <sphereGeometry args={[1, 16, 12]} />
+                <meshStandardMaterial color="#fff9e9" roughness={1} />
+              </mesh>
+              <mesh position={[0.12, 0.16, 0]} scale={[0.86, 0.56, 0.42]}>
+                <sphereGeometry args={[1, 16, 12]} />
+                <meshStandardMaterial color="#fffdf5" roughness={1} />
+              </mesh>
+              <mesh position={[0.68, -0.02, 0]} scale={[0.62, 0.38, 0.35]}>
+                <sphereGeometry args={[1, 16, 12]} />
+                <meshStandardMaterial color="#f5f7e9" roughness={1} />
+              </mesh>
+            </group>
+          ))}
+          {/* Cow: body, head, four legs, ears and dark patches, sized to read at a distance. */}
+          <group position={[-1.1, -0.28, 0.55]} rotation={[0, -0.2, 0]}>
+            <mesh position={[0, 0.68, 0]} scale={[0.86, 0.48, 0.42]}>
+              <sphereGeometry args={[1, 24, 16]} />
+              <meshStandardMaterial color="#f6f2e8" roughness={0.92} />
+            </mesh>
+            <mesh position={[0.58, 0.9, 0.02]} scale={[0.29, 0.34, 0.29]}>
+              <sphereGeometry args={[1, 20, 14]} />
+              <meshStandardMaterial color="#f5eee2" roughness={0.9} />
+            </mesh>
+            <mesh position={[0.75, 0.72, 0.02]} scale={[0.2, 0.14, 0.22]}>
+              <sphereGeometry args={[1, 16, 10]} />
+              <meshStandardMaterial color="#c88d7c" roughness={1} />
+            </mesh>
+            {[-0.38, 0.18].map((x, i) => (
+              <mesh key={`cow-patch-${x}`} position={[x, 0.94, i ? -0.28 : 0.28]} scale={[0.24, 0.2, 0.07]}>
+                <sphereGeometry args={[1, 12, 8]} />
+                <meshStandardMaterial color="#343a32" roughness={1} />
+              </mesh>
+            ))}
+            {[-0.52, -0.1, 0.32, 0.57].map((x) => (
+              <mesh key={`cow-leg-${x}`} position={[x, 0.2, x > 0.2 ? -0.22 : 0.22]}>
+                <cylinderGeometry args={[0.075, 0.09, 0.48, 10]} />
+                <meshStandardMaterial color="#e8e0d2" roughness={1} />
+              </mesh>
+            ))}
+            <mesh position={[0.53, 1.18, -0.16]} rotation={[0, 0, -0.45]}>
+              <coneGeometry args={[0.07, 0.25, 8]} />
+              <meshStandardMaterial color="#d7d0bd" roughness={1} />
+            </mesh>
+            <mesh position={[0.53, 1.18, 0.19]} rotation={[0, 0, -0.45]}>
+              <coneGeometry args={[0.07, 0.25, 8]} />
+              <meshStandardMaterial color="#d7d0bd" roughness={1} />
+            </mesh>
+            <mesh position={[-0.88, 0.84, 0]}>
+              <cylinderGeometry args={[0.025, 0.035, 0.6, 8]} />
+              <meshStandardMaterial color="#42362a" roughness={1} />
+            </mesh>
+          </group>
+          {/* Farmer silhouette with a hat, shirt and boots beside the animal. */}
+          <group position={[-2.55, -0.22, 0.95]}>
+            <mesh position={[0, 1.08, 0]}>
+              <capsuleGeometry args={[0.19, 0.38, 5, 10]} />
+              <meshStandardMaterial color="#4f7d4f" roughness={0.86} />
+            </mesh>
+            <mesh position={[0, 1.52, 0]}>
+              <sphereGeometry args={[0.18, 16, 12]} />
+              <meshStandardMaterial color="#b77d56" roughness={0.95} />
+            </mesh>
+            <mesh position={[0, 1.72, 0]}>
+              <cylinderGeometry args={[0.23, 0.25, 0.07, 16]} />
+              <meshStandardMaterial color="#c6a36a" roughness={0.8} />
+            </mesh>
+            {[-0.11, 0.11].map((x) => (
+              <mesh key={x} position={[x, 0.34, 0]}>
+                <cylinderGeometry args={[0.075, 0.08, 0.38, 8]} />
+                <meshStandardMaterial color="#493f32" roughness={1} />
+              </mesh>
+            ))}
+            <mesh position={[0.24, 1.06, 0]} rotation={[0, 0, -0.72]}>
+              <capsuleGeometry args={[0.055, 0.27, 4, 8]} />
+              <meshStandardMaterial color="#b77d56" roughness={1} />
+            </mesh>
+          </group>
         </>
       )}
 
@@ -245,6 +332,33 @@ export function ProjectWorlds() {
             <p>{active.description}</p>
             <a href={active.destination} target="_blank" rel="noreferrer">EXPLORE THE PROJECT <span>↗</span></a>
           </div>
+          <div className="pw-explore-scroll" aria-label={`Explore ${active.name} project details`}>
+            <div className="pw-scroll-cue"><span>KEEP EXPLORING</span><b>↓</b></div>
+            <section className="pw-detail-section pw-detail-intro">
+              <span className="pw-detail-kicker">INSIDE THE WORLD / 01</span>
+              <h3>{active.theme === "milk" ? "From farm to front door." : active.theme === "learning" ? "A landscape built for learning." : "Move information through light."}</h3>
+              <p>{active.theme === "milk"
+                ? "DudhWala is imagined as a local dairy marketplace: independent milk sellers serve nearby homes, with a simple customer journey from discovering a seller to managing everyday orders."
+                : active.theme === "learning"
+                  ? "Learner’s Guide brings study material, useful tools and a student-first interface into one focused place—designed to make daily learning easier to navigate."
+                  : "OptiCode Studio explores a browser-first optical transfer workflow, turning visual frames into a path for sending and reconstructing data without relying on a conventional network connection."}</p>
+            </section>
+            <section className="pw-detail-section">
+              <span className="pw-detail-kicker">THE EXPERIENCE / 02</span>
+              <div className="pw-detail-grid">
+                <article><b>01</b><h4>{active.theme === "milk" ? "Discover local sellers" : active.theme === "learning" ? "Find learning resources" : "Prepare the payload"}</h4><p>{active.theme === "milk" ? "Explore the local marketplace and see the seller-led model at the heart of the product." : active.theme === "learning" ? "Keep study material and everyday learning actions easy to find." : "Choose content and prepare it for an optical transfer session."}</p></article>
+                <article><b>02</b><h4>{active.theme === "milk" ? "Build a daily routine" : active.theme === "learning" ? "Stay in a focused flow" : "Transmit through frames"}</h4><p>{active.theme === "milk" ? "A clear customer journey is designed around regular household needs." : active.theme === "learning" ? "A clean interface reduces friction between a student and the next task." : "Visual frames carry encoded data so a receiver can collect and decode them."}</p></article>
+                <article><b>03</b><h4>{active.theme === "milk" ? "Connect the community" : active.theme === "learning" ? "Keep tools together" : "Reconstruct the result"}</h4><p>{active.theme === "milk" ? "The marketplace concept connects customers with independent sellers." : active.theme === "learning" ? "A mobile-friendly toolkit keeps useful study actions in one place." : "Receiver logic tracks frames and rebuilds the original payload when enough data arrives."}</p></article>
+              </div>
+            </section>
+            <section className="pw-detail-section pw-detail-outro">
+              <span className="pw-detail-kicker">NEXT STOP / 03</span>
+              <h3>Want to go deeper?</h3>
+              <p>This is the project overview inside the portfolio. Open the source only when you want to inspect implementation details, code, or the latest repository history.</p>
+              <a className="pw-repository-cta" href={active.destination} target="_blank" rel="noreferrer">OPEN SOURCE REPOSITORY <span>↗</span></a>
+              <button className="pw-back-to-top" type="button" onClick={() => document.querySelector(".pw-explore-scroll")?.scrollTo({ top: 0, behavior: motionAllowed ? "smooth" : "auto" })}>↑ BACK TO THE WORLD</button>
+            </section>
+          </div>
           <span className="pw-world-coordinate">MP / IMMERSIVE PROJECT UNIVERSE</span>
         </div>
       )}
@@ -293,6 +407,26 @@ export function ProjectWorlds() {
         .pw-world-copy a{display:inline-flex;align-items:center;gap:24px;margin-top:22px;padding:15px 18px;border:1px solid #ffffff4a;border-radius:999px;color:#fff;text-decoration:none;font:11px ui-monospace,SFMono-Regular,monospace;letter-spacing:.13em;background:#ffffff0c;backdrop-filter:blur(12px);transition:background .2s,transform .2s}
         .pw-world-copy a:hover{background:#ffffff20;transform:translateY(-2px)}
         .pw-close{position:absolute;z-index:4;top:24px;left:24px;padding:12px 15px;border:1px solid #ffffff30;border-radius:999px;background:#090a0b66;color:#f7eee4;font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.1em;cursor:pointer;backdrop-filter:blur(14px)}
+        .pw-explore-scroll{position:absolute;z-index:3;inset:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#ffffff35 transparent;pointer-events:auto;touch-action:pan-y;scroll-behavior:smooth}
+        .pw-scroll-cue{height:100svh;min-height:620px;display:flex;align-items:flex-end;justify-content:center;gap:12px;padding:0 20px max(42px,env(safe-area-inset-bottom));color:#ffffffb0;font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.2em;pointer-events:none}
+        .pw-scroll-cue b{font-size:18px;font-weight:400;animation:pw-cue-bob 1.8s ease-in-out infinite}
+        .pw-detail-section{position:relative;padding:clamp(58px,9vw,120px) clamp(22px,9vw,132px);background:linear-gradient(180deg,#080b10ee,#080b10f5);border-top:1px solid #ffffff16}
+        .pw-detail-kicker{color:var(--world-light);font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.18em}
+        .pw-detail-section h3{max-width:900px;margin:24px 0;font-size:clamp(38px,7vw,84px);line-height:.98;letter-spacing:-.065em;font-weight:600;text-wrap:balance}
+        .pw-detail-section>p{max-width:720px;color:#d7deebbd;font-size:clamp(15px,2vw,19px);line-height:1.9}
+        .pw-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:34px}
+        .pw-detail-grid article{padding:23px;border:1px solid #ffffff1a;border-radius:22px;background:linear-gradient(145deg,#ffffff0c,#ffffff03);box-shadow:inset 0 1px #ffffff0a}
+        .pw-detail-grid article>b{color:var(--world-light);font:11px ui-monospace,SFMono-Regular,monospace}
+        .pw-detail-grid h4{margin:24px 0 12px;font-size:18px;letter-spacing:-.04em}
+        .pw-detail-grid p{margin:0;color:#d7deebad;font-size:13px;line-height:1.8}
+        .pw-detail-outro{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+        .pw-repository-cta,.pw-back-to-top{display:inline-flex;align-items:center;gap:14px;min-height:48px;margin:18px 10px 0 0;padding:0 18px;border:1px solid #ffffff35;border-radius:999px;background:#ffffff0a;color:#fff;font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.1em;cursor:pointer}
+        .pw-repository-cta span{color:var(--world-light)}
+        .pw-back-to-top:hover,.pw-repository-cta:hover{background:#ffffff16;border-color:var(--world-light)}
+        .pw-world-copy{pointer-events:none}
+        .pw-world-copy a{pointer-events:auto}
+        @keyframes pw-cue-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
         .pw-world-coordinate{position:absolute;z-index:3;bottom:26px;right:26px;color:#ffffff75;font:9px ui-monospace,SFMono-Regular,monospace;letter-spacing:.16em}
         .pw-theme-learning{--world-sky:#081c35;--world-light:#69bfff;--ridge-back:#163c5b;--ridge-mid:#0b2944;--ridge-front:#071b2c}
         .pw-theme-milk{--world-sky:#17251d;--world-light:#e0f5d0;--ridge-back:#4a6c4a;--ridge-mid:#203d2d;--ridge-front:#10251d}
@@ -313,6 +447,7 @@ export function ProjectWorlds() {
         .pw-world-copy a:hover{transform:translateY(-2px);border-color:var(--world-light);background:#ffffff14}
         .pw-world-copy a span{color:var(--world-light)}
         .pw-world-coordinate{position:absolute;z-index:4;right:max(22px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));color:#d4c8b6a6;font:9px ui-monospace,SFMono-Regular,monospace;letter-spacing:.15em}
+        @media(max-width:700px){.pw-detail-grid{grid-template-columns:1fr}.pw-detail-grid article{padding:20px}.pw-detail-grid h4{margin-top:16px}.pw-scroll-cue{min-height:560px}.pw-detail-section h3{font-size:clamp(36px,10vw,58px)}}
         @media(max-width:640px){.pw-world-copy{left:22px;right:22px;top:52%;max-width:100%}.pw-world-copy h2{margin:20px 0 13px;font-size:clamp(40px,12vw,66px)}.pw-world-copy p{max-width:34ch;font-size:14px;line-height:1.6}.pw-world-eyebrow{font-size:9px;letter-spacing:.12em}.pw-close{top:max(14px,env(safe-area-inset-top));left:14px;min-height:42px;padding:10px 13px;font-size:9px}.pw-world-coordinate{right:14px;bottom:max(14px,env(safe-area-inset-bottom));font-size:7px;letter-spacing:.08em}.pw-world-glow{width:58vw;height:58vw}}
         @media(prefers-reduced-motion:reduce){.pw-transition,.pw-transition *{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}.pw-three-scene{opacity:.72}}
       `}</style>
