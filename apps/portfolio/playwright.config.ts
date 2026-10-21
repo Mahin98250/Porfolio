@@ -13,6 +13,10 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:3000",
     trace: "retain-on-failure",
     ...devices["Desktop Chrome"],
+    // CI host OS accessibility defaults must not silently switch the entire
+    // chapter-scroll layout into the non-scrolling reduced-motion fallback.
+    // Individual accessibility tests explicitly emulate "reduce" as needed.
+    reducedMotion: "no-preference",
   },
   webServer: {
     command: "node scripts/static-server.mjs",
