@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector3, CatmullRomCurve3 } from "three";
+import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3 } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -574,7 +574,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     bumpMap: maps.height,
     bumpScale: 0.085,
     normalMap: maps.normal,
-    normalScale: [0.62, 0.62],
+    normalScale: new Vector2(0.62, 0.62),
     roughnessMap: maps.roughness,
     vertexColors: true,
     roughness: 0.98,
