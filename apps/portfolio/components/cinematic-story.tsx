@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry, CircleGeometry } from "three";
+import { AdditiveBlending, BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry, CircleGeometry } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -903,6 +903,145 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
+function CaveLightShafts() {
+  // A small alpha-gradient texture fakes soft volumetric scatter without a
+  // full-screen raymarch. Multiple depth layers make the shafts feel embedded
+  // in the cave rather than like a single overlay in front of the camera.
+  const beamTexture = useMemo(() => {
+    const width = 48;
+    const height = 128;
+    const data = new Uint8Array(width * height * 4);
+    for (let y = 0; y < height; y++) {
+      const v = y / (height - 1);
+      const vertical = MathUtils.smoothstep(v, 0.02, 0.18) * (1 - MathUtils.smoothstep(v, 0.72, 0.99));
+      for (let x = 0; x < width; x++) {
+        const u = x / (width - 1);
+        const center = 0.5 + Math.sin(v * 6.4) * 0.065;
+        const distance = Math.abs(u - center);
+        const widthFade = Math.max(0, 1 - distance / 0.43);
+        const irregularity = 0.78 + 0.22 * Math.sin(v * 19 + u * 5.5);
+        const alpha = Math.pow(widthFade, 2.2) * vertical * irregularity;
+        const index = (y * width + x) * 4;
+        data[index] = 255;
+        data[index + 1] = 255;
+        data[index + 2] = 255;
+        data[index + 3] = Math.round(255 * alpha);
+      }
+    }
+    const texture = new DataTexture(data, width, height);
+    texture.magFilter = LinearFilter;
+    texture.minFilter = LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    return texture;
+  }, []);
+
+  const shafts = [
+    { key: "outer-blue", position: [-2.2, 1.9, 10.3] as [number, number, number], scale: [4.8, 8.4, 1] as [number, number, number], rotation: [0, 0, -0.23] as [number, number, number], color: "#b8d9ff", opacity: 0.28 },
+    { key: "outer-gold", position: [1.7, 1.4, 8.2] as [number, number, number], scale: [3.0, 7.2, 1] as [number, number, number], rotation: [0, 0, 0.16] as [number, number, number], color: "#ffe2b2", opacity: 0.22 },
+    { key: "inner-blue", position: [-0.8, 1.5, 3.3] as [number, number, number], scale: [3.8, 7.7, 1] as [number, number, number], rotation: [0, 0, -0.13] as [number, number, number], color: "#b4d5f5", opacity: 0.13 },
+    { key: "inner-amber", position: [1.3, 1.0, -5.8] as [number, number, number], scale: [3.2, 6.8, 1] as [number, number, number], rotation: [0, 0, 0.18] as [number, number, number], color: "#edc995", opacity: 0.09 },
+  ];
+
+  return (
+    <group renderOrder={2}>
+      {shafts.map((shaft) => (
+        <mesh key={shaft.key} position={shaft.position} rotation={shaft.rotation} scale={shaft.scale} renderOrder={2}>
+          <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial
+            map={beamTexture as never}
+            color={shaft.color}
+            transparent
+            opacity={shaft.opacity}
+            blending={AdditiveBlending}
+            depthWrite={false}
+            side={DoubleSide}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function CaveEntranceMist() {
+  const elapsed = useRef(0);
+  const mist = useMemo(() => {
+    const count = 132;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      const offset = i * 3;
+      // Mist stays low around the threshold; it is not spread uniformly
+      // through the tunnel, where it would flatten the distant geology.
+      positions[offset] = (hash01(i * 19.13 + 2.7) - 0.5) * 7.8;
+      positions[offset + 1] = -1.15 + hash01(i * 31.7 + 5.2) * 1.35;
+      positions[offset + 2] = 6.8 + hash01(i * 43.1 + 9.6) * 6.3;
+      phases[i] = hash01(i * 53.9 + 1.8) * Math.PI * 2;
+      const coolness = 0.78 + hash01(i * 61.2 + 4.4) * 0.22;
+      colors[offset] = coolness * 0.80;
+      colors[offset + 1] = coolness * 0.90;
+      colors[offset + 2] = coolness;
+    }
+
+    const size = 32;
+    const spriteData = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const nx = ((x + 0.5) / size) * 2 - 1;
+        const ny = ((y + 0.5) / size) * 2 - 1;
+        const radiusSq = nx * nx + ny * ny;
+        const alpha = Math.exp(-radiusSq * 3.9) * Math.max(0, 1 - radiusSq * 0.12);
+        const offset = (y * size + x) * 4;
+        spriteData[offset] = 255;
+        spriteData[offset + 1] = 255;
+        spriteData[offset + 2] = 255;
+        spriteData[offset + 3] = Math.round(255 * alpha);
+      }
+    }
+    const sprite = new DataTexture(spriteData, size, size);
+    sprite.magFilter = LinearFilter;
+    sprite.minFilter = LinearFilter;
+    sprite.generateMipmaps = false;
+    sprite.needsUpdate = true;
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
+    const material = new PointsMaterial({
+      color: "#d5e1e8",
+      map: sprite,
+      size: 0.92,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.075,
+      vertexColors: true,
+      depthWrite: false,
+    });
+    const object = new Points(geometry, material);
+    object.frustumCulled = false;
+    object.renderOrder = 1;
+    return { object, basePositions: positions.slice(), phases };
+  }, []);
+
+  useFrame((_, delta) => {
+    elapsed.current += Math.min(delta, 0.04);
+    const attribute = mist.object.geometry.getAttribute("position") as Float32BufferAttribute;
+    const positions = attribute.array as Float32Array;
+    for (let i = 0; i < mist.phases.length; i++) {
+      const offset = i * 3;
+      const phase = mist.phases[i] ?? 0;
+      positions[offset] = (mist.basePositions[offset] ?? 0) + Math.sin(elapsed.current * 0.16 + phase) * 0.13;
+      positions[offset + 1] = (mist.basePositions[offset + 1] ?? 0) + Math.sin(elapsed.current * 0.23 + phase * 0.7) * 0.045;
+      positions[offset + 2] = (mist.basePositions[offset + 2] ?? 0) + Math.cos(elapsed.current * 0.12 + phase) * 0.035;
+    }
+    attribute.needsUpdate = true;
+  });
+
+  return <primitive object={mist.object as unknown as Object3D} dispose={null} />;
+}
+
 function CaveTunnel() {
   const branchMaps = useMemo(() => makeRockTextures(), []);
   const branchMaterial = useMemo(() => new MeshStandardMaterial({
@@ -926,6 +1065,8 @@ function CaveTunnel() {
       <CaveFormations />
       <CaveRocks />
       <CaveFloorRubble />
+      <CaveEntranceMist />
+      <CaveLightShafts />
       <CaveDust junctionX={junctionX} junctionY={junctionY} />
       <group position={[junctionX, junctionY, -22]}>
         <CaveBranch side={-1} material={branchMaterial} />
