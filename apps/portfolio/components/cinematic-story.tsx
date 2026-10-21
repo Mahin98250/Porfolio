@@ -928,6 +928,67 @@ function CaveTunnel() {
   );
 }
 
+function CaveExterior() {
+  // Fractured cliff shoulders extend the entrance into a real landscape instead
+  // of leaving a clean pipe-like mouth floating in darkness.
+  const scene = useMemo(() => {
+    const geometry = new IcosahedronGeometry(1, 2);
+    const vertices = geometry.getAttribute("position");
+    for (let i = 0; i < vertices.count; i++) {
+      const x = vertices.getX(i), y = vertices.getY(i), z = vertices.getZ(i);
+      const broad = noise3(x * 3.2 + 4, y * 3.2 - 2, z * 3.2 + 7);
+      const chipped = noise3(x * 8.5 - 3, y * 8.5 + 1, z * 8.5);
+      const scale = 0.84 + broad * 0.18 + chipped * 0.08;
+      vertices.setXYZ(i, x * scale, y * scale, z * scale);
+    }
+    vertices.needsUpdate = true;
+    geometry.computeVertexNormals();
+    const material = new MeshStandardMaterial({ color: "#75604a", roughness: 1, flatShading: true });
+    const pieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
+    for (const side of [-1, 1]) for (let i = 0; i < 34; i++) {
+      const seed = (side + 2) * 100 + i;
+      const size = 0.8 + hash01(seed * 7.13) * 2.25;
+      pieces.push({
+        p: [side * (3.7 + hash01(seed * 2.71) * 4.1), -0.15 + hash01(seed * 3.17) * 5.8, 5 + hash01(seed * 5.31) * 16],
+        s: [size * (0.75 + hash01(seed * 8.3)), size * (0.7 + hash01(seed * 9.7)), size * (0.8 + hash01(seed * 10.9))],
+        r: [hash01(seed * 11.1) * 2.8, hash01(seed * 12.3) * 2.8, hash01(seed * 13.5) * 2.8],
+      });
+    }
+    for (let i = 0; i < 24; i++) {
+      const seed = 500 + i;
+      const size = 0.8 + hash01(seed * 4.1) * 2;
+      pieces.push({
+        p: [(hash01(seed * 2.3) - 0.5) * 12, 3.8 + hash01(seed * 5.3) * 3.2, 5 + hash01(seed * 3.7) * 12],
+        s: [size * 1.4, size * 0.8, size * 1.15],
+        r: [hash01(seed * 6.7) * 1.4, hash01(seed * 7.9) * 2.6, hash01(seed * 8.1) * 1.4],
+      });
+    }
+    for (let i = 0; i < 54; i++) {
+      const seed = 800 + i;
+      const side = hash01(seed * 2.1) > 0.5 ? 1 : -1;
+      const size = 0.12 + hash01(seed * 3.3) * 0.62;
+      pieces.push({
+        p: [side * (2.6 + hash01(seed * 4.7) * 5.2), -2.0 + hash01(seed * 5.9) * 0.8, 7 + hash01(seed * 6.1) * 14],
+        s: [size * 1.4, size * 0.38, size * 0.9],
+        r: [hash01(seed * 9.7) * 0.3, hash01(seed * 10.9) * 6.2, hash01(seed * 11.1) * 0.4],
+      });
+    }
+    const mesh = new InstancedMesh(geometry, material, pieces.length);
+    const dummy = new Object3D();
+    pieces.forEach((piece, index) => {
+      dummy.position.set(...piece.p);
+      dummy.scale.set(...piece.s);
+      dummy.rotation.set(...piece.r);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    return mesh;
+  }, []);
+  return <primitive object={scene as unknown as Object3D} dispose={null} />;
+}
+
 function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branchChoice: { current: "left" | "right" | null } }) {
   const world = useRef<Group>(null);
   // Smooth the branch route itself, not only the lens direction. A choice
@@ -1023,6 +1084,7 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       <pointLight position={[-1.2, 0.8, -45.5]} intensity={7.4} distance={27} decay={1.3} color="#f5ddb4" />
       <pointLight position={[0.4, -0.2, -53.5]} intensity={5.8} distance={22} decay={1.35} color="#d9d5c6" />
       <group ref={world}>
+        <CaveExterior />
         <CaveTunnel />
       </group>
     </>
