@@ -35,14 +35,41 @@ function noise3(x: number, y: number, z: number): number {
   return MathUtils.lerp(MathUtils.lerp(x00, x10, fy), MathUtils.lerp(x01, x11, fy), fz);
 }
 
-function noise2(x: number, y: number): number {
-  const x0 = Math.floor(x);
-  const y0 = Math.floor(y);
-  const fx = fadeNoise(x - x0);
-  const fy = fadeNoise(y - y0);
-  const a = MathUtils.lerp(hash3(x0, y0, 0), hash3(x0 + 1, y0, 0), fx);
-  const b = MathUtils.lerp(hash3(x0, y0 + 1, 0), hash3(x0 + 1, y0 + 1, 0), fx);
-  return MathUtils.lerp(a, b, fy);
+function makeTileNoiseSampler(size: number, cellsX: number, cellsY: number): (x: number, y: number) => number {
+  // Precompute the periodic lattice once. Sampling millions of texture pixels
+  // then needs four array reads and lerps rather than four Math.sin hash calls.
+  const lattice = new Float32Array(cellsX * cellsY);
+  for (let y = 0; y < cellsY; y++) {
+    for (let x = 0; x < cellsX; x++) {
+      lattice[y * cellsX + x] = hash3(x, y, 0);
+    }
+  }
+
+  return (x: number, y: number) => {
+    // Wrap the lattice itself, not only the texture sampler, so opposite
+    // texture edges share the same values and do not expose a repeat seam.
+    const wrappedX = x >= 0 && x < size ? x : ((x % size) + size) % size;
+    const wrappedY = y >= 0 && y < size ? y : ((y % size) + size) % size;
+    const tx = wrappedX / size * cellsX;
+    const ty = wrappedY / size * cellsY;
+    const x0 = Math.floor(tx);
+    const y0 = Math.floor(ty);
+    const fx = fadeNoise(tx - x0);
+    const fy = fadeNoise(ty - y0);
+    const x1 = (x0 + 1) % cellsX;
+    const y1 = (y0 + 1) % cellsY;
+    const a = MathUtils.lerp(
+      lattice[y0 * cellsX + x0] ?? 0,
+      lattice[y0 * cellsX + x1] ?? 0,
+      fx,
+    );
+    const b = MathUtils.lerp(
+      lattice[y1 * cellsX + x0] ?? 0,
+      lattice[y1 * cellsX + x1] ?? 0,
+      fx,
+    );
+    return MathUtils.lerp(a, b, fy);
+  };
 }
 
 function caveCenter(t: number): [number, number] {
@@ -162,9 +189,21 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
   const roughnessData = new Uint8Array(size * size * 4);
+  // Each procedural octave gets a small periodic lattice, computed once and
+  // reused for every texel. This preserves seamless tiling without millions
+  // of repeated trigonometric hash operations on slower phones.
+  const broadNoise = makeTileNoiseSampler(size, 4, 4);
+  const midNoise = makeTileNoiseSampler(size, 13, 13);
+  const fineNoise = makeTileNoiseSampler(size, 47, 47);
+  const grainNoise = makeTileNoiseSampler(size, 160, 160);
+  const beddingNoise = makeTileNoiseSampler(size, 9, 12);
+  const poreNoise = makeTileNoiseSampler(size, 320, 320);
+  const dampNoise = makeTileNoiseSampler(size, 7, 5);
+  const strataNoise = makeTileNoiseSampler(size, 6, 8);
+  const mineralNoise = makeTileNoiseSampler(size, 24, 16);
 
-  // A tileable Voronoi fracture field creates thin, irregular cracks in the
-  // limestone. Jitter is precomputed so the per-pixel texture pass stays light.
+  // Periodic multi-scale noise and a tileable Voronoi field create limestone
+  // fractures and strata without visible seams at repeated texture edges.
   const crackCellSize = 32;
   const crackGridCount = size / crackCellSize;
   const crackSites = new Float32Array(crackGridCount * crackGridCount * 2);
@@ -178,12 +217,12 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const broad = noise2(x / 118, y / 118);
-      const mid = noise2(x / 39, y / 39);
-      const fine = noise2(x / 11, y / 11);
-      const grain = noise2(x / 3.2, y / 3.2);
-      const bedding = Math.sin(y / 27 + noise2(x / 58, y / 43) * 2.4) * 0.07;
-      const pore = noise2(x / 1.6, y / 1.6) * 0.035;
+      const broad = broadNoise(x, y);
+      const mid = midNoise(x, y);
+      const fine = fineNoise(x, y);
+      const grain = grainNoise(x, y);
+      const bedding = Math.sin((y / size) * Math.PI * 2 * 19 + beddingNoise(x, y) * 2.4) * 0.07;
+      const pore = poreNoise(x, y) * 0.035;
 
       // Find the two closest fracture sites in a wrapping 3x3 cell window.
       // The difference between their distances isolates narrow, chipped seams.
@@ -218,11 +257,11 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       const crackEdge = Math.pow(MathUtils.clamp(1 - distanceGap / 0.105, 0, 1), 1.35);
 
       // Irregular damp patches read as seepage stains, not a glossy wet shader.
-      const damp = Math.pow(MathUtils.clamp((noise2(x / 73 + 6.4, y / 101 - 3.2) - 0.05) * 1.55, 0, 1), 1.5);
+      const damp = Math.pow(MathUtils.clamp((dampNoise(x + 467.2, y - 323.2) - 0.05) * 1.55, 0, 1), 1.5);
 
       // Thin, wavy mineral beds break up the generic noise look and give the
       // limestone a believable sedimentary structure without regular stripes.
-      const strataSignal = Math.sin(y / 18 + noise2(x / 88, y / 62) * 3.6 + broad * 1.2);
+      const strataSignal = Math.sin((y / size) * Math.PI * 2 * 28 + strataNoise(x, y) * 3.6 + broad * 1.2);
       const strata = Math.sign(strataSignal) * Math.pow(Math.abs(strataSignal), 9) * 0.075;
       const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22 - crackEdge * 0.045 - damp * 0.025, 0, 1);
       const i = (y * size + x) * 4;
@@ -232,7 +271,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 - crackEdge * 10 - damp * 5, 0, 255));
       colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 - crackEdge * 8 - damp * 3, 0, 255));
       // Fine iron/mineral flecks add subtle warm/cool variation, not obvious speckles.
-      const mineralTint = Math.max(0, noise2(x / 21 + 17.2, y / 33 - 5.1) - 0.16) * 7;
+      const mineralTint = Math.max(0, mineralNoise(x + 361.2, y - 168.3) - 0.16) * 7;
       colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5 - mineralTint * 0.24, 0, 255));
       colorData[i] = Math.round(MathUtils.clamp((colorData[i] ?? 0) + mineralTint, 0, 255));
       colorData[i + 3] = 255;
@@ -1236,10 +1275,17 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         const angle = (segment / puddleSegments) * Math.PI * 2;
         const x = Math.cos(angle);
         const y = Math.sin(angle);
+        // Organic boundary: irregularity strengthens near the water edge,
+        // so the puddle reads as a shallow pool following the broken ground,
+        // not a perfect circle stamped onto the rock.
+        const boundaryNoise = noise3(x * 2.6 + 3.1, y * 2.6 - 4.4, 5.7)
+          + Math.sin(angle * 5.0 + 0.6) * 0.28
+          + Math.sin(angle * 9.0 - 1.2) * 0.12;
+        const localRadius = radius * (1 + boundaryNoise * 0.052 * (0.28 + radius * 0.72));
         const ripple = Math.sin(radius * 34 + Math.sin(angle * 3.1) * 0.65) * 0.012 * (1 - radius * 0.32)
           + noise3(x * 3.5 + 2.1, y * 3.5 - 4.2, radius * 13) * 0.0035;
-        puddlePositions.push(x * radius, y * radius, ripple);
-        puddleUvs.push(0.5 + x * radius * 0.5, 0.5 + y * radius * 0.5);
+        puddlePositions.push(x * localRadius, y * localRadius, ripple);
+        puddleUvs.push(0.5 + x * localRadius * 0.5, 0.5 + y * localRadius * 0.5);
       }
     }
     const firstRing = 1;
@@ -1281,11 +1327,57 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       + noise3(x * 0.62 - 4, z * 0.62 + 2, 7) * 0.12
       - Math.pow(Math.abs(x) / 12.5, 1.45) * 0.82;
     const puddleSpecs: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [
-      { p: [-0.9, groundHeight(-0.9, 10.8) + 0.035, 10.8], s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
-      { p: [0.75, groundHeight(0.75, 13.7) + 0.035, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
-      { p: [-0.35, groundHeight(-0.35, 17.6) + 0.035, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
-      { p: [1.55, groundHeight(1.55, 19.2) + 0.035, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
+      { p: [-0.9, groundHeight(-0.9, 10.8) + 0.035, 10.8], s: [0.84, 0.43, 1], r: [-Math.PI / 2, 0, -0.08] },
+      { p: [0.75, groundHeight(0.75, 13.7) + 0.035, 13.7], s: [1.18, 0.38, 1], r: [-Math.PI / 2, 0, 0.16] },
+      { p: [-0.35, groundHeight(-0.35, 17.6) + 0.035, 17.6], s: [0.58, 0.28, 1], r: [-Math.PI / 2, 0, -0.12] },
+      { p: [1.55, groundHeight(1.55, 19.2) + 0.035, 19.2], s: [0.72, 0.34, 1], r: [-Math.PI / 2, 0, 0.08] },
     ];
+    // A narrow matte seepage halo softens the transition from reflective
+    // water to rough limestone. It is one instanced ring mesh for all pools.
+    const haloGeometry = new BufferGeometry();
+    const haloPositions: number[] = [];
+    const haloIndices: number[] = [];
+    const haloSegments = 56;
+    const haloRings = [0.86, 1.22];
+    for (let ring = 0; ring < haloRings.length; ring++) {
+      const radius = haloRings[ring] ?? 1;
+      for (let segment = 0; segment < haloSegments; segment++) {
+        const angle = (segment / haloSegments) * Math.PI * 2;
+        const x = Math.cos(angle), y = Math.sin(angle);
+        const edge = 1 + (noise3(x * 2.6 + 3.1, y * 2.6 - 4.4, 5.7)
+          + Math.sin(angle * 5 + 0.6) * 0.28 + Math.sin(angle * 9 - 1.2) * 0.12) * 0.052;
+        const r = radius * edge;
+        haloPositions.push(x * r, y * r, 0);
+      }
+    }
+    for (let segment = 0; segment < haloSegments; segment++) {
+      const next = (segment + 1) % haloSegments;
+      haloIndices.push(segment, haloSegments + segment, next);
+      haloIndices.push(next, haloSegments + segment, haloSegments + next);
+    }
+    haloGeometry.setAttribute("position", new Float32BufferAttribute(haloPositions, 3));
+    haloGeometry.setIndex(haloIndices);
+    haloGeometry.computeVertexNormals();
+    const haloMaterial = new MeshStandardMaterial({
+      color: "#202b29",
+      roughness: 0.96,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      side: DoubleSide,
+    });
+    const haloMesh = new InstancedMesh(haloGeometry, haloMaterial, puddleSpecs.length);
+    puddleSpecs.forEach((piece, index) => {
+      detailDummy.position.set(piece.p[0], piece.p[1] - 0.021, piece.p[2]);
+      detailDummy.scale.set(piece.s[0] * 1.12, piece.s[1] * 1.12, 1);
+      detailDummy.rotation.set(...piece.r);
+      detailDummy.updateMatrix();
+      haloMesh.setMatrixAt(index, detailDummy.matrix);
+    });
+    haloMesh.instanceMatrix.needsUpdate = true;
+    haloMesh.frustumCulled = false;
+
     const puddlesMesh = new InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
     puddleSpecs.forEach((piece, index) => {
       detailDummy.position.set(...piece.p);
@@ -1346,7 +1438,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.frustumCulled = false;
-    return { mesh, ground, mossMesh, rootsMesh, puddlesMesh, puddleBasePositions };
+    return { mesh, ground, mossMesh, rootsMesh, puddlesMesh, haloMesh, puddleBasePositions };
   }, [maps]);
   const rippleTime = useRef(0);
   useFrame((_, delta) => {
@@ -1372,6 +1464,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     <primitive object={scene.mesh as unknown as Object3D} dispose={null} />
     <primitive object={scene.mossMesh as unknown as Object3D} dispose={null} />
     <primitive object={scene.rootsMesh as unknown as Object3D} dispose={null} />
+    <primitive object={scene.haloMesh as unknown as Object3D} dispose={null} />
     <primitive object={scene.puddlesMesh as unknown as Object3D} dispose={null} />
   </group>;
 }
