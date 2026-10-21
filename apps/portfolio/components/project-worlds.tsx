@@ -87,6 +87,7 @@ export function ProjectWorlds() {
             <span className="pw-ridge pw-ridge-front" />
             <span className="pw-world-glow" />
             <span className="pw-world-particles" />
+            <div className={`pw-landmarks pw-landmarks-${active.theme}`} aria-hidden="true"><span className="pw-landmark pw-landmark-a" /><span className="pw-landmark pw-landmark-b" /><span className="pw-landmark pw-landmark-c" /><span className="pw-landmark pw-landmark-d" /><span className="pw-ground-grid" /></div>
           </div>
           <button className="pw-close" type="button" onClick={() => { setLeaving(true); window.setTimeout(() => { setActive(null); setLeaving(false); }, 520); }}>← RETURN TO THE CAVE</button>
           <div className="pw-world-copy">
@@ -119,6 +120,20 @@ export function ProjectWorlds() {
         .pw-ridge-front{inset:62% -10% -45%;background:linear-gradient(155deg,var(--ridge-front),#08090c 68%);transform:rotate(-4deg);box-shadow:inset 0 2px 0 #ffffff19}
         .pw-world-glow{inset:18% 12% auto auto;width:34vw;height:34vw;max-width:280px;max-height:280px;border-radius:50%;background:radial-gradient(circle,#fff5 0, var(--world-light) 8%,transparent 68%);filter:blur(8px);animation:pw-pulse 5s ease-in-out infinite}
         .pw-world-particles{opacity:.38;background-image:radial-gradient(circle at 20% 24%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 78% 18%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 68% 58%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 32% 70%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 88% 80%,#fff 0 1px,transparent 1.8px);animation:pw-drift 12s ease-in-out infinite alternate}
+        .pw-landmarks{position:absolute;inset:0;perspective:1000px;transform-style:preserve-3d;overflow:hidden}
+        .pw-landmark{position:absolute;display:block;transform-style:preserve-3d;filter:drop-shadow(0 22px 28px #0006);animation:pw-float 8s ease-in-out infinite}
+        .pw-landmark-a{right:15%;top:30%;width:clamp(70px,12vw,150px);height:clamp(70px,12vw,150px);border:1px solid #ffffff65;border-radius:24px;background:linear-gradient(135deg,#ffffff30,#ffffff04 45%,var(--world-light) 150%);box-shadow:inset 0 1px 0 #fff8, inset -18px -20px 40px #0003,0 0 55px var(--world-light);transform:rotateX(54deg) rotateZ(35deg)}
+        .pw-landmark-b{right:32%;top:45%;width:clamp(40px,7vw,90px);height:clamp(55px,9vw,112px);border:1px solid #ffffff45;border-radius:12px;background:linear-gradient(145deg,#ffffff26,#ffffff04);transform:rotateY(-25deg) rotateX(12deg) rotateZ(-13deg);animation-delay:-2s}
+        .pw-landmark-c{right:8%;top:55%;width:clamp(32px,5vw,68px);height:clamp(32px,5vw,68px);border:1px solid var(--world-light);border-radius:50%;box-shadow:0 0 22px var(--world-light),inset 0 0 18px var(--world-light);opacity:.7;animation-delay:-4s}
+        .pw-landmark-d{right:25%;top:21%;width:clamp(10px,1.6vw,20px);height:clamp(10px,1.6vw,20px);border-radius:50%;background:#fff;box-shadow:0 0 22px 7px var(--world-light);animation-delay:-1s}
+        .pw-ground-grid{position:absolute;left:15%;right:-10%;bottom:-12%;height:44%;opacity:.23;background-image:linear-gradient(#ffffff20 1px,transparent 1px),linear-gradient(90deg,#ffffff20 1px,transparent 1px);background-size:38px 38px;transform:perspective(280px) rotateX(64deg);mask-image:linear-gradient(transparent,#000 24%,transparent 94%)}
+        .pw-landmarks-learning .pw-landmark-a{border-radius:8px 8px 18px 8px;transform:rotateY(-25deg) rotateX(10deg) rotateZ(-8deg);background:linear-gradient(90deg,#69bfff38 0 48%,#ffffff16 49% 52%,#69bfff22 53%);box-shadow:inset 0 0 0 5px #8ed0ff20,0 0 45px #69bfff35}
+        .pw-landmarks-learning .pw-landmark-b{width:clamp(70px,10vw,130px);height:clamp(44px,7vw,85px);border-radius:50%;border-color:#8ed7ff;background:#5cbfff10;transform:rotateX(65deg) rotateZ(-22deg);box-shadow:0 0 28px #69bfff45}
+        .pw-landmarks-milk .pw-landmark-a{border-radius:50% 50% 48% 48%;width:clamp(48px,8vw,100px);height:clamp(72px,12vw,145px);transform:rotateX(5deg) rotateZ(12deg);background:linear-gradient(100deg,#ffffff75,#d9f5d72c 55%,#ffffff12);clip-path:polygon(20% 0,80% 0,88% 14%,88% 88%,76% 100%,24% 100%,12% 88%,12% 14%);box-shadow:0 0 40px #e0f5d040}
+        .pw-landmarks-milk .pw-landmark-b{border-radius:50% 50% 50% 5%;width:clamp(32px,5vw,60px);height:clamp(32px,5vw,60px);transform:rotate(45deg);background:linear-gradient(140deg,#fff9,#dff6d922);border-color:#efffe8}
+        .pw-landmarks-optical .pw-landmark-a{border-radius:50%;background:transparent;border:2px solid #ffd18b;box-shadow:0 0 30px #ffd18b66,inset 0 0 30px #ffd18b22;transform:rotateX(65deg) rotateZ(-20deg) scaleX(1.5)}
+        .pw-landmarks-optical .pw-landmark-b{border-radius:50%;border:1px solid #ffd18b;background:transparent;transform:rotateX(65deg) rotateZ(30deg) scaleX(1.6);box-shadow:0 0 22px #ffd18b44}
+        .pw-landmarks-optical .pw-landmark-c{border-radius:3px;width:clamp(55px,9vw,110px);height:clamp(34px,5vw,60px);border-color:#ffd18b;background:repeating-linear-gradient(90deg,#ffd18b66 0 2px,transparent 2px 8px);transform:rotateY(-30deg) rotateZ(15deg)}
         .pw-world-copy{position:absolute;left:clamp(24px,8vw,120px);right:24px;top:46%;transform:translateY(-50%);max-width:790px;animation:pw-copy-in 1s .15s both}
         .pw-world-eyebrow{display:flex;align-items:center;gap:10px;color:#d9c7ad;font:11px/1.4 ui-monospace,SFMono-Regular,monospace;letter-spacing:.18em}
         .pw-world-eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--world-light);box-shadow:0 0 18px var(--world-light)}
@@ -134,9 +149,9 @@ export function ProjectWorlds() {
         @keyframes pw-arrive{from{opacity:0;clip-path:circle(0% at 50% 50%);transform:scale(1.04);filter:blur(14px)}to{opacity:1;clip-path:circle(150% at 50% 50%);transform:scale(1);filter:blur(0)}}
         @keyframes pw-depart{to{opacity:0;clip-path:circle(0% at 50% 50%);transform:scale(.97);filter:blur(12px)}}
         @keyframes pw-copy-in{from{opacity:0;transform:translateY(calc(-50% + 26px));filter:blur(8px)}to{opacity:1;transform:translateY(-50%);filter:blur(0)}}
-        @keyframes pw-pulse{0%,100%{transform:scale(.94);opacity:.65}50%{transform:scale(1.08);opacity:1}}
+        @keyframes pw-float{0%,100%{translate:0 0}50%{translate:0 -14px}}\n        @keyframes pw-pulse{0%,100%{transform:scale(.94);opacity:.65}50%{transform:scale(1.08);opacity:1}}
         @keyframes pw-drift{from{transform:translate3d(-1%,0,0)}to{transform:translate3d(1%,-2%,0)}}
-        @media(max-width:520px){.pw-launcher{bottom:12px;padding:9px}.pw-launcher-actions{gap:5px}.pw-launcher-actions button{padding:10px 5px;font-size:8px;gap:5px;letter-spacing:0}.pw-launcher-label{font-size:9px}.pw-world-copy{top:48%}.pw-close{top:16px;left:14px}.pw-world-coordinate{left:18px;right:auto;bottom:16px;font-size:8px}}
+        @media(max-width:520px){.pw-landmark{opacity:.72}.pw-landmark-a{right:8%;top:24%}.pw-landmark-b{right:20%;top:43%}.pw-launcher{bottom:12px;padding:9px}.pw-launcher-actions{gap:5px}.pw-launcher-actions button{padding:10px 5px;font-size:8px;gap:5px;letter-spacing:0}.pw-launcher-label{font-size:9px}.pw-world-copy{top:48%}.pw-close{top:16px;left:14px}.pw-world-coordinate{left:18px;right:auto;bottom:16px;font-size:8px}}
         @media(prefers-reduced-motion:reduce){.pw-transition,.pw-transition *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
       `}</style>
     </>
