@@ -423,7 +423,7 @@ export function ProjectWorlds() {
         .pw-repository-cta,.pw-back-to-top{display:inline-flex;align-items:center;gap:14px;min-height:48px;margin:18px 10px 0 0;padding:0 18px;border:1px solid #ffffff35;border-radius:999px;background:#ffffff0a;color:#fff;font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.1em;cursor:pointer}
         .pw-repository-cta span{color:var(--world-light)}
         .pw-back-to-top:hover,.pw-repository-cta:hover{background:#ffffff16;border-color:var(--world-light)}
-        .pw-world-copy{pointer-events:none}
+        .pw-world-copy{z-index:4;pointer-events:none}
         .pw-world-copy a{pointer-events:auto}
         @keyframes pw-cue-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
 
