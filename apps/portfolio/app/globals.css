@@ -1014,6 +1014,10 @@ html:has(.cinematic-story-track),body:has(.cinematic-story-track){background:#08
 .site-root:has(.cinematic-story-track){height:100svh;min-height:100svh;overflow:clip}
 .cinematic-story-scroll{position:fixed;z-index:10;inset:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:none;touch-action:pan-y;-webkit-overflow-scrolling:touch;background:#08060b}
 .cinematic-story-scroll::-webkit-scrollbar{display:none}
+/* Keep the site's real navigation above the fixed cinematic scroll surface. */
+.site-root:has(.cinematic-story-track)>.topbar{z-index:1000}
+/* Hidden chapter content must not remain hit-testable through child pointer-events overrides. */
+.cinema-scene-copy[aria-hidden="true"] *,.cinema-project-reveal[aria-hidden="true"] *{pointer-events:none!important}
 .cinematic-story-track{width:100%;margin:0;min-height:100svh}
 .cinematic-story-stage{position:sticky;top:0}
 @media(prefers-reduced-motion:reduce){
