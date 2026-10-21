@@ -1224,7 +1224,11 @@ export function CinematicStory() {
     const scrollRoot = scrollRootRef.current;
     scrollRoot?.addEventListener("scroll", queueUpdate, { passive: true });
     window.addEventListener("resize", queueUpdate, { passive: true });
+    // Signal only after the scene's own scroll listener is ready. This avoids
+    // losing the very first programmatic scroll when the scene hydrates lazily.
+    document.documentElement.dataset.cinematicStoryReady = "true";
     return () => {
+      delete document.documentElement.dataset.cinematicStoryReady;
       reduceMotion.removeEventListener?.("change", onMotion);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("resize", onViewport);
