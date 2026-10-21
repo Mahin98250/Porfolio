@@ -1114,10 +1114,16 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       <ambientLight intensity={0.78} color="#d5c7b2" />
       <hemisphereLight args={["#f0e4d0", "#51402f", 1.05]} />
       <directionalLight position={[4, 5, 3]} intensity={1.75} color="#f4e3c6" />
-      {/* Broad entrance fill, with softer decay to illuminate the first chamber. */}
+      {/* Exterior skylight: cool daylight spills over the cave lip and contrasts with the warm interior. */}
+      <directionalLight position={[-8, 8, 15]} intensity={2.1} color="#b8d8ff" />
+      <spotLight position={[-5.5, 5.2, 14]} target-position={[0, 0.1, 2]} intensity={48} distance={38} angle={0.68} penumbra={1} decay={1.35} color="#c7e3ff" />
+      {/* Broad amber bounce gives the wet-looking limestone a cinematic warm/cool split. */}
       <pointLight position={[0.1, 1.1, 5.4]} intensity={13} distance={29} decay={1.25} color="#ffe0ad" />
       {/* Grazing key light shows the chipped entrance lip without an overblown hotspot. */}
       <spotLight position={[-1.8, 3.4, 11.5]} intensity={62} distance={30} angle={0.78} penumbra={0.9} decay={1.35} color="#ffe1b4" />
+      {/* A low amber rim skims the foreground rock; a soft blue fill preserves shadow depth. */}
+      <spotLight position={[5.8, 0.8, 9]} target-position={[0, -0.7, 1]} intensity={24} distance={25} angle={0.62} penumbra={1} decay={1.5} color="#ffb86b" />
+      <pointLight position={[-5.5, 0.2, 1.5]} intensity={4.2} distance={16} decay={1.6} color="#82bfff" />
       {/* Overlapping, lower-intensity fill pools prevent long stretches from becoming unreadable. */}
       <pointLight position={[-2.5, 1.0, -4.5]} intensity={6.5} distance={23} decay={1.35} color="#edc99a" />
       <pointLight position={[2.2, 1.0, -12.5]} intensity={7.2} distance={25} decay={1.35} color="#f2dfbd" />
