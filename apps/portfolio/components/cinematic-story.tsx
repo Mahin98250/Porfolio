@@ -485,24 +485,43 @@ function CaveFormations() {
   </group>;
 }
 
+function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
+  const wallRadius = caveRadiusAt(31 / 63);
+  return new CatmullRomCurve3([
+    new Vector3(side * (wallRadius - 0.04), 0, 0),
+    new Vector3(side * (wallRadius + 0.28), 0.03, -0.32),
+    new Vector3(side * (wallRadius + 0.82), 0.08, -0.9),
+    new Vector3(side * 5.05, 0.12, -1.9),
+    new Vector3(side * 6.25, 0.12, -3.6),
+    new Vector3(side * 7.25, 0.01, -5.5),
+    new Vector3(side * 8.0, -0.09, -7.7),
+    new Vector3(side * 8.5, -0.16, -10.8),
+    new Vector3(side * 8.62, -0.19, -12.8),
+    new Vector3(side * 8.65, -0.21, -16.2),
+    new Vector3(side * 8.68, -0.24, -20.8),
+  ], false, "centripetal");
+}
+
+function branchPointAtDepth(side: -1 | 1, localZ: number): Vector3 {
+  const curve = makeBranchCurve(side);
+  const depth = MathUtils.clamp(localZ, -20.8, 0);
+  let best = curve.getPointAt(0);
+  let bestDistance = Math.abs(best.z - depth);
+  for (let sample = 1; sample <= 160; sample++) {
+    const point = curve.getPointAt(sample / 160);
+    const distance = Math.abs(point.z - depth);
+    if (distance < bestDistance) {
+      best = point;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
 function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMaterial }) {
   const geometry = useMemo(() => {
-    // These are cross-sections of a rock passage, not a perfect primitive
-    // pipe: the cross-section is asymmetric, chipped and subtly changing.
-    const junctionT = 31 / 63;
-    const wallRadius = caveRadiusAt(junctionT);
-    const points = [
-      new Vector3(side * (wallRadius - 0.04), 0, 0),
-      new Vector3(side * (wallRadius + 0.28), 0.03, -0.32),
-      new Vector3(side * (wallRadius + 0.82), 0.08, -0.9),
-      new Vector3(side * 5.05, 0.12, -1.9),
-      new Vector3(side * 6.25, 0.12, -3.6),
-      new Vector3(side * 7.25, 0.01, -5.5),
-      new Vector3(side * 8.0, -0.09, -7.7),
-      new Vector3(side * 8.5, -0.16, -10.8),
-      new Vector3(side * 8.62, -0.19, -12.8),
-    ];
-    const curve = new CatmullRomCurve3(points, false, "centripetal");
+    // Cross-sections use the same authored centreline as the cinematic camera.
+    const curve = makeBranchCurve(side);
     const tubularSegments = 144;
     const radialSegments = 48;
     const frames = curve.computeFrenetFrames(tubularSegments, false);
@@ -609,9 +628,11 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
         ];
       }
 
-      const distance = MathUtils.clamp((t - junctionT) / 0.143, 0, 1);
-      const lateral = MathUtils.lerp(junctionRadius - 0.12, 8.5, distance);
-      return [junctionX + branchOffset * lateral, junctionY - 0.19 * distance];
+      // Sample the exact branch centreline used by the mesh. This avoids
+      // the camera drifting outside the hollow passage during the turn.
+      const localDepth = MathUtils.clamp(targetZ + 22, -20.8, 0);
+      const point = branchPointAtDepth(branchOffset as -1 | 1, localDepth);
+      return [junctionX + point.x, junctionY + point.y];
     };
     const [pathX, pathY] = routePoint(routeT);
     const [aheadX, aheadY] = routePoint(routeT + 0.075);
