@@ -182,6 +182,18 @@ export function ProjectWorlds() {
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
+    const onEnterWorld = (event: Event) => {
+      const detail = (event as CustomEvent<{ id?: string }>).detail;
+      const selected = worlds.find((world) => world.id === detail?.id);
+      if (!selected) return;
+      setLeaving(false);
+      setActive(selected);
+    };
+    window.addEventListener("portfolio:enter-world", onEnterWorld);
+    return () => window.removeEventListener("portfolio:enter-world", onEnterWorld);
+  }, []);
+
+  useEffect(() => {
     if (!active) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -204,19 +216,6 @@ export function ProjectWorlds() {
 
   return (
     <>
-      <aside className="pw-launcher" aria-label="Project worlds">
-        <span className="pw-launcher-label">CHOOSE YOUR NEXT WORLD</span>
-        <div className="pw-launcher-actions">
-          {worlds.map((world) => (
-            <button key={world.id} type="button" onClick={() => enterWorld(world)}>
-              <span className={`pw-orb pw-orb-${world.theme}`} aria-hidden="true" />
-              <span>{world.name}</span>
-              <b aria-hidden="true">↗</b>
-            </button>
-          ))}
-        </div>
-      </aside>
-
       {active && (
         <div className={`pw-transition pw-theme-${active.theme} ${leaving ? "pw-leaving" : "pw-entering"}`} role="dialog" aria-modal="true" aria-label={active.name}>
           <div className="pw-sky" aria-hidden="true" />
@@ -252,7 +251,7 @@ export function ProjectWorlds() {
         .pw-transition.pw-leaving{animation:pw-depart .52s cubic-bezier(.7,0,.8,.2) both}
         .pw-sky,.pw-landscape,.pw-ridge,.pw-world-glow,.pw-world-particles{position:absolute;inset:0;pointer-events:none}
         .pw-sky{background:radial-gradient(ellipse at 72% 32%,var(--world-light),transparent 30%),linear-gradient(160deg,var(--world-sky),#08090d 78%)}
-        .pw-landscape{perspective:900px;overflow:hidden}\n        .pw-three-scene{position:absolute!important;inset:0;width:100%!important;height:100%!important;opacity:.92;pointer-events:none}\n        .pw-three-scene canvas{display:block}
+        .pw-landscape{perspective:900px;overflow:hidden}\n        .pw-three-scene{position:absolute!important;inset:0;z-index:2;width:100%!important;height:100%!important;opacity:.96;pointer-events:none}\n        .pw-three-scene canvas{display:block}
         .pw-ridge{inset:27% -20% -35%;border-radius:48% 52% 0 0;transform:rotate(-8deg) skewY(-5deg);filter:drop-shadow(0 -20px 40px #0005)}
         .pw-ridge-back{background:linear-gradient(150deg,var(--ridge-back),#11131a 72%);transform:translate3d(4%,3%, -100px) rotate(-9deg) scale(1.1);opacity:.8}
         .pw-ridge-mid{inset:43% -18% -35%;background:linear-gradient(145deg,var(--ridge-mid),#101116 66%);transform:rotate(7deg) skewY(8deg);box-shadow:inset 0 2px 0 #ffffff14}
