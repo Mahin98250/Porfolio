@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { MotionEnhancements } from "./motion-enhancements";
+import { ProjectWorlds } from "./project-worlds";
 
 const links = [
   { href: "/", label: "Home" },
@@ -22,6 +23,7 @@ export function SiteShell({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <div className="site-root">
       <MotionEnhancements />
+      <ProjectWorlds />
       <div className="ambient ambient-a" aria-hidden="true" />
       <div className="ambient ambient-b" aria-hidden="true" />
       <header className="topbar glass">
