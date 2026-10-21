@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Vector3, CatmullRomCurve3 } from "three";
+import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector3, CatmullRomCurve3 } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -404,6 +404,83 @@ function CaveGuideDots() {
   </group>;
 }
 
+function CaveDust() {
+  const elapsed = useRef(0);
+  const dust = useMemo(() => {
+    const count = 132;
+    const positions = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      const t = 0.035 + hash01(i * 19.37 + 5.4) * 0.93;
+      const angle = hash01(i * 43.71 + 3.8) * Math.PI * 2;
+      const radial = 0.16 + hash01(i * 11.13 + 6.2) * 0.50;
+      const [cx, cy] = caveCenter(t);
+      const radius = caveRadiusAt(t);
+      const offset = i * 3;
+      // Keep dust suspended within the walkable void, never on the rock skin.
+      positions[offset] = cx + Math.cos(angle) * radius * radial;
+      positions[offset + 1] = cy + Math.sin(angle) * radius * (Math.sin(angle) >= 0 ? 1.08 : 0.73) * radial;
+      positions[offset + 2] = 9 - t * 63;
+      phases[i] = hash01(i * 29.41 + 1.6) * Math.PI * 2;
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+
+    // A tiny radial-alpha sprite prevents square particles and gives the dust
+    // a soft edge even against the cave's almost-black background.
+    const spriteSize = 16;
+    const spriteData = new Uint8Array(spriteSize * spriteSize * 4);
+    for (let y = 0; y < spriteSize; y++) {
+      for (let x = 0; x < spriteSize; x++) {
+        const nx = (x + 0.5) / spriteSize * 2 - 1;
+        const ny = (y + 0.5) / spriteSize * 2 - 1;
+        const falloff = Math.max(0, 1 - Math.hypot(nx, ny));
+        const index = (y * spriteSize + x) * 4;
+        spriteData[index] = 255;
+        spriteData[index + 1] = 255;
+        spriteData[index + 2] = 255;
+        spriteData[index + 3] = Math.round(255 * falloff * falloff);
+      }
+    }
+    const sprite = new DataTexture(spriteData, spriteSize, spriteSize);
+    sprite.magFilter = LinearFilter;
+    sprite.minFilter = LinearFilter;
+    sprite.generateMipmaps = false;
+    sprite.needsUpdate = true;
+
+    const material = new PointsMaterial({
+      color: "#d8c29f",
+      map: sprite,
+      size: 0.07,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.20,
+      depthWrite: false,
+    });
+    const object = new Points(geometry, material);
+    object.frustumCulled = false;
+    return { object, basePositions: positions.slice(), phases };
+  }, []);
+
+  useFrame((_, delta) => {
+    elapsed.current += Math.min(delta, 0.05);
+    const attribute = dust.object.geometry.getAttribute("position") as Float32BufferAttribute;
+    const positions = attribute.array as Float32Array;
+    for (let i = 0; i < dust.phases.length; i++) {
+      const offset = i * 3;
+      const phase = dust.phases[i] ?? 0;
+      positions[offset] = (dust.basePositions[offset] ?? 0) + Math.cos(elapsed.current * 0.27 + phase) * 0.022;
+      positions[offset + 1] = (dust.basePositions[offset + 1] ?? 0) + Math.sin(elapsed.current * 0.31 + phase) * 0.035;
+      positions[offset + 2] = (dust.basePositions[offset + 2] ?? 0) + Math.sin(elapsed.current * 0.18 + phase) * 0.015;
+    }
+    attribute.needsUpdate = true;
+  });
+
+  return <primitive object={dust.object as unknown as Object3D} dispose={null} />;
+}
+
 function makeFormationGeometry(seed: number, length: number, hanging: boolean): BufferGeometry {
   const radialSegments = 9;
   const axialSegments = 7;
@@ -597,6 +674,7 @@ function CaveTunnel() {
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
+      <CaveDust />
       <group position={[junctionX, junctionY, -22]}>
         <CaveBranch side={-1} material={branchMaterial} />
         <CaveBranch side={1} material={branchMaterial} />
