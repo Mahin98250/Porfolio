@@ -230,3 +230,36 @@ test("cinematic homepage keeps a single persistent stage and story chapters", as
   await expect(page.locator("[data-story-scene]")).toHaveCount(9);
   await expect(page.locator(".cinema-progress-track")).toBeVisible();
 });
+
+test("DudhWala world exposes its dairy scene and scrollable project story", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-project-worlds-ready", "true", { timeout: 15000 });
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "milk" } })));
+
+  const world = page.getByRole("dialog", { name: /DUDHWALA/i });
+  await expect(world).toBeVisible();
+  await expect(world.locator("canvas.pw-three-scene")).toBeAttached();
+  await expect(world.getByRole("link", { name: /EXPLORE THE PROJECT/i })).toHaveAttribute(
+    "href",
+    "https://github.com/Mahin98250/Dudh-Wallah",
+  );
+
+  const story = world.locator(".pw-explore-scroll");
+  await expect(story).toHaveAttribute("aria-label", "Explore DUDHWALA project details");
+  await expect(story.getByRole("heading", { level: 3, name: "From farm to front door." })).toBeAttached();
+  await expect(story.getByRole("heading", { level: 4, name: "Discover local sellers" })).toBeAttached();
+  await expect(story.getByRole("heading", { level: 4, name: "Build a daily routine" })).toBeAttached();
+  await expect(story.getByRole("heading", { level: 4, name: "Connect the community" })).toBeAttached();
+
+  await story.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect(story.getByRole("link", { name: /OPEN SOURCE REPOSITORY/i })).toHaveAttribute(
+    "href",
+    "https://github.com/Mahin98250/Dudh-Wallah",
+  );
+  await world.getByRole("button", { name: /RETURN TO THE CAVE/i }).click();
+  await expect(world).toHaveCount(0, { timeout: 2500 });
+});
+
