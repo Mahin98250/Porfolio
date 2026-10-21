@@ -1287,7 +1287,7 @@ export function CinematicStory() {
           <span className="cinema-project-counter">01 — 03</span>
           <h2>OPTICODE<br /><span>STUDIO.</span></h2>
           <p>Moving information through light. Exploring optical file transfer, QR streams, frame reconstruction and offline-first communication.</p>
-          <a href="https://github.com/Mahin98250/OptiCode-Studio" target="_blank" rel="noreferrer">ENTER PROJECT <span>↗</span></a>
+          <button className="cinema-world-enter" type="button" onClick={() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "optical" } }))}>ENTER WORLD <span>↗</span></button><a className="cinema-repository-link" href="https://github.com/Mahin98250/OptiCode-Studio" target="_blank" rel="noreferrer">REPOSITORY ↗</a>
         </div>
 
         <div className="cinema-project-reveal cinema-project-reveal-right" data-story-scene data-from="0.575" data-to="0.68" aria-hidden="true">
@@ -1295,7 +1295,7 @@ export function CinematicStory() {
           <span className="cinema-project-counter">02 — 03</span>
           <h2>LEARNER’S<br /><span>GUIDE.</span></h2>
           <p>A student-focused learning platform designed to make study resources and everyday learning workflows easier to navigate.</p>
-          <a href="https://github.com/Mahin98250/Final-Learner-s-Guide" target="_blank" rel="noreferrer">ENTER PROJECT <span>↗</span></a>
+          <button className="cinema-world-enter" type="button" onClick={() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "learning" } }))}>ENTER WORLD <span>↗</span></button><a className="cinema-repository-link" href="https://github.com/Mahin98250/Final-Learner-s-Guide" target="_blank" rel="noreferrer">REPOSITORY ↗</a>
         </div>
 
         <div className="cinema-project-reveal" data-story-scene data-from="0.655" data-to="0.755" aria-hidden="true">
@@ -1303,7 +1303,7 @@ export function CinematicStory() {
           <span className="cinema-project-counter">03 — 03</span>
           <h2>DUDHWALA<br /><span>MARKETPLACE.</span></h2>
           <p>Connecting customers with independent local milk sellers through a marketplace built around distinct journeys and useful everyday interactions.</p>
-          <a href="https://github.com/Mahin98250/Dudh-Wallah" target="_blank" rel="noreferrer">ENTER PROJECT <span>↗</span></a>
+          <button className="cinema-world-enter" type="button" onClick={() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "milk" } }))}>ENTER WORLD <span>↗</span></button><a className="cinema-repository-link" href="https://github.com/Mahin98250/Dudh-Wallah" target="_blank" rel="noreferrer">REPOSITORY ↗</a>
         </div>
 
         <div className="cinema-scene-copy cinema-copy-robotics" data-story-scene data-from="0.725" data-to="0.89" aria-hidden="true">
