@@ -1,8 +1,12 @@
 import { createServer } from "node:http";
+import process from "node:process";
+import { URL } from "node:url";
+import { Console } from "node:console";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
 const root = resolve("out");
+const logger = new Console({ stdout: process.stdout, stderr: process.stderr });
 const port = Number(process.env.PORT ?? 3000);
 const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".woff2": "font/woff2" };
 
@@ -29,5 +33,5 @@ createServer(async (request, response) => {
     response.end("Not found");
   }
 }).listen(port, "127.0.0.1", () => {
-  console.log("Static export server listening on http://127.0.0.1:" + port);
+  logger.log("Static export server listening on http://127.0.0.1:" + port);
 });
