@@ -504,19 +504,25 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
         // The entrance lip is not a clean cut plane: its edge breaks forward
         // and backward by angle, with a stronger chipped silhouette near the roof.
         const entranceWeight = Math.pow(Math.max(0, 1 - t / 0.115), 1.65);
+        // Stronger, multi-scale erosion at the mouth creates a broken limestone
+        // silhouette instead of a clean tunnel cut. The variation fades quickly
+        // into the passage so the entrance reads as a distinct geological threshold.
         const entranceChip = (
-          Math.sin(angle * 3.0 + 0.4) * 0.34
-          + Math.sin(angle * 5.0 + 1.7) * 0.19
-          + noise3(aroundX * 4.2 + 2.1, aroundY * 4.2 - 0.8, 1.4) * 0.28
+          Math.sin(angle * 3.0 + 0.4) * 0.43
+          + Math.sin(angle * 5.0 + 1.7) * 0.25
+          + Math.sin(angle * 8.0 - 0.6) * 0.09
+          + noise3(aroundX * 4.2 + 2.1, aroundY * 4.2 - 0.8, 1.4) * 0.34
         ) * entranceWeight;
         const entranceBulge = entranceWeight * (
-          Math.max(0, aroundY) * 0.34
-          + Math.max(0, -aroundY) * 0.10
-          + Math.sin(angle * 2.0 - 0.7) * 0.12
+          Math.max(0, aroundY) * 0.42
+          + Math.max(0, -aroundY) * 0.13
+          + Math.sin(angle * 2.0 - 0.7) * 0.16
+          + noise3(aroundX * 5.8 + 1, aroundY * 5.8 - 3, 2.4) * 0.12
         );
+        const entranceMicro = entranceWeight * micro * 0.045;
         const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038)
           + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle)
-          + entranceBulge + fine * 0.052 + micro * 0.018;
+          + entranceBulge + fine * 0.052 + micro * 0.018 + entranceMicro;
 
         // The floor is lower and flatter than the roof; upper surfaces have
         // more headroom and uneven overhangs. This deliberately avoids a
@@ -525,7 +531,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
         const floorRidge = Math.max(0, -aroundY) * Math.sin(t * 31 + aroundX * 5.7 + coarse) * 0.105;
         const x = cx + aroundX * radius * (0.98 + medium * 0.045);
         const y = cy + aroundY * radius * verticalScale + floorRidge;
-        const entranceEdgeZ = entranceChip * 1.5 + entranceWeight * Math.sin(angle * 2.7 + 0.8) * 0.22;
+        const entranceEdgeZ = entranceChip * 1.9 + entranceWeight * Math.sin(angle * 2.7 + 0.8) * 0.30 + entranceWeight * noise3(aroundX * 7.4, aroundY * 7.4, 3.1) * 0.10;
         positions.push(x, y, z + entranceEdgeZ);
         uvs.push(u * 3.8, t * 7.5);
 
