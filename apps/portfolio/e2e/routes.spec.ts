@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function scrubStory(page: Page, progress: number) {
+  await expect(page.locator("html")).toHaveAttribute("data-project-worlds-ready", "true", { timeout: 15000 });
   await expect(page.locator(".cinematic-story-scroll")).toBeVisible({ timeout: 15000 });
   await page.evaluate((targetProgress) => {
     const scroller = document.querySelector<HTMLElement>(".cinematic-story-scroll");
@@ -194,6 +195,7 @@ test("each cinematic project reveal enters its matching world", async ({ page })
 
 test("project world can be exited with Escape and respects reduced motion styling", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-project-worlds-ready", "true", { timeout: 15000 });
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "optical" } })));
   const world = page.getByRole("dialog", { name: /OPTICODE STUDIO/i });
   await expect(world).toBeVisible();
