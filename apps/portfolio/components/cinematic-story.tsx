@@ -1236,10 +1236,17 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         const angle = (segment / puddleSegments) * Math.PI * 2;
         const x = Math.cos(angle);
         const y = Math.sin(angle);
+        // Organic boundary: irregularity strengthens near the water edge,
+        // so the puddle reads as a shallow pool following the broken ground,
+        // not a perfect circle stamped onto the rock.
+        const boundaryNoise = noise3(x * 2.6 + 3.1, y * 2.6 - 4.4, 5.7)
+          + Math.sin(angle * 5.0 + 0.6) * 0.28
+          + Math.sin(angle * 9.0 - 1.2) * 0.12;
+        const localRadius = radius * (1 + boundaryNoise * 0.052 * (0.28 + radius * 0.72));
         const ripple = Math.sin(radius * 34 + Math.sin(angle * 3.1) * 0.65) * 0.012 * (1 - radius * 0.32)
           + noise3(x * 3.5 + 2.1, y * 3.5 - 4.2, radius * 13) * 0.0035;
-        puddlePositions.push(x * radius, y * radius, ripple);
-        puddleUvs.push(0.5 + x * radius * 0.5, 0.5 + y * radius * 0.5);
+        puddlePositions.push(x * localRadius, y * localRadius, ripple);
+        puddleUvs.push(0.5 + x * localRadius * 0.5, 0.5 + y * localRadius * 0.5);
       }
     }
     const firstRing = 1;
