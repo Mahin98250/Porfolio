@@ -190,8 +190,8 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
       const cellY = y / crackCellSize;
       const gx0 = Math.floor(cellX);
       const gy0 = Math.floor(cellY);
-      let nearest = Infinity;
-      let secondNearest = Infinity;
+      let nearestDistanceSq = Infinity;
+      let secondNearestDistanceSq = Infinity;
       for (let oy = -1; oy <= 1; oy++) {
         for (let ox = -1; ox <= 1; ox++) {
           const gx = gx0 + ox;
@@ -203,16 +203,18 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
           const siteY = gy + (crackSites[site + 1] ?? 0.5);
           const dx = cellX - siteX;
           const dy = cellY - siteY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < nearest) {
-            secondNearest = nearest;
-            nearest = distance;
-          } else if (distance < secondNearest) {
-            secondNearest = distance;
+          const distanceSq = dx * dx + dy * dy;
+          if (distanceSq < nearestDistanceSq) {
+            secondNearestDistanceSq = nearestDistanceSq;
+            nearestDistanceSq = distanceSq;
+          } else if (distanceSq < secondNearestDistanceSq) {
+            secondNearestDistanceSq = distanceSq;
           }
         }
       }
-      const crackEdge = Math.pow(MathUtils.clamp(1 - (secondNearest - nearest) / 0.105, 0, 1), 1.35);
+      // Only take square roots once per texel, not once per candidate site.
+      const distanceGap = Math.sqrt(secondNearestDistanceSq) - Math.sqrt(nearestDistanceSq);
+      const crackEdge = Math.pow(MathUtils.clamp(1 - distanceGap / 0.105, 0, 1), 1.35);
 
       // Irregular damp patches read as seepage stains, not a glossy wet shader.
       const damp = Math.pow(MathUtils.clamp((noise2(x / 73 + 6.4, y / 101 - 3.2) - 0.05) * 1.55, 0, 1), 1.5);
@@ -761,7 +763,7 @@ function CaveTunnel() {
     color: "#c0ad96",
     map: branchMaps.color,
     bumpMap: branchMaps.height,
-    bumpScale: 0.12,
+    bumpScale: 0.155,
     roughnessMap: branchMaps.height,
     roughness: 0.99,
     metalness: 0,
