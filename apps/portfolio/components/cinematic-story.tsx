@@ -1263,6 +1263,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     puddleGeometry.setAttribute("uv", new Float32BufferAttribute(puddleUvs, 2));
     puddleGeometry.setIndex(puddleIndices);
     puddleGeometry.computeVertexNormals();
+    const puddleBasePositions = new Float32Array(puddlePositions);
     const puddleMaterial = new MeshPhysicalMaterial({
       color: "#263a40",
       roughness: 0.22,
@@ -1345,8 +1346,27 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.frustumCulled = false;
-    return { mesh, ground, mossMesh, rootsMesh, puddlesMesh };
+    return { mesh, ground, mossMesh, rootsMesh, puddlesMesh, puddleBasePositions };
   }, [maps]);
+  const rippleTime = useRef(0);
+  useFrame((_, delta) => {
+    rippleTime.current += Math.min(delta, 0.04);
+    const geometry = scene.puddlesMesh.geometry;
+    const attribute = geometry.getAttribute("position") as Float32BufferAttribute;
+    const base = scene.puddleBasePositions;
+    for (let i = 0; i < attribute.count; i++) {
+      const offset = i * 3;
+      const x = base[offset] ?? 0;
+      const y = base[offset + 1] ?? 0;
+      const radius = Math.hypot(x, y);
+      const angle = Math.atan2(y, x);
+      const waveA = Math.sin(radius * 31 - rippleTime.current * 1.25 + Math.sin(angle * 2.1)) * 0.0032;
+      const waveB = Math.sin(radius * 53 + angle * 2.8 + rippleTime.current * 0.88) * 0.0011;
+      attribute.setZ(i, (base[offset + 2] ?? 0) + waveA + waveB);
+    }
+    attribute.needsUpdate = true;
+    geometry.computeVertexNormals();
+  });
   return <group>
     <primitive object={scene.ground as unknown as Object3D} dispose={null} />
     <primitive object={scene.mesh as unknown as Object3D} dispose={null} />
