@@ -1302,10 +1302,10 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       + noise3(x * 0.62 - 4, z * 0.62 + 2, 7) * 0.12
       - Math.pow(Math.abs(x) / 12.5, 1.45) * 0.82;
     const puddleSpecs: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [
-      { p: [-0.9, groundHeight(-0.9, 10.8) + 0.035, 10.8], s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
-      { p: [0.75, groundHeight(0.75, 13.7) + 0.035, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
-      { p: [-0.35, groundHeight(-0.35, 17.6) + 0.035, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
-      { p: [1.55, groundHeight(1.55, 19.2) + 0.035, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
+      { p: [-0.9, groundHeight(-0.9, 10.8) + 0.035, 10.8], s: [0.84, 0.43, 1], r: [-Math.PI / 2, 0, -0.08] },
+      { p: [0.75, groundHeight(0.75, 13.7) + 0.035, 13.7], s: [1.18, 0.38, 1], r: [-Math.PI / 2, 0, 0.16] },
+      { p: [-0.35, groundHeight(-0.35, 17.6) + 0.035, 17.6], s: [0.58, 0.28, 1], r: [-Math.PI / 2, 0, -0.12] },
+      { p: [1.55, groundHeight(1.55, 19.2) + 0.035, 19.2], s: [0.72, 0.34, 1], r: [-Math.PI / 2, 0, 0.08] },
     ];
     // A narrow matte seepage halo softens the transition from reflective
     // water to rough limestone. It is one instanced ring mesh for all pools.
@@ -1345,7 +1345,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const haloMesh = new InstancedMesh(haloGeometry, haloMaterial, puddleSpecs.length);
     puddleSpecs.forEach((piece, index) => {
       detailDummy.position.set(piece.p[0], piece.p[1] - 0.021, piece.p[2]);
-      detailDummy.scale.set(piece.s[0] * 1.12, 1, piece.s[2] * 1.12);
+      detailDummy.scale.set(piece.s[0] * 1.12, piece.s[1] * 1.12, 1);
       detailDummy.rotation.set(...piece.r);
       detailDummy.updateMatrix();
       haloMesh.setMatrixAt(index, detailDummy.matrix);
