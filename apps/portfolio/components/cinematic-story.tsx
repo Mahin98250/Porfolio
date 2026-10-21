@@ -601,6 +601,9 @@ function CaveTunnel() {
 
 function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branchChoice: { current: "left" | "right" | null } }) {
   const world = useRef<Group>(null);
+  // Keep the look target as state between frames: directly looking at a newly
+  // selected branch makes the camera snap even when its position is damped.
+  const smoothLookTarget = useRef(new Vector3(0, 0, 6.2));
   useFrame((state, delta) => {
     const step = Math.min(delta, 0.045);
     const progress = MathUtils.clamp(progressRef.current, 0, 1);
@@ -644,9 +647,17 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
     camera.position.x = MathUtils.damp(camera.position.x, pathX, 2.15, step);
     camera.position.y = MathUtils.damp(camera.position.y, pathY, 3.0, step);
-    // After the choice, ease the camera off the central route and into the
-    // selected arm instead of snapping sideways.
-    camera.lookAt(aheadX * 0.62 + farX * 0.38 + bendStrength * 0.45, aheadY * 0.62 + farY * 0.38 + (aheadY - pathY) * 1.4, camera.position.z - 7.8);
+    // Ease the viewing direction as well as the camera position. This is
+    // especially important when a player taps LEFT/RIGHT at the fork: the
+    // destination changes immediately, but the lens glides toward it over
+    // several frames instead of whipping around to the new passage.
+    const desiredLookX = aheadX * 0.62 + farX * 0.38 + bendStrength * 0.45;
+    const desiredLookY = aheadY * 0.62 + farY * 0.38 + (aheadY - pathY) * 1.4;
+    const desiredLookZ = camera.position.z - 7.8;
+    smoothLookTarget.current.x = MathUtils.damp(smoothLookTarget.current.x, desiredLookX, 2.7, step);
+    smoothLookTarget.current.y = MathUtils.damp(smoothLookTarget.current.y, desiredLookY, 2.7, step);
+    smoothLookTarget.current.z = MathUtils.damp(smoothLookTarget.current.z, desiredLookZ, 3.8, step);
+    camera.lookAt(smoothLookTarget.current);
     camera.rotation.z = MathUtils.damp(camera.rotation.z, -bendStrength * 0.13, 2.2, step);
     if (world.current) {
       world.current.rotation.z = MathUtils.damp(world.current.rotation.z, Math.sin(progress * Math.PI * 3) * 0.012, 1.8, step);
