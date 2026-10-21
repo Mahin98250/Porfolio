@@ -905,7 +905,7 @@ function CaveTunnel() {
     bumpMap: branchMaps.height,
     bumpScale: 0.085,
     normalMap: branchMaps.normal,
-    normalScale: [0.62, 0.62],
+    normalScale: new Vector2(0.62, 0.62),
     roughnessMap: branchMaps.roughness,
     roughness: 0.99,
     metalness: 0,
