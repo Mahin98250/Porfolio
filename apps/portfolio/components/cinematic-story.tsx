@@ -725,15 +725,24 @@ export function CinematicStory() {
   const [selectedBranch, setSelectedBranch] = useState<"left" | "right" | null>(null);
   const [motionAllowed, setMotionAllowed] = useState(true);
   const [visible, setVisible] = useState(true);
+  const [renderDpr, setRenderDpr] = useState<[number, number]>([1, 1.35]);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const onMotion = () => setMotionAllowed(!reduceMotion.matches);
     const onVisibility = () => setVisible(!document.hidden);
+    // Spend more GPU resolution where there is room, while keeping mobile
+    // devices on a restrained cap to avoid trading smooth motion for pixels.
+    const onViewport = () => {
+      const mobile = window.matchMedia("(max-width: 760px)").matches;
+      setRenderDpr([1, mobile ? 1.25 : 1.8]);
+    };
     onMotion();
     onVisibility();
+    onViewport();
     reduceMotion.addEventListener?.("change", onMotion);
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("resize", onViewport, { passive: true });
 
     const storyScenes = Array.from(document.querySelectorAll<HTMLElement>("[data-story-scene]"));
     const hint = document.querySelector<HTMLElement>("[data-scroll-hint]");
@@ -791,6 +800,7 @@ export function CinematicStory() {
     return () => {
       reduceMotion.removeEventListener?.("change", onMotion);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("resize", onViewport);
       scrollRoot?.removeEventListener("scroll", queueUpdate);
       window.removeEventListener("resize", queueUpdate);
       if (raf) window.cancelAnimationFrame(raf);
@@ -803,7 +813,7 @@ export function CinematicStory() {
       <div className="cinematic-story-stage">
         {motionAllowed ? (
           <Canvas
-            dpr={[1, 1.35]}
+            dpr={renderDpr}
             camera={{ position: [0, 0, 14], fov: 67, near: 0.1, far: 100 }}
             gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
             frameloop={visible ? "always" : "never"}

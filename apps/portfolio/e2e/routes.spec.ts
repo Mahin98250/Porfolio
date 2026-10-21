@@ -23,6 +23,32 @@ test("home opens in the cave and reveals the selected work at the end of the sto
   await expect(page.getByRole("link", { name: /FOLLOW THE JOURNEY/i })).toHaveAttribute("href", /\/journey\/?$/);
 });
 
+
+test("left and right passage choices confirm selection and advance toward the chosen route", async ({ page }) => {
+  for (const option of [
+    { name: /TAKE THE LEFT PASSAGE/i, selected: "LEFT" },
+    { name: /TAKE THE RIGHT PASSAGE/i, selected: "RIGHT" },
+  ]) {
+    await page.goto("/");
+    const initialScroll = await page.evaluate(() => {
+      const scroller = document.querySelector<HTMLElement>(".cinematic-story-scroll");
+      const track = document.querySelector<HTMLElement>(".cinematic-story-track");
+      if (!scroller || !track) throw new Error("Cinematic story scroll surface was not mounted");
+      const maxScroll = Math.max(1, track.offsetHeight - scroller.clientHeight);
+      scroller.scrollTo({ top: maxScroll * 0.46, behavior: "instant" });
+      return maxScroll * 0.46;
+    });
+
+    await expect(page.locator(".cinema-branch-choice")).toHaveCSS("opacity", "1");
+    await page.getByRole("button", { name: option.name }).click();
+    await expect(page.locator(".cinema-branch-confirm")).toContainText(option.selected);
+    await expect.poll(
+      () => page.locator(".cinematic-story-scroll").evaluate((element) => (element as HTMLElement).scrollTop),
+      { timeout: 6000 },
+    ).toBeGreaterThan(initialScroll + 30);
+  }
+});
+
 test("primary navigation reaches every top-level page", async ({ page }) => {
   await page.goto("/");
   for (const route of [
