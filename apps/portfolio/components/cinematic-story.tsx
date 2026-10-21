@@ -162,6 +162,19 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
 
+  // A tileable Voronoi fracture field creates thin, irregular cracks in the
+  // limestone. Jitter is precomputed so the per-pixel texture pass stays light.
+  const crackCellSize = 32;
+  const crackGridCount = size / crackCellSize;
+  const crackSites = new Float32Array(crackGridCount * crackGridCount * 2);
+  for (let gy = 0; gy < crackGridCount; gy++) {
+    for (let gx = 0; gx < crackGridCount; gx++) {
+      const site = (gy * crackGridCount + gx) * 2;
+      crackSites[site] = 0.18 + hash01(gx * 53.17 + gy * 17.91 + 1.2) * 0.64;
+      crackSites[site + 1] = 0.18 + hash01(gx * 29.73 + gy * 67.31 + 8.4) * 0.64;
+    }
+  }
+
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const broad = noise2(x / 118, y / 118);
@@ -170,21 +183,55 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
       const grain = noise2(x / 3.2, y / 3.2);
       const bedding = Math.sin(y / 27 + noise2(x / 58, y / 43) * 2.4) * 0.07;
       const pore = noise2(x / 1.6, y / 1.6) * 0.035;
+
+      // Find the two closest fracture sites in a wrapping 3x3 cell window.
+      // The difference between their distances isolates narrow, chipped seams.
+      const cellX = x / crackCellSize;
+      const cellY = y / crackCellSize;
+      const gx0 = Math.floor(cellX);
+      const gy0 = Math.floor(cellY);
+      let nearest = Infinity;
+      let secondNearest = Infinity;
+      for (let oy = -1; oy <= 1; oy++) {
+        for (let ox = -1; ox <= 1; ox++) {
+          const gx = gx0 + ox;
+          const gy = gy0 + oy;
+          const wrappedX = (gx % crackGridCount + crackGridCount) % crackGridCount;
+          const wrappedY = (gy % crackGridCount + crackGridCount) % crackGridCount;
+          const site = (wrappedY * crackGridCount + wrappedX) * 2;
+          const siteX = gx + (crackSites[site] ?? 0.5);
+          const siteY = gy + (crackSites[site + 1] ?? 0.5);
+          const dx = cellX - siteX;
+          const dy = cellY - siteY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < nearest) {
+            secondNearest = nearest;
+            nearest = distance;
+          } else if (distance < secondNearest) {
+            secondNearest = distance;
+          }
+        }
+      }
+      const crackEdge = Math.pow(MathUtils.clamp(1 - (secondNearest - nearest) / 0.105, 0, 1), 1.35);
+
+      // Irregular damp patches read as seepage stains, not a glossy wet shader.
+      const damp = Math.pow(MathUtils.clamp((noise2(x / 73 + 6.4, y / 101 - 3.2) - 0.05) * 1.55, 0, 1), 1.5);
+
       // Thin, wavy mineral beds break up the generic noise look and give the
       // limestone a believable sedimentary structure without regular stripes.
       const strataSignal = Math.sin(y / 18 + noise2(x / 88, y / 62) * 3.6 + broad * 1.2);
       const strata = Math.sign(strataSignal) * Math.pow(Math.abs(strataSignal), 9) * 0.075;
-      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22, 0, 1);
+      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22 - crackEdge * 0.045 - damp * 0.025, 0, 1);
       const i = (y * size + x) * 4;
 
-      // Muted mineral grey, umber and limestone tones; narrow sediment bands
-      // tint the same relief field so the colour and height maps stay coherent.
-      colorData[i] = Math.round(39 + value * 37 + strata * 34);
-      colorData[i + 1] = Math.round(35 + value * 32 + strata * 24);
-      colorData[i + 2] = Math.round(31 + value * 29 + strata * 14);
+      // Crack edges darken slightly while seepage cools and stains the stone.
+      // The exact same fracture field is also cut into the height map below.
+      colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 - crackEdge * 10 - damp * 5, 0, 255));
+      colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 - crackEdge * 8 - damp * 3, 0, 255));
+      colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5, 0, 255));
       colorData[i + 3] = 255;
 
-      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58, 0, 1);
+      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58 - crackEdge * 0.12 - damp * 0.02, 0, 1);
       const h = Math.round(255 * relief);
       heightData[i] = h;
       heightData[i + 1] = h;
@@ -217,7 +264,24 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
 }
 
 function CaveRocks() {
-  const geometry = useMemo(() => new IcosahedronGeometry(1, 2), []);
+  const geometry = useMemo(() => {
+    const shape = new IcosahedronGeometry(1, 2);
+    const vertices = shape.getAttribute("position");
+    // Deform the instanced rubble mesh itself, so wall chips have broken,
+    // asymmetrical facets instead of repeating smooth pebble silhouettes.
+    for (let vertex = 0; vertex < vertices.count; vertex++) {
+      const x = vertices.getX(vertex);
+      const y = vertices.getY(vertex);
+      const z = vertices.getZ(vertex);
+      const broad = noise3(x * 3.4 + 8.2, y * 3.4 - 4.8, z * 3.4 + 1.4);
+      const chipped = noise3(x * 8.6 - 2.1, y * 8.6 + 5.3, z * 8.6);
+      const scale = 0.88 + broad * 0.15 + chipped * 0.085;
+      vertices.setXYZ(vertex, x * scale, y * scale, z * scale);
+    }
+    vertices.needsUpdate = true;
+    shape.computeVertexNormals();
+    return shape;
+  }, []);
   const material = useMemo(() => new MeshStandardMaterial({
     color: "#554a40",
     roughness: 0.99,
@@ -369,7 +433,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture }
     color: "#d4c7b3",
     map: maps.color,
     bumpMap: maps.height,
-    bumpScale: 0.12,
+    bumpScale: 0.155,
     roughnessMap: maps.height,
     vertexColors: true,
     roughness: 0.98,
@@ -411,6 +475,7 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
     const branchCount = 80;
     const count = mainCount + branchCount * 2;
     const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
     const phases = new Float32Array(count);
     const leftCurve = makeBranchCurve(-1);
     const rightCurve = makeBranchCurve(1);
@@ -443,10 +508,15 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
         positions[offset + 2] = -22 + point.z;
       }
       phases[i] = hash01(i * 29.41 + 1.6) * Math.PI * 2;
+      const brightness = 0.78 + hash01(i * 47.13 + 3.7) * 0.38;
+      colors[offset] = brightness;
+      colors[offset + 1] = brightness * (0.92 + hash01(i * 13.91 + 8.2) * 0.08);
+      colors[offset + 2] = brightness * (0.80 + hash01(i * 7.27 + 4.6) * 0.18);
     }
 
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
 
     // A tiny radial-alpha sprite prevents square particles and gives the dust
     // a soft edge even against the cave's almost-black background.
@@ -476,7 +546,8 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
       size: 0.045,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.17,
+      vertexColors: true,
       depthWrite: false,
     });
     const object = new Points(geometry, material);
