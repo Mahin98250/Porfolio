@@ -285,7 +285,7 @@ function CaveRocks() {
     return shape;
   }, []);
   const material = useMemo(() => new MeshStandardMaterial({
-    color: "#554a40",
+    color: "#625548",
     roughness: 0.99,
     metalness: 0,
     flatShading: false,
@@ -357,7 +357,7 @@ function CaveFloorRubble() {
   }, []);
 
   const material = useMemo(() => new MeshStandardMaterial({
-    color: "#51483c",
+    color: "#5e5548",
     roughness: 1,
     metalness: 0,
     flatShading: true,
@@ -507,7 +507,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture }
   }, []);
 
   const material = useMemo(() => new MeshStandardMaterial({
-    color: "#d4c7b3",
+    color: "#e1d4c0",
     map: maps.color,
     bumpMap: maps.height,
     bumpScale: 0.155,
@@ -835,7 +835,7 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
 function CaveTunnel() {
   const branchMaps = useMemo(() => makeRockTextures(), []);
   const branchMaterial = useMemo(() => new MeshStandardMaterial({
-    color: "#c0ad96",
+    color: "#d0bea4",
     map: branchMaps.color,
     bumpMap: branchMaps.height,
     bumpScale: 0.155,
@@ -937,23 +937,24 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
 
   return (
     <>
-      <color attach="background" args={["#100d09"]} />
-      <fog attach="fog" args={["#100d09", 10, 42]} />
-      {/* Broad, low-level bounce keeps the limestone readable without flattening shadows. */}
-      <ambientLight intensity={0.42} color="#c7b9a5" />
-      <hemisphereLight args={["#d8d0c2", "#241b14", 0.72]} />
-      <directionalLight position={[4, 5, 3]} intensity={1.35} color="#ead8bd" />
-      {/* Warm entrance spill: a broad, visible source rather than a glowing ring. */}
-      <pointLight position={[0.1, 1.1, 5.4]} intensity={8.5} distance={22} decay={1.65} color="#ffd39a" />
-      {/* Entrance key light grazes the chipped rock lip from outside the cave. */}
-      <spotLight position={[-1.8, 3.4, 11.5]} intensity={95} distance={24} angle={0.72} penumbra={0.82} decay={1.8} color="#ffd9a6" />
-      <pointLight position={[-2.5, 1.0, -4.5]} intensity={4.2} distance={17} decay={1.8} color="#e8bd85" />
-      {/* Soft pools of reflected light reveal the side chambers along the route. */}
-      <pointLight position={[2.2, 1.0, -12.5]} intensity={4.8} distance={18} decay={1.9} color="#e7d1ad" />
-      <pointLight position={[-2.8, -0.3, -23.5]} intensity={4.4} distance={18} decay={1.9} color="#c8c6b1" />
-      <pointLight position={[1.6, 1.3, -34.5]} intensity={4.8} distance={18} decay={1.8} color="#e7c99c" />
-      <pointLight position={[-1.2, 0.8, -45.5]} intensity={5.2} distance={20} decay={1.8} color="#f0d2a0" />
-      <pointLight position={[0.4, -0.2, -53.5]} intensity={3.6} distance={15} decay={1.9} color="#c9c2ae" />
+      <color attach="background" args={["#17130e"]} />
+      {/* Push the visibility range deeper so distant cave features do not vanish into fog. */}
+      <fog attach="fog" args={["#17130e", 18, 68]} />
+      {/* Lift shadow detail substantially: cave texture must remain readable on mobile screens. */}
+      <ambientLight intensity={0.78} color="#d5c7b2" />
+      <hemisphereLight args={["#f0e4d0", "#51402f", 1.05]} />
+      <directionalLight position={[4, 5, 3]} intensity={1.75} color="#f4e3c6" />
+      {/* Broad entrance fill, with softer decay to illuminate the first chamber. */}
+      <pointLight position={[0.1, 1.1, 5.4]} intensity={13} distance={29} decay={1.25} color="#ffe0ad" />
+      {/* Grazing key light shows the chipped entrance lip without an overblown hotspot. */}
+      <spotLight position={[-1.8, 3.4, 11.5]} intensity={62} distance={30} angle={0.78} penumbra={0.9} decay={1.35} color="#ffe1b4" />
+      {/* Overlapping, lower-intensity fill pools prevent long stretches from becoming unreadable. */}
+      <pointLight position={[-2.5, 1.0, -4.5]} intensity={6.5} distance={23} decay={1.35} color="#edc99a" />
+      <pointLight position={[2.2, 1.0, -12.5]} intensity={7.2} distance={25} decay={1.35} color="#f2dfbd" />
+      <pointLight position={[-2.8, -0.3, -23.5]} intensity={6.6} distance={24} decay={1.35} color="#d8d9ca" />
+      <pointLight position={[1.6, 1.3, -34.5]} intensity={7.0} distance={25} decay={1.35} color="#f0d3a5" />
+      <pointLight position={[-1.2, 0.8, -45.5]} intensity={7.4} distance={27} decay={1.3} color="#f5ddb4" />
+      <pointLight position={[0.4, -0.2, -53.5]} intensity={5.8} distance={22} decay={1.35} color="#d9d5c6" />
       <group ref={world}>
         <CaveTunnel />
       </group>
