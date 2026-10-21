@@ -2,13 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function scrubStory(page: Page, progress: number) {
   await expect(page.locator("html")).toHaveAttribute("data-project-worlds-ready", "true", { timeout: 15000 });
+  await expect(page.locator("html")).toHaveAttribute("data-cinematic-story-ready", "true", { timeout: 15000 });
   await expect(page.locator(".cinematic-story-scroll")).toBeVisible({ timeout: 15000 });
   await page.evaluate((targetProgress) => {
     const scroller = document.querySelector<HTMLElement>(".cinematic-story-scroll");
     const track = document.querySelector<HTMLElement>(".cinematic-story-track");
     if (!scroller || !track) throw new Error("Cinematic scroll surface was not mounted");
     const maxScroll = Math.max(1, track.offsetHeight - scroller.clientHeight);
-    scroller.scrollTo({ top: maxScroll * targetProgress, behavior: "instant" });
+    // Set scrollTop directly and dispatch a scroll event so the RAF-backed
+    // scene controller synchronizes before assertions/clicks race ahead.
+    scroller.scrollTop = maxScroll * targetProgress;
+    scroller.dispatchEvent(new Event("scroll"));
   }, progress);
 }
 
@@ -31,15 +35,9 @@ test("left and right passage choices confirm selection and advance toward the ch
     { name: /TAKE THE RIGHT PASSAGE/i, selected: "RIGHT" },
   ]) {
     await page.goto("/");
-    await expect(page.locator(".cinematic-story-scroll")).toBeVisible({ timeout: 15000 });
-    const initialScroll = await page.evaluate(() => {
-      const scroller = document.querySelector<HTMLElement>(".cinematic-story-scroll");
-      const track = document.querySelector<HTMLElement>(".cinematic-story-track");
-      if (!scroller || !track) throw new Error("Cinematic story scroll surface was not mounted");
-      const maxScroll = Math.max(1, track.offsetHeight - scroller.clientHeight);
-      scroller.scrollTo({ top: maxScroll * 0.46, behavior: "instant" });
-      return maxScroll * 0.46;
-    });
+    await scrubStory(page, 0.46);
+    await expect(page.locator(".cinematic-story-track")).toHaveAttribute("data-chapter", "code");
+    const initialScroll = await page.locator(".cinematic-story-scroll").evaluate((element) => (element as HTMLElement).scrollTop);
 
     // Verify the panel is active and can receive input. Its opacity is
     // intentionally transitioned, so sampling a single rendered opacity can
@@ -66,7 +64,8 @@ test("primary navigation reaches every top-level page", async ({ page }) => {
     { label: "Contact", heading: "Let’s make" },
   ]) {
     await page.getByRole("link", { name: route.label, exact: true }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(route.heading);
+    await expect(page).toHaveURL(new RegExp(route.label.toLowerCase() === "about" ? "/about/?$" : "/" + route.label.toLowerCase() + "/?$"), { timeout: 15000 });
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(route.heading, { timeout: 15000 });
   }
 });
 
@@ -130,6 +129,7 @@ test("mobile navigation exposes its state and closes after route selection", asy
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
+  await expect(page.locator("html")).toHaveAttribute("data-cinematic-story-ready", "true", { timeout: 15000 });
   const openButton = page.getByRole("button", { name: "Open navigation" });
   await expect(openButton).toHaveAttribute("aria-controls", "main-navigation");
   await openButton.click();
@@ -196,6 +196,7 @@ test("each cinematic project reveal enters its matching world", async ({ page })
 test("project world can be exited with Escape and respects reduced motion styling", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-project-worlds-ready", "true", { timeout: 15000 });
+  await expect(page.locator("html")).toHaveAttribute("data-cinematic-story-ready", "true", { timeout: 15000 });
   await page.evaluate(() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "optical" } })));
   const world = page.getByRole("dialog", { name: /OPTICODE STUDIO/i });
   await expect(world).toBeVisible();
