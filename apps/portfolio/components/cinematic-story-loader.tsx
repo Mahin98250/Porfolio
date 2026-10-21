@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ProjectWorlds } from "./project-worlds";
 
 const Story = dynamic(() => import("./cinematic-story").then((module) => module.CinematicStory), {
   ssr: false,
@@ -9,5 +8,5 @@ const Story = dynamic(() => import("./cinematic-story").then((module) => module.
 });
 
 export function CinematicStoryLoader() {
-  return <><Story /><ProjectWorlds /></>;
+  return <Story />;
 }
