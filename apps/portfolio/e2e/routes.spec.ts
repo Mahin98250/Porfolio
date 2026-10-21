@@ -192,6 +192,18 @@ test("each cinematic project reveal enters its matching world", async ({ page })
   }
 });
 
+test("project world can be exited with Escape and respects reduced motion styling", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "optical" } })));
+  const world = page.getByRole("dialog", { name: /OPTICODE STUDIO/i });
+  await expect(world).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(world).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "learning" } })));
+  await expect(page.getByRole("dialog", { name: /LEARNER’S GUIDE/i })).toBeVisible();
+});
+ 
 test("cinematic ending exposes journey, project, and contact actions", async ({ page }) => {
   await page.goto("/");
   await scrubStory(page, 0.99);
