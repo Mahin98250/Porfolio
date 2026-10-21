@@ -605,13 +605,22 @@ function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
   ], false, "centripetal");
 }
 
+// Pre-sample each branch once. The camera asks for three look-ahead points
+// on every rendered frame; rebuilding a Catmull-Rom curve and evaluating 160
+// samples for every query created avoidable CPU work exactly during turns.
+const branchDepthSamples: Record<"-1" | "1", Vector3[]> = {
+  "-1": makeBranchCurve(-1).getSpacedPoints(160),
+  "1": makeBranchCurve(1).getSpacedPoints(160),
+};
+
 function branchPointAtDepth(side: -1 | 1, localZ: number): Vector3 {
-  const curve = makeBranchCurve(side);
+  const samples = branchDepthSamples[String(side) as "-1" | "1"];
   const depth = MathUtils.clamp(localZ, -20.8, 0);
-  let best = curve.getPointAt(0);
+  let best = samples[0] ?? new Vector3();
   let bestDistance = Math.abs(best.z - depth);
-  for (let sample = 1; sample <= 160; sample++) {
-    const point = curve.getPointAt(sample / 160);
+  for (let sample = 1; sample < samples.length; sample++) {
+    const point = samples[sample];
+    if (!point) continue;
     const distance = Math.abs(point.z - depth);
     if (distance < bestDistance) {
       best = point;
