@@ -30,6 +30,7 @@ test("left and right passage choices confirm selection and advance toward the ch
     { name: /TAKE THE RIGHT PASSAGE/i, selected: "RIGHT" },
   ]) {
     await page.goto("/");
+    await expect(page.locator(".cinematic-story-scroll")).toBeVisible({ timeout: 15000 });
     const initialScroll = await page.evaluate(() => {
       const scroller = document.querySelector<HTMLElement>(".cinematic-story-scroll");
       const track = document.querySelector<HTMLElement>(".cinematic-story-track");
