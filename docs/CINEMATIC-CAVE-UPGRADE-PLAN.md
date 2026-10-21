@@ -7,22 +7,25 @@ This plan upgrades the portfolio's opening cave into a cinematic, explorable 3D 
 - Keep the cave's existing procedural geometry and camera story intact.
 - Fix end-to-end tests that incorrectly target the React Three Fiber wrapper instead of its nested canvas.
 - Require production build and browser regression checks before claiming deployment.
-**Status:** In progress. Lighting pass committed; regression selector corrected. CI verification pending.
+**Status:** Implemented. The cave lighting change is merged. The production static export and Playwright route regression passed; the full workspace gate remains blocked by existing OptiCode lint errors and dependency-audit findings unrelated to this scene.
 
 ## Phase 2 — Entrance silhouette and geology
 - Improve the first camera view: more irregular cave lip, layered rock strata, fractured edges, moss/roots and readable foreground scale.
 - Increase material detail without relying on a single flat texture.
 - Keep geometry and texture generation bounded for mobile memory.
+**Status:** Implemented and deployed in the main branch: rougher cave lip, exterior scree, cliff-anchored moss, hanging roots and puddles aligned to the generated terrain.
 
 ## Phase 3 — Cinematic atmosphere
 - Add restrained, depth-aware mist, drifting dust and light shafts where technically feasible.
 - Tune exposure, fog, warm/cool contrast and wet-rock highlights to avoid washed-out shadows.
 - Avoid expensive full-screen effects on low-tier devices.
+**Status:** Implemented and merged: layered gradient light shafts and slow-moving ground mist use small generated textures and avoid full-screen raymarching. Main-branch release checks are tracked in GitHub Actions.
 
 ## Phase 4 — Surface detail and environmental storytelling
 - Refine rock roughness, micro-relief, fractures, damp areas, mineral variation, and foreground puddle reflections.
 - Add details that support the scene composition rather than decorative clutter.
 - Use deterministic procedural generation to avoid noisy visual changes between renders.
+**Status:** In progress on the surface-realism branch: puddles now use a multi-ring rippled mesh and a clear-coated physical material, with subtle low-amplitude animated surface normals.
 
 ## Phase 5 — Camera and interaction polish
 - Smoothly transition from exterior to the cave interior.
