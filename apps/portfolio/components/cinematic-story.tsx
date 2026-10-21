@@ -404,24 +404,44 @@ function CaveGuideDots() {
   </group>;
 }
 
-function CaveDust() {
+function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: number }) {
   const elapsed = useRef(0);
   const dust = useMemo(() => {
-    const count = 132;
+    const mainCount = 132;
+    const branchCount = 36;
+    const count = mainCount + branchCount * 2;
     const positions = new Float32Array(count * 3);
     const phases = new Float32Array(count);
+    const leftCurve = makeBranchCurve(-1);
+    const rightCurve = makeBranchCurve(1);
 
     for (let i = 0; i < count; i++) {
-      const t = 0.035 + hash01(i * 19.37 + 5.4) * 0.93;
-      const angle = hash01(i * 43.71 + 3.8) * Math.PI * 2;
-      const radial = 0.16 + hash01(i * 11.13 + 6.2) * 0.50;
-      const [cx, cy] = caveCenter(t);
-      const radius = caveRadiusAt(t);
       const offset = i * 3;
-      // Keep dust suspended within the walkable void, never on the rock skin.
-      positions[offset] = cx + Math.cos(angle) * radius * radial;
-      positions[offset + 1] = cy + Math.sin(angle) * radius * (Math.sin(angle) >= 0 ? 1.08 : 0.73) * radial;
-      positions[offset + 2] = 9 - t * 63;
+      if (i < mainCount) {
+        const t = 0.035 + hash01(i * 19.37 + 5.4) * 0.93;
+        const angle = hash01(i * 43.71 + 3.8) * Math.PI * 2;
+        const radial = 0.16 + hash01(i * 11.13 + 6.2) * 0.50;
+        const [cx, cy] = caveCenter(t);
+        const radius = caveRadiusAt(t);
+        // Keep dust suspended within the walkable void, never on the rock skin.
+        positions[offset] = cx + Math.cos(angle) * radius * radial;
+        positions[offset + 1] = cy + Math.sin(angle) * radius * (Math.sin(angle) >= 0 ? 1.08 : 0.73) * radial;
+        positions[offset + 2] = 9 - t * 63;
+      } else {
+        // Add motes to both selected arms as well as the main tunnel, sampling
+        // the authored branch curves so the atmosphere follows either choice.
+        const branchIndex = i - mainCount;
+        const side = branchIndex < branchCount ? -1 : 1;
+        const localIndex = branchIndex % branchCount;
+        const branchT = 0.055 + hash01(localIndex * 37.19 + (side < 0 ? 2.2 : 9.1)) * 0.89;
+        const curve = side < 0 ? leftCurve : rightCurve;
+        const point = curve.getPointAt(branchT);
+        const angle = hash01(localIndex * 17.83 + side * 5.7) * Math.PI * 2;
+        const radial = 0.12 + hash01(localIndex * 7.93 + side * 3.1) * 0.75;
+        positions[offset] = junctionX + point.x + Math.cos(angle) * 0.82 * radial;
+        positions[offset + 1] = junctionY + point.y + Math.sin(angle) * 0.68 * radial;
+        positions[offset + 2] = -22 + point.z;
+      }
       phases[i] = hash01(i * 29.41 + 1.6) * Math.PI * 2;
     }
 
@@ -674,7 +694,7 @@ function CaveTunnel() {
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
-      <CaveDust />
+      <CaveDust junctionX={junctionX} junctionY={junctionY} />
       <group position={[junctionX, junctionY, -22]}>
         <CaveBranch side={-1} material={branchMaterial} />
         <CaveBranch side={1} material={branchMaterial} />
