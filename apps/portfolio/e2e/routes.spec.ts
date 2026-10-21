@@ -163,18 +163,33 @@ test("mobile cinematic journey advances through chapters without stacked content
   await expect(page.getByRole("heading", { level: 2 })).toContainText("CURIOSITY");
 });
 
-test("project worlds appear at their scene on the cinematic timeline", async ({ page }) => {
+test("each cinematic project reveal enters its matching world", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/");
 
   const track = page.locator(".cinematic-story-track");
-  await scrubStory(page, 0.55);
-  await expect(track).toHaveAttribute("data-chapter", "opticode");
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("OPTICODE");
-  await expect(page.getByRole("link", { name: /ENTER PROJECT/i }).first()).toHaveAttribute(
-    "href",
-    "https://github.com/Mahin98250/OptiCode-Studio",
-  );
+  const projects = [
+    { progress: 0.55, chapter: "opticode", heading: "OPTICODE", world: /OPTICODE STUDIO/i, repository: "https://github.com/Mahin98250/OptiCode-Studio" },
+    { progress: 0.63, chapter: "learning", heading: "LEARNER", world: /LEARNER’S GUIDE/i, repository: "https://github.com/Mahin98250/Final-Learner-s-Guide" },
+    { progress: 0.70, chapter: "marketplace", heading: "DUDHWALA", world: /DUDHWALA/i, repository: "https://github.com/Mahin98250/Dudh-Wallah" },
+  ];
+
+  for (const project of projects) {
+    await scrubStory(page, project.progress);
+    await expect(track).toHaveAttribute("data-chapter", project.chapter);
+    await expect(page.getByRole("heading", { level: 2 })).toContainText(project.heading);
+
+    const enterWorld = page.getByRole("button", { name: /ENTER WORLD/i }).first();
+    await expect(enterWorld).toBeVisible();
+    await expect(page.getByRole("link", { name: /REPOSITORY/i }).first()).toHaveAttribute("href", project.repository);
+    await enterWorld.click();
+
+    const dialog = page.getByRole("dialog", { name: project.world });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /RETURN TO THE CAVE/i })).toBeVisible();
+    await dialog.getByRole("button", { name: /RETURN TO THE CAVE/i }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 2500 });
+  }
 });
 
 test("cinematic ending exposes journey, project, and contact actions", async ({ page }) => {
