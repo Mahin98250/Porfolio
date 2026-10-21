@@ -994,16 +994,41 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const mossPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number]; tint: number }> = [];
     for (let i = 0; i < 88; i++) {
       const seed = 1200 + i * 3.17;
-      const side = hash01(seed) > 0.5 ? 1 : -1;
       const nearGround = i < 36;
+      let position: [number, number, number];
+      let rotation: [number, number, number];
+      let scale: [number, number, number];
+      if (nearGround) {
+        // Follow the same height field as the scree mesh so moss hugs the earth.
+        const side = hash01(seed) > 0.5 ? 1 : -1;
+        const x = side * (2.8 + hash01(seed * 1.7) * 7.6);
+        const z = 8.8 + hash01(seed * 3.1) * 17.2;
+        const broad = noise3(x * 0.19 + 2, z * 0.19 - 1, 2.5);
+        const broken = noise3(x * 0.62 - 4, z * 0.62 + 2, 7);
+        const sideSlope = Math.pow(Math.abs(x) / 12.5, 1.45) * 0.82;
+        const groundY = -2.2 + broad * 0.38 + broken * 0.12 - sideSlope;
+        position = [x, groundY + 0.028, z];
+        rotation = [0, (hash01(seed * 7.1) - 0.5) * 0.7, (hash01(seed * 8.1) - 0.5) * 0.12];
+        scale = [0.22 + hash01(seed * 4.1) * 0.52, 0.05 + hash01(seed * 4.7) * 0.08, 0.26 + hash01(seed * 5.3) * 0.62];
+      } else {
+        // Anchor the patch to the outer shoulder of an existing cliff boulder
+        // instead of scattering green blobs through empty space.
+        const host = pieces[Math.floor(hash01(seed * 1.31) * 68)];
+        const side = (host?.p[0] ?? 1) >= 0 ? 1 : -1;
+        const hostPosition = host?.p ?? [side * 5, 2, 12];
+        const hostScale = host?.s ?? [1.5, 1.5, 1.5];
+        position = [
+          hostPosition[0] + side * hostScale[0] * 0.78,
+          hostPosition[1] + (hash01(seed * 2.3) - 0.5) * hostScale[1] * 0.78,
+          hostPosition[2] + (hash01(seed * 3.1) - 0.5) * hostScale[2] * 0.78,
+        ];
+        rotation = [(hash01(seed * 6.1) - 0.5) * 0.26, (hash01(seed * 7.1) - 0.5) * 0.25, side > 0 ? -Math.PI / 2 : Math.PI / 2];
+        scale = [0.26 + hash01(seed * 4.1) * 0.64, 0.075 + hash01(seed * 4.7) * 0.13, 0.24 + hash01(seed * 5.3) * 0.55];
+      }
       mossPieces.push({
-        p: nearGround
-          ? [side * (3.2 + hash01(seed * 1.7) * 5.9), -1.78 + hash01(seed * 2.3) * 1.2, 8 + hash01(seed * 3.1) * 17]
-          : [side * (3.7 + hash01(seed * 1.7) * 4.0), 0.1 + hash01(seed * 2.3) * 4.8, 6 + hash01(seed * 3.1) * 12],
-        s: nearGround
-          ? [0.22 + hash01(seed * 4.1) * 0.52, 0.05 + hash01(seed * 4.7) * 0.12, 0.26 + hash01(seed * 5.3) * 0.62]
-          : [0.26 + hash01(seed * 4.1) * 0.64, 0.08 + hash01(seed * 4.7) * 0.20, 0.24 + hash01(seed * 5.3) * 0.55],
-        r: [hash01(seed * 6.1) * 0.4, hash01(seed * 7.1) * 0.6, (hash01(seed * 8.1) - 0.5) * 0.4],
+        p: position,
+        s: scale,
+        r: rotation,
         tint: 0.72 + hash01(seed * 9.1) * 0.55,
       });
     }
@@ -1027,12 +1052,19 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const rootPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
     for (let i = 0; i < 30; i++) {
       const seed = 1800 + i * 4.17;
-      const side = hash01(seed) > 0.5 ? 1 : -1;
+      const host = pieces[68 + Math.floor(hash01(seed * 1.31) * 24)];
+      const hostPosition = host?.p ?? [0, 5, 12];
+      const hostScale = host?.s ?? [1.5, 1.5, 1.5];
       const length = 0.48 + hash01(seed * 1.7) * 1.8;
       rootPieces.push({
-        p: [side * (2.9 + hash01(seed * 2.1) * 3.9), 4.2 + hash01(seed * 3.1) * 2.2 - length * 0.42, 7 + hash01(seed * 4.1) * 10],
+        // Start at the underside of an overhead boulder and hang into space.
+        p: [
+          hostPosition[0] + (hash01(seed * 2.1) - 0.5) * hostScale[0] * 0.9,
+          hostPosition[1] - hostScale[1] * 0.42 - length * 0.46,
+          hostPosition[2] + (hash01(seed * 4.1) - 0.5) * hostScale[2] * 0.8,
+        ],
         s: [0.55 + hash01(seed * 5.1) * 1.3, length, 0.55 + hash01(seed * 6.1) * 1.3],
-        r: [(hash01(seed * 7.1) - 0.5) * 0.7, (hash01(seed * 8.1) - 0.5) * 0.6, (hash01(seed * 9.1) - 0.5) * 0.55],
+        r: [(hash01(seed * 7.1) - 0.5) * 0.45, (hash01(seed * 8.1) - 0.5) * 0.3, (hash01(seed * 9.1) - 0.5) * 0.28],
       });
     }
     const rootsMesh = new InstancedMesh(rootGeometry, rootMaterial, rootPieces.length);
@@ -1051,10 +1083,10 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const puddleGeometry = new CircleGeometry(1, 28);
     const puddleMaterial = new MeshStandardMaterial({ color: "#24343a", roughness: 0.28, metalness: 0.12, emissive: "#0c1719", emissiveIntensity: 0.24, side: DoubleSide });
     const puddleSpecs: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [
-      { p: [-0.9, -2.13, 10.8], s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
-      { p: [0.75, -2.12, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
-      { p: [-0.35, -2.11, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
-      { p: [1.55, -2.14, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
+      { p: [-0.9, -2.13 + noise3(-0.9 * 0.19 + 2, 10.8 * 0.19 - 1, 2.5) * 0.38 + noise3(-0.9 * 0.62 - 4, 10.8 * 0.62 + 2, 7) * 0.12 + 0.035, s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
+      { p: [0.75, -2.2 + noise3(0.75 * 0.19 + 2, 13.7 * 0.19 - 1, 2.5) * 0.38 + noise3(0.75 * 0.62 - 4, 13.7 * 0.62 + 2, 7) * 0.12 + 0.035, s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
+      { p: [-0.35, -2.2 + noise3(-0.35 * 0.19 + 2, 17.6 * 0.19 - 1, 2.5) * 0.38 + noise3(-0.35 * 0.62 - 4, 17.6 * 0.62 + 2, 7) * 0.12 + 0.035, s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
+      { p: [1.55, -2.2 + noise3(1.55 * 0.19 + 2, 19.2 * 0.19 - 1, 2.5) * 0.38 + noise3(1.55 * 0.62 - 4, 19.2 * 0.62 + 2, 7) * 0.12 + 0.035, s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
     ];
     const puddlesMesh = new InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
     puddleSpecs.forEach((piece, index) => {
