@@ -336,6 +336,81 @@ function CaveRocks() {
   return <primitive object={rockMesh as unknown as Object3D} dispose={null} />;
 }
 
+function CaveFloorRubble() {
+  const geometry = useMemo(() => {
+    const shape = new IcosahedronGeometry(1, 1);
+    const vertices = shape.getAttribute("position");
+    // Low-poly chips keep their broken silhouette even when seen close to
+    // the camera; the mesh is shared by every instanced stone.
+    for (let vertex = 0; vertex < vertices.count; vertex++) {
+      const x = vertices.getX(vertex);
+      const y = vertices.getY(vertex);
+      const z = vertices.getZ(vertex);
+      const broad = noise3(x * 3.8 + 7.3, y * 3.8 - 3.1, z * 3.8 + 1.7);
+      const chipped = noise3(x * 9.4 - 1.5, y * 9.4 + 4.2, z * 9.4);
+      const scale = 0.86 + broad * 0.16 + chipped * 0.10;
+      vertices.setXYZ(vertex, x * scale, y * scale, z * scale);
+    }
+    vertices.needsUpdate = true;
+    shape.computeVertexNormals();
+    return shape;
+  }, []);
+
+  const material = useMemo(() => new MeshStandardMaterial({
+    color: "#51483c",
+    roughness: 1,
+    metalness: 0,
+    flatShading: true,
+  }), []);
+
+  const stones = useMemo(() => Array.from({ length: 168 }, (_, i) => {
+    const t = 0.028 + hash01(i * 31.71 + 2.6) * 0.944;
+    // Keep the fragments around the lower shoulders of the floor. That adds
+    // scale cues without filling the camera's central path with large rocks.
+    const angle = Math.PI * 1.5 + (hash01(i * 7.13 + 9.2) - 0.5) * 0.92;
+    const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
+    const [cx, cy] = caveCenter(t);
+    const dx = surfaceX - cx;
+    const dy = surfaceY - cy;
+    const radialLength = Math.hypot(dx, dy) || 1;
+    const size = 0.035 + hash01(i * 19.17 + 4.3) * 0.085;
+    return {
+      position: [
+        surfaceX - (dx / radialLength) * size * 0.82,
+        surfaceY - (dy / radialLength) * size * 0.82,
+        9 - t * 63,
+      ] as [number, number, number],
+      scale: [
+        size * (0.72 + hash01(i * 3.41 + 5.7) * 1.55),
+        size * (0.28 + hash01(i * 11.23 + 8.1) * 0.46),
+        size * (0.68 + hash01(i * 13.37 + 6.2) * 1.45),
+      ] as [number, number, number],
+      rotation: [
+        (hash01(i * 17.19 + 3.2) - 0.5) * 0.34,
+        hash01(i * 23.83 + 7.9) * Math.PI * 2,
+        (hash01(i * 29.41 + 1.8) - 0.5) * 0.72,
+      ] as [number, number, number],
+    };
+  }), []);
+
+  const rubbleMesh = useMemo(() => {
+    const mesh = new InstancedMesh(geometry, material, stones.length);
+    const dummy = new Object3D();
+    stones.forEach((stone, index) => {
+      dummy.position.set(...stone.position);
+      dummy.rotation.set(...stone.rotation);
+      dummy.scale.set(...stone.scale);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    return mesh;
+  }, [geometry, material, stones]);
+
+  return <primitive object={rubbleMesh as unknown as Object3D} dispose={null} />;
+}
+
 function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture } }) {
   const shell = useMemo(() => {
     // A denser, non-uniform shell. Large-scale chambers and constrictions are
@@ -776,6 +851,7 @@ function CaveTunnel() {
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
+      <CaveFloorRubble />
       <CaveDust junctionX={junctionX} junctionY={junctionY} />
       <group position={[junctionX, junctionY, -22]}>
         <CaveBranch side={-1} material={branchMaterial} />
