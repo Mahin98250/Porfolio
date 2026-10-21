@@ -157,7 +157,7 @@ function caveSurfacePoint(t: number, angle: number): [number, number] {
   ];
 }
 
-function makeRockTextures(): { color: DataTexture; height: DataTexture } {
+function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: DataTexture } {
   const size = 512;
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
@@ -242,6 +242,43 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
     }
   }
 
+  // Derive a tangent-space normal map from the same high-frequency relief.
+  // This catches grazing light across pores and fracture edges far better than
+  // a bump map alone, while keeping all material data generated locally.
+  const normalData = new Uint8Array(size * size * 4);
+  const normalStrength = 3.2;
+  for (let y = 0; y < size; y++) {
+    const up = ((y - 1 + size) % size) * size * 4;
+    const down = ((y + 1) % size) * size * 4;
+    for (let x = 0; x < size; x++) {
+      const left = (y * size + (x - 1 + size) % size) * 4;
+      const right = (y * size + (x + 1) % size) * 4;
+      const index = (y * size + x) * 4;
+      const dx = ((heightData[right] ?? 128) - (heightData[left] ?? 128)) / 255 * normalStrength;
+      const dy = ((heightData[down + x * 4] ?? 128) - (heightData[up + x * 4] ?? 128)) / 255 * normalStrength;
+      let nx = -dx;
+      let ny = -dy;
+      let nz = 1;
+      const length = Math.hypot(nx, ny, nz) || 1;
+      nx /= length;
+      ny /= length;
+      nz /= length;
+      normalData[index] = Math.round((nx * 0.5 + 0.5) * 255);
+      normalData[index + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+      normalData[index + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+      normalData[index + 3] = 255;
+    }
+  }
+
+  const normal = new DataTexture(normalData, size, size);
+  normal.wrapS = RepeatWrapping;
+  normal.wrapT = RepeatWrapping;
+  normal.magFilter = LinearFilter;
+  normal.minFilter = LinearMipmapLinearFilter;
+  normal.generateMipmaps = true;
+  normal.anisotropy = 8;
+  normal.needsUpdate = true;
+
   const color = new DataTexture(colorData, size, size);
   color.colorSpace = SRGBColorSpace;
   color.wrapS = RepeatWrapping;
@@ -262,7 +299,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
   height.anisotropy = 8;
   height.needsUpdate = true;
 
-  return { color, height };
+  return { color, height, normal };
 }
 
 function CaveRocks() {
@@ -411,12 +448,13 @@ function CaveFloorRubble() {
   return <primitive object={rubbleMesh as unknown as Object3D} dispose={null} />;
 }
 
-function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture } }) {
+function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; normal: DataTexture } }) {
   const shell = useMemo(() => {
     // A denser, non-uniform shell. Large-scale chambers and constrictions are
     // sculpted into the cross-section before rock detail is added.
-    const radialSegments = 144;
-    const axialSegments = 224;
+    // ~62k shell vertices preserve the large silhouette and add smoother, finer erosion ridges.
+    const radialSegments = 192;
+    const axialSegments = 320;
     const positions: number[] = [];
     const colors: number[] = [];
     const uvs: number[] = [];
@@ -439,6 +477,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture }
         const coarse = noise3(aroundX * 1.7 + 8, aroundY * 1.7 - 4, t * 7.5);
         const medium = noise3(aroundX * 5.2 - 2, aroundY * 5.2 + 6, t * 23);
         const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
+        const micro = noise3(aroundX * 31 + 4.7, aroundY * 31 - 2.6, t * 91);
         const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
         // The entrance lip is not a clean cut plane: its edge breaks forward
         // and backward by angle, with a stronger chipped silhouette near the roof.
@@ -455,7 +494,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture }
         );
         const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038)
           + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle)
-          + entranceBulge + fine * 0.045;
+          + entranceBulge + fine * 0.052 + micro * 0.018;
 
         // The floor is lower and flatter than the roof; upper surfaces have
         // more headroom and uneven overhangs. This deliberately avoids a
@@ -469,8 +508,9 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture }
         uvs.push(u * 3.8, t * 7.5);
 
         const mineral = Math.max(0, Math.sin(angle * 2.3 + coarse * 2.2 + t * 8.7)) * 0.5;
-        const shade = MathUtils.clamp(0.82 + coarse * 0.10 + medium * 0.07 + fine * 0.035 - mineral * 0.035, 0.58, 1.0);
-        colors.push(shade, shade * (0.97 + mineral * 0.025), shade * (0.93 + mineral * 0.08));
+        const mineralVein = Math.max(0, Math.sin(angle * 4.7 + coarse * 4.1 + t * 19 + medium * 2.2));
+        const shade = MathUtils.clamp(0.82 + coarse * 0.10 + medium * 0.07 + fine * 0.035 + micro * 0.022 - mineral * 0.035 - mineralVein * 0.018, 0.56, 1.02);
+        colors.push(shade * (0.99 - mineralVein * 0.018), shade * (0.97 + mineral * 0.025 + mineralVein * 0.012), shade * (0.92 + mineral * 0.08 + mineralVein * 0.025));
       }
     }
 
@@ -510,7 +550,9 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture }
     color: "#e1d4c0",
     map: maps.color,
     bumpMap: maps.height,
-    bumpScale: 0.155,
+    bumpScale: 0.085,
+    normalMap: maps.normal,
+    normalScale: [0.62, 0.62],
     roughnessMap: maps.height,
     vertexColors: true,
     roughness: 0.98,
@@ -650,11 +692,11 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
 }
 
 function makeFormationGeometry(seed: number, length: number, hanging: boolean): BufferGeometry {
-  const radialSegments = 9;
-  const axialSegments = 7;
+  const radialSegments = 12;
+  const axialSegments = 9;
   const positions: number[] = [];
   const indices: number[] = [];
-  const profile = [0.29, 0.34, 0.275, 0.22, 0.155, 0.105, 0.055, 0.012];
+  const profile = [0.29, 0.35, 0.31, 0.255, 0.205, 0.155, 0.105, 0.062, 0.028, 0.008];
 
   for (let row = 0; row <= axialSegments; row++) {
     const u = row / axialSegments;
@@ -665,7 +707,8 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
       const irregular = 1
         + Math.sin(angle * 3.0 + seed * 1.7 + u * 3.1) * 0.19
         + Math.sin(angle * 5.0 - seed * 0.8 + u * 7.2) * 0.10
-        + noise3(Math.cos(angle) * 2.4 + seed, Math.sin(angle) * 2.4, u * 4.2) * 0.13;
+        + noise3(Math.cos(angle) * 2.4 + seed, Math.sin(angle) * 2.4, u * 4.2) * 0.13
+        + noise3(Math.cos(angle) * 7.8 - seed, Math.sin(angle) * 7.8 + seed * 0.4, u * 12.5) * 0.055;
       const radius = Math.max(0.006, base * irregular * (0.9 + hash01(seed * 11 + row) * 0.2));
       const lean = Math.sin(u * Math.PI * 0.85 + seed) * u * 0.14;
       positions.push(
@@ -692,7 +735,7 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
 }
 
 function CaveFormations() {
-  const formations = useMemo(() => Array.from({ length: 42 }, (_, i) => {
+  const formations = useMemo(() => Array.from({ length: 56 }, (_, i) => {
     const t = 0.045 + hash01(i * 17.31 + 8.1) * 0.91;
     const choice = hash01(i * 9.73 + 2.4);
     const hanging = choice < 0.64;
@@ -782,8 +825,8 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
   const geometry = useMemo(() => {
     // Cross-sections use the same authored centreline as the cinematic camera.
     const curve = makeBranchCurve(side);
-    const tubularSegments = 144;
-    const radialSegments = 48;
+    const tubularSegments = 176;
+    const radialSegments = 56;
     const frames = curve.computeFrenetFrames(tubularSegments, false);
     const positions: number[] = [];
     const uvs: number[] = [];
@@ -838,7 +881,9 @@ function CaveTunnel() {
     color: "#d0bea4",
     map: branchMaps.color,
     bumpMap: branchMaps.height,
-    bumpScale: 0.155,
+    bumpScale: 0.085,
+    normalMap: branchMaps.normal,
+    normalScale: [0.62, 0.62],
     roughnessMap: branchMaps.height,
     roughness: 0.99,
     metalness: 0,
