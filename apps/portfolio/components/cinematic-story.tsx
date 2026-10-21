@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { AdditiveBlending, BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry, CircleGeometry } from "three";
+import { AdditiveBlending, BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -1221,8 +1221,59 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
 
     // Shallow dark pools break up uniformly rough scree. This restrained gloss
     // avoids expensive screen-space reflections and remains viable on phones.
-    const puddleGeometry = new CircleGeometry(1, 28);
-    const puddleMaterial = new MeshStandardMaterial({ color: "#24343a", roughness: 0.28, metalness: 0.12, emissive: "#0c1719", emissiveIntensity: 0.24, side: DoubleSide });
+    // A radial mesh with several rings gives the puddles real low-amplitude
+    // surface relief. The ripple height is subtle enough to avoid a cartoon
+    // water effect but catches warm highlights when the camera moves.
+    const puddleGeometry = new BufferGeometry();
+    const puddlePositions: number[] = [0, 0, 0];
+    const puddleUvs: number[] = [0.5, 0.5];
+    const puddleIndices: number[] = [];
+    const puddleRings = 9;
+    const puddleSegments = 56;
+    for (let ring = 1; ring <= puddleRings; ring++) {
+      const radius = ring / puddleRings;
+      for (let segment = 0; segment < puddleSegments; segment++) {
+        const angle = (segment / puddleSegments) * Math.PI * 2;
+        const x = Math.cos(angle);
+        const y = Math.sin(angle);
+        const ripple = Math.sin(radius * 34 + Math.sin(angle * 3.1) * 0.65) * 0.012 * (1 - radius * 0.32)
+          + noise3(x * 3.5 + 2.1, y * 3.5 - 4.2, radius * 13) * 0.0035;
+        puddlePositions.push(x * radius, y * radius, ripple);
+        puddleUvs.push(0.5 + x * radius * 0.5, 0.5 + y * radius * 0.5);
+      }
+    }
+    const firstRing = 1;
+    for (let segment = 0; segment < puddleSegments; segment++) {
+      const next = (segment + 1) % puddleSegments;
+      puddleIndices.push(0, firstRing + segment, firstRing + next);
+    }
+    for (let ring = 1; ring < puddleRings; ring++) {
+      const innerStart = 1 + (ring - 1) * puddleSegments;
+      const outerStart = 1 + ring * puddleSegments;
+      for (let segment = 0; segment < puddleSegments; segment++) {
+        const next = (segment + 1) % puddleSegments;
+        const inner = innerStart + segment;
+        const innerNext = innerStart + next;
+        const outer = outerStart + segment;
+        const outerNext = outerStart + next;
+        puddleIndices.push(inner, outer, innerNext, outer, outerNext, innerNext);
+      }
+    }
+    puddleGeometry.setAttribute("position", new Float32BufferAttribute(puddlePositions, 3));
+    puddleGeometry.setAttribute("uv", new Float32BufferAttribute(puddleUvs, 2));
+    puddleGeometry.setIndex(puddleIndices);
+    puddleGeometry.computeVertexNormals();
+    const puddleMaterial = new MeshPhysicalMaterial({
+      color: "#263a40",
+      roughness: 0.22,
+      metalness: 0.06,
+      clearcoat: 0.92,
+      clearcoatRoughness: 0.13,
+      ior: 1.333,
+      emissive: "#0c1719",
+      emissiveIntensity: 0.18,
+      side: DoubleSide,
+    });
     const groundHeight = (x: number, z: number) =>
       -2.2
       + noise3(x * 0.19 + 2, z * 0.19 - 1, 2.5) * 0.38
