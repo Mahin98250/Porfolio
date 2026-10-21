@@ -601,8 +601,10 @@ function CaveTunnel() {
 
 function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branchChoice: { current: "left" | "right" | null } }) {
   const world = useRef<Group>(null);
-  // Keep the look target as state between frames: directly looking at a newly
-  // selected branch makes the camera snap even when its position is damped.
+  // Smooth the branch route itself, not only the lens direction. A choice
+  // therefore becomes a gradual steering input rather than a one-frame jump.
+  const branchBlend = useRef(0);
+  // Keep the look target between frames so both translation and rotation ease.
   const smoothLookTarget = useRef(new Vector3(0, 0, 6.2));
   useFrame((state, delta) => {
     const step = Math.min(delta, 0.045);
@@ -612,7 +614,9 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     // Drive the camera from world depth, not the story-panel percentages.
     // This keeps the camera aligned with the actual shell and branch openings.
     const routeT = MathUtils.clamp((9 - targetZ) / 63, 0, 1);
-    const branchOffset = branchChoice.current === "left" ? -1 : branchChoice.current === "right" ? 1 : 0;
+    const selectedBranch = branchChoice.current === "left" ? -1 : branchChoice.current === "right" ? 1 : 0;
+    branchBlend.current = MathUtils.damp(branchBlend.current, selectedBranch === 0 ? 0 : 1, 1.65, step);
+    const branchOffset = selectedBranch;
     const junctionT = 31 / 63;
     const [junctionX, junctionY] = caveCenter(junctionT);
     const junctionRadius = caveRadiusAt(junctionT);
@@ -621,24 +625,27 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       const [x, y] = caveCenter(t);
       if (branchOffset === 0) return [x, y];
 
-      // Approach the fork along the main route, then travel through the
-      // selected opening and follow the same centreline as that branch mesh.
+      // Build the desired path, then blend into it gradually after selection.
+      // The pre-junction steering aims for the mouth; beyond it the path uses
+      // the exact centreline shared with the selected branch geometry.
+      let desiredX: number;
+      let desiredY: number;
       if (t < junctionT) {
         const approach = MathUtils.smoothstep(t, 0.35, junctionT);
-        return [
-          MathUtils.lerp(x, junctionX + branchOffset * (junctionRadius - 0.12), approach),
-          MathUtils.lerp(y, junctionY, approach),
-        ];
+        desiredX = MathUtils.lerp(x, junctionX + branchOffset * (junctionRadius - 0.12), approach);
+        desiredY = MathUtils.lerp(y, junctionY, approach);
+      } else {
+        // Each look-ahead sample uses its own depth, so heading follows the
+        // curve rather than pointing at a single cross-section.
+        const localDepth = MathUtils.clamp(31 - 63 * t, -20.8, 0);
+        const point = branchPointAtDepth(branchOffset as -1 | 1, localDepth);
+        desiredX = junctionX + point.x;
+        desiredY = junctionY + point.y;
       }
-
-      // Sample the exact branch centreline used by the mesh. This avoids
-      // the camera drifting outside the hollow passage during the turn.
-      // Use the queried route sample's depth, not this frame's depth.
-      // The look-ahead samples must advance down the branch too, otherwise
-      // both lookAt points collapse onto the camera's current cross-section.
-      const localDepth = MathUtils.clamp(31 - 63 * t, -20.8, 0);
-      const point = branchPointAtDepth(branchOffset as -1 | 1, localDepth);
-      return [junctionX + point.x, junctionY + point.y];
+      return [
+        MathUtils.lerp(x, desiredX, branchBlend.current),
+        MathUtils.lerp(y, desiredY, branchBlend.current),
+      ];
     };
     const [pathX, pathY] = routePoint(routeT);
     const [aheadX, aheadY] = routePoint(routeT + 0.075);
@@ -657,7 +664,9 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     smoothLookTarget.current.x = MathUtils.damp(smoothLookTarget.current.x, desiredLookX, 2.7, step);
     smoothLookTarget.current.y = MathUtils.damp(smoothLookTarget.current.y, desiredLookY, 2.7, step);
     smoothLookTarget.current.z = MathUtils.damp(smoothLookTarget.current.z, desiredLookZ, 3.8, step);
-    camera.lookAt(smoothLookTarget.current);
+    // Numeric arguments avoid a duplicate-Three Vector3 type collision in
+    // the workspace while retaining the same smoothed look-at target.
+    camera.lookAt(smoothLookTarget.current.x, smoothLookTarget.current.y, smoothLookTarget.current.z);
     camera.rotation.z = MathUtils.damp(camera.rotation.z, -bendStrength * 0.13, 2.2, step);
     if (world.current) {
       world.current.rotation.z = MathUtils.damp(world.current.rotation.z, Math.sin(progress * Math.PI * 3) * 0.012, 1.8, step);
