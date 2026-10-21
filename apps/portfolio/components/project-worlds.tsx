@@ -290,6 +290,16 @@ export function ProjectWorlds() {
         @keyframes pw-drift{from{transform:translate3d(-1%,0,0)}to{transform:translate3d(1%,-2%,0)}}
         @media(max-width:520px){.pw-landmark{opacity:.72}.pw-landmark-a{right:8%;top:24%}.pw-landmark-b{right:20%;top:43%}.pw-launcher{bottom:12px;padding:9px}.pw-launcher-actions{gap:5px}.pw-launcher-actions button{padding:10px 5px;font-size:8px;gap:5px;letter-spacing:0}.pw-launcher-label{font-size:9px}.pw-world-copy{top:48%}.pw-close{top:16px;left:14px}.pw-world-coordinate{left:18px;right:auto;bottom:16px;font-size:8px}}
         @media(prefers-reduced-motion:reduce){.pw-transition,.pw-transition *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+        .pw-close:focus-visible,.pw-world-copy a:focus-visible{outline:2px solid var(--world-light);outline-offset:5px}
+        .pw-close{z-index:5;position:absolute;top:max(22px,env(safe-area-inset-top));left:max(22px,env(safe-area-inset-left));min-height:44px;padding:12px 16px;border:1px solid #ffffff36;border-radius:999px;background:#090b10a8;backdrop-filter:blur(18px);color:#f8f0e7;font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.1em;cursor:pointer;transition:background .2s,transform .2s}
+        .pw-close:hover{background:#ffffff18;transform:translateY(-1px)}
+        .pw-world-copy a{position:relative;z-index:4;display:inline-flex;align-items:center;gap:14px;min-height:46px;margin-top:24px;padding:13px 17px;border:1px solid #ffffff45;border-radius:999px;background:#ffffff0b;color:#f8f0e7;font:10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.12em;text-decoration:none;transition:transform .22s,border-color .22s,background .22s}
+        .pw-world-copy a:hover{transform:translateY(-2px);border-color:var(--world-light);background:#ffffff14}
+        .pw-world-copy a span{color:var(--world-light)}
+        .pw-world-coordinate{position:absolute;z-index:4;right:max(22px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));color:#d4c8b6a6;font:9px ui-monospace,SFMono-Regular,monospace;letter-spacing:.15em}
+        @media(max-width:640px){.pw-world-copy{left:22px;right:22px;top:52%;max-width:100%}.pw-world-copy h2{margin:20px 0 13px;font-size:clamp(40px,12vw,66px)}.pw-world-copy p{max-width:34ch;font-size:14px;line-height:1.6}.pw-world-eyebrow{font-size:9px;letter-spacing:.12em}.pw-close{top:max(14px,env(safe-area-inset-top));left:14px;min-height:42px;padding:10px 13px;font-size:9px}.pw-world-coordinate{right:14px;bottom:max(14px,env(safe-area-inset-bottom));font-size:7px;letter-spacing:.08em}.pw-world-glow{width:58vw;height:58vw}}
+        @media(prefers-reduced-motion:reduce){.pw-transition,.pw-transition *{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}.pw-three-scene{opacity:.72}}
       `}</style>
     </>
   );
