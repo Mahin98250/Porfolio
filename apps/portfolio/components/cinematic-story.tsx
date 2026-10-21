@@ -700,7 +700,7 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
     const object = new Points(geometry, material);
     object.frustumCulled = false;
     return { object, basePositions: positions.slice(), phases };
-  }, []);
+  }, [junctionX, junctionY]);
 
   useFrame((_, delta) => {
     elapsed.current += Math.min(delta, 0.05);
@@ -1051,10 +1051,10 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const puddleGeometry = new CircleGeometry(1, 28);
     const puddleMaterial = new MeshStandardMaterial({ color: "#24343a", roughness: 0.28, metalness: 0.12, emissive: "#0c1719", emissiveIntensity: 0.24, side: DoubleSide });
     const puddleSpecs: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [
-      { p: [-0.9, -1.93, 10.8], s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
-      { p: [0.75, -1.92, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
-      { p: [-0.35, -1.91, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
-      { p: [1.55, -1.94, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
+      { p: [-0.9, -2.13, 10.8], s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
+      { p: [0.75, -2.12, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
+      { p: [-0.35, -2.11, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
+      { p: [1.55, -2.14, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
     ];
     const puddlesMesh = new InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
     puddleSpecs.forEach((piece, index) => {
