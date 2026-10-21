@@ -1047,7 +1047,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     mossMesh.frustumCulled = false;
 
     // Fine roots hang from the upper lip and crack-lines as low-poly tapered strands.
-    const rootGeometry = new CylinderGeometry(0.012, 0.052, 1, 5, 2, true);
+    const rootGeometry = new CylinderGeometry(0.052, 0.012, 1, 5, 2, true);
     const rootMaterial = new MeshStandardMaterial({ color: "#49372a", roughness: 1, metalness: 0 });
     const rootPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
     for (let i = 0; i < 30; i++) {
@@ -1082,11 +1082,16 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     // avoids expensive screen-space reflections and remains viable on phones.
     const puddleGeometry = new CircleGeometry(1, 28);
     const puddleMaterial = new MeshStandardMaterial({ color: "#24343a", roughness: 0.28, metalness: 0.12, emissive: "#0c1719", emissiveIntensity: 0.24, side: DoubleSide });
+    const groundHeight = (x: number, z: number) =>
+      -2.2
+      + noise3(x * 0.19 + 2, z * 0.19 - 1, 2.5) * 0.38
+      + noise3(x * 0.62 - 4, z * 0.62 + 2, 7) * 0.12
+      - Math.pow(Math.abs(x) / 12.5, 1.45) * 0.82;
     const puddleSpecs: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [
-      { p: [-0.9, -2.13 + noise3(-0.9 * 0.19 + 2, 10.8 * 0.19 - 1, 2.5) * 0.38 + noise3(-0.9 * 0.62 - 4, 10.8 * 0.62 + 2, 7) * 0.12 + 0.035, s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
-      { p: [0.75, -2.2 + noise3(0.75 * 0.19 + 2, 13.7 * 0.19 - 1, 2.5) * 0.38 + noise3(0.75 * 0.62 - 4, 13.7 * 0.62 + 2, 7) * 0.12 + 0.035, s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
-      { p: [-0.35, -2.2 + noise3(-0.35 * 0.19 + 2, 17.6 * 0.19 - 1, 2.5) * 0.38 + noise3(-0.35 * 0.62 - 4, 17.6 * 0.62 + 2, 7) * 0.12 + 0.035, s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
-      { p: [1.55, -2.2 + noise3(1.55 * 0.19 + 2, 19.2 * 0.19 - 1, 2.5) * 0.38 + noise3(1.55 * 0.62 - 4, 19.2 * 0.62 + 2, 7) * 0.12 + 0.035, s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
+      { p: [-0.9, groundHeight(-0.9, 10.8) + 0.035, 10.8], s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
+      { p: [0.75, groundHeight(0.75, 13.7) + 0.035, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
+      { p: [-0.35, groundHeight(-0.35, 17.6) + 0.035, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
+      { p: [1.55, groundHeight(1.55, 19.2) + 0.035, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
     ];
     const puddlesMesh = new InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
     puddleSpecs.forEach((piece, index) => {
