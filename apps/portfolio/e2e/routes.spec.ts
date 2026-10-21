@@ -238,7 +238,7 @@ test("DudhWala world exposes its dairy scene and scrollable project story", asyn
 
   const world = page.getByRole("dialog", { name: /DUDHWALA/i });
   await expect(world).toBeVisible();
-  await expect(world.locator("canvas.pw-three-scene")).toBeAttached();
+  await expect(world.locator(".pw-three-scene canvas")).toBeAttached();
   await expect(world.getByRole("link", { name: /EXPLORE THE PROJECT/i })).toHaveAttribute(
     "href",
     "https://github.com/Mahin98250/Dudh-Wallah",
