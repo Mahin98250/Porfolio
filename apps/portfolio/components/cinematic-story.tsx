@@ -914,6 +914,7 @@ function CaveTunnel() {
   const [junctionX, junctionY] = caveCenter(31 / 63);
   return (
     <group>
+      <CaveExterior maps={branchMaps} />
       <CaveShell maps={branchMaps} />
       <CaveGuideDots />
       <CaveFormations />
@@ -1125,7 +1126,6 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       <pointLight position={[-1.2, 0.8, -45.5]} intensity={7.4} distance={27} decay={1.3} color="#f5ddb4" />
       <pointLight position={[0.4, -0.2, -53.5]} intensity={5.8} distance={22} decay={1.35} color="#d9d5c6" />
       <group ref={world}>
-        <CaveExterior maps={branchMaps} />
         <CaveTunnel />
       </group>
     </>
