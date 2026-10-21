@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3 } from "three";
+import { BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry, CircleGeometry } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -980,6 +980,93 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         r: [hash01(seed * 9.7) * 0.3, hash01(seed * 10.9) * 6.2, hash01(seed * 11.1) * 0.4],
       });
     }
+    // Moss islands sit on the cliff shoulders and damp scree edges.
+    // Instancing keeps environmental dressing to a small number of draw calls.
+    const mossGeometry = new IcosahedronGeometry(1, 2);
+    const mossVertices = mossGeometry.getAttribute("position");
+    for (let i = 0; i < mossVertices.count; i++) {
+      const x = mossVertices.getX(i), y = mossVertices.getY(i), z = mossVertices.getZ(i);
+      const warp = noise3(x * 3.2 + 2, y * 3.2 - 5, z * 3.2 + 1);
+      mossVertices.setXYZ(i, x * (1 + warp * 0.13), y * (1 + warp * 0.09), z * (1 + warp * 0.13));
+    }
+    mossGeometry.computeVertexNormals();
+    const mossMaterial = new MeshStandardMaterial({ color: "#58724a", roughness: 1, metalness: 0, flatShading: true });
+    const mossPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number]; tint: number }> = [];
+    for (let i = 0; i < 88; i++) {
+      const seed = 1200 + i * 3.17;
+      const side = hash01(seed) > 0.5 ? 1 : -1;
+      const nearGround = i < 36;
+      mossPieces.push({
+        p: nearGround
+          ? [side * (3.2 + hash01(seed * 1.7) * 5.9), -1.78 + hash01(seed * 2.3) * 1.2, 8 + hash01(seed * 3.1) * 17]
+          : [side * (3.7 + hash01(seed * 1.7) * 4.0), 0.1 + hash01(seed * 2.3) * 4.8, 6 + hash01(seed * 3.1) * 12],
+        s: nearGround
+          ? [0.22 + hash01(seed * 4.1) * 0.52, 0.05 + hash01(seed * 4.7) * 0.12, 0.26 + hash01(seed * 5.3) * 0.62]
+          : [0.26 + hash01(seed * 4.1) * 0.64, 0.08 + hash01(seed * 4.7) * 0.20, 0.24 + hash01(seed * 5.3) * 0.55],
+        r: [hash01(seed * 6.1) * 0.4, hash01(seed * 7.1) * 0.6, (hash01(seed * 8.1) - 0.5) * 0.4],
+        tint: 0.72 + hash01(seed * 9.1) * 0.55,
+      });
+    }
+    const mossMesh = new InstancedMesh(mossGeometry, mossMaterial, mossPieces.length);
+    const detailDummy = new Object3D();
+    mossPieces.forEach((piece, index) => {
+      detailDummy.position.set(...piece.p);
+      detailDummy.scale.set(...piece.s);
+      detailDummy.rotation.set(...piece.r);
+      detailDummy.updateMatrix();
+      mossMesh.setMatrixAt(index, detailDummy.matrix);
+      mossMesh.setColorAt(index, new Color("#63844b").multiplyScalar(piece.tint));
+    });
+    mossMesh.instanceMatrix.needsUpdate = true;
+    if (mossMesh.instanceColor) mossMesh.instanceColor.needsUpdate = true;
+    mossMesh.frustumCulled = false;
+
+    // Fine roots hang from the upper lip and crack-lines as low-poly tapered strands.
+    const rootGeometry = new CylinderGeometry(0.012, 0.052, 1, 5, 2, true);
+    const rootMaterial = new MeshStandardMaterial({ color: "#49372a", roughness: 1, metalness: 0 });
+    const rootPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
+    for (let i = 0; i < 30; i++) {
+      const seed = 1800 + i * 4.17;
+      const side = hash01(seed) > 0.5 ? 1 : -1;
+      const length = 0.48 + hash01(seed * 1.7) * 1.8;
+      rootPieces.push({
+        p: [side * (2.9 + hash01(seed * 2.1) * 3.9), 4.2 + hash01(seed * 3.1) * 2.2 - length * 0.42, 7 + hash01(seed * 4.1) * 10],
+        s: [0.55 + hash01(seed * 5.1) * 1.3, length, 0.55 + hash01(seed * 6.1) * 1.3],
+        r: [(hash01(seed * 7.1) - 0.5) * 0.7, (hash01(seed * 8.1) - 0.5) * 0.6, (hash01(seed * 9.1) - 0.5) * 0.55],
+      });
+    }
+    const rootsMesh = new InstancedMesh(rootGeometry, rootMaterial, rootPieces.length);
+    rootPieces.forEach((piece, index) => {
+      detailDummy.position.set(...piece.p);
+      detailDummy.scale.set(...piece.s);
+      detailDummy.rotation.set(...piece.r);
+      detailDummy.updateMatrix();
+      rootsMesh.setMatrixAt(index, detailDummy.matrix);
+    });
+    rootsMesh.instanceMatrix.needsUpdate = true;
+    rootsMesh.frustumCulled = false;
+
+    // Shallow dark pools break up uniformly rough scree. This restrained gloss
+    // avoids expensive screen-space reflections and remains viable on phones.
+    const puddleGeometry = new CircleGeometry(1, 28);
+    const puddleMaterial = new MeshStandardMaterial({ color: "#24343a", roughness: 0.28, metalness: 0.12, emissive: "#0c1719", emissiveIntensity: 0.24, side: DoubleSide });
+    const puddleSpecs: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [
+      { p: [-0.9, -1.93, 10.8], s: [0.84, 1, 0.43], r: [-Math.PI / 2, 0, -0.08] },
+      { p: [0.75, -1.92, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
+      { p: [-0.35, -1.91, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
+      { p: [1.55, -1.94, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
+    ];
+    const puddlesMesh = new InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
+    puddleSpecs.forEach((piece, index) => {
+      detailDummy.position.set(...piece.p);
+      detailDummy.scale.set(...piece.s);
+      detailDummy.rotation.set(...piece.r);
+      detailDummy.updateMatrix();
+      puddlesMesh.setMatrixAt(index, detailDummy.matrix);
+    });
+    puddlesMesh.instanceMatrix.needsUpdate = true;
+    puddlesMesh.frustumCulled = false;
+
     // A triangulated scree apron joins the outside ground to the cave threshold.
     const groundPositions: number[] = [];
     const groundUvs: number[] = [];
@@ -1029,11 +1116,14 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.frustumCulled = false;
-    return { mesh, ground };
+    return { mesh, ground, mossMesh, rootsMesh, puddlesMesh };
   }, [maps]);
   return <group>
     <primitive object={scene.ground as unknown as Object3D} dispose={null} />
     <primitive object={scene.mesh as unknown as Object3D} dispose={null} />
+    <primitive object={scene.mossMesh as unknown as Object3D} dispose={null} />
+    <primitive object={scene.rootsMesh as unknown as Object3D} dispose={null} />
+    <primitive object={scene.puddlesMesh as unknown as Object3D} dispose={null} />
   </group>;
 }
 
