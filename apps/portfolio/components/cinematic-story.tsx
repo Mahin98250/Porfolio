@@ -38,22 +38,26 @@ function noise3(x: number, y: number, z: number): number {
 function tileNoise2(x: number, y: number, size: number, cellsX: number, cellsY: number): number {
   // Wrap the lattice itself, not only the texture sampler. This ensures the
   // noise values meet at opposite edges instead of exposing a repeat seam.
-  const tx = (((x % size) + size) % size) / size * cellsX;
-  const ty = (((y % size) + size) % size) / size * cellsY;
+  const wrappedX = x >= 0 && x < size ? x : ((x % size) + size) % size;
+  const wrappedY = y >= 0 && y < size ? y : ((y % size) + size) % size;
+  const tx = wrappedX / size * cellsX;
+  const ty = wrappedY / size * cellsY;
   const x0 = Math.floor(tx);
   const y0 = Math.floor(ty);
   const fx = fadeNoise(tx - x0);
   const fy = fadeNoise(ty - y0);
-  const wrapX = (value: number) => (value % cellsX + cellsX) % cellsX;
-  const wrapY = (value: number) => (value % cellsY + cellsY) % cellsY;
+  const x0Wrapped = x0 % cellsX;
+  const x1Wrapped = (x0 + 1) % cellsX;
+  const y0Wrapped = y0 % cellsY;
+  const y1Wrapped = (y0 + 1) % cellsY;
   const a = MathUtils.lerp(
-    hash3(wrapX(x0), wrapY(y0), 0),
-    hash3(wrapX(x0 + 1), wrapY(y0), 0),
+    hash3(x0Wrapped, y0Wrapped, 0),
+    hash3(x1Wrapped, y0Wrapped, 0),
     fx,
   );
   const b = MathUtils.lerp(
-    hash3(wrapX(x0), wrapY(y0 + 1), 0),
-    hash3(wrapX(x0 + 1), wrapY(y0 + 1), 0),
+    hash3(x0Wrapped, y1Wrapped, 0),
+    hash3(x1Wrapped, y1Wrapped, 0),
     fx,
   );
   return MathUtils.lerp(a, b, fy);
