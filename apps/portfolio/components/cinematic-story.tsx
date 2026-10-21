@@ -1307,6 +1307,52 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       { p: [-0.35, groundHeight(-0.35, 17.6) + 0.035, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
       { p: [1.55, groundHeight(1.55, 19.2) + 0.035, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
     ];
+    // A narrow matte seepage halo softens the transition from reflective
+    // water to rough limestone. It is one instanced ring mesh for all pools.
+    const haloGeometry = new BufferGeometry();
+    const haloPositions: number[] = [];
+    const haloIndices: number[] = [];
+    const haloSegments = 56;
+    const haloRings = [0.86, 1.22];
+    for (let ring = 0; ring < haloRings.length; ring++) {
+      const radius = haloRings[ring] ?? 1;
+      for (let segment = 0; segment < haloSegments; segment++) {
+        const angle = (segment / haloSegments) * Math.PI * 2;
+        const x = Math.cos(angle), y = Math.sin(angle);
+        const edge = 1 + (noise3(x * 2.6 + 3.1, y * 2.6 - 4.4, 5.7)
+          + Math.sin(angle * 5 + 0.6) * 0.28 + Math.sin(angle * 9 - 1.2) * 0.12) * 0.052;
+        const r = radius * edge;
+        haloPositions.push(x * r, y * r, 0);
+      }
+    }
+    for (let segment = 0; segment < haloSegments; segment++) {
+      const next = (segment + 1) % haloSegments;
+      haloIndices.push(segment, haloSegments + segment, next);
+      haloIndices.push(next, haloSegments + segment, haloSegments + next);
+    }
+    haloGeometry.setAttribute("position", new Float32BufferAttribute(haloPositions, 3));
+    haloGeometry.setIndex(haloIndices);
+    haloGeometry.computeVertexNormals();
+    const haloMaterial = new MeshStandardMaterial({
+      color: "#202b29",
+      roughness: 0.96,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      side: DoubleSide,
+    });
+    const haloMesh = new InstancedMesh(haloGeometry, haloMaterial, puddleSpecs.length);
+    puddleSpecs.forEach((piece, index) => {
+      detailDummy.position.set(piece.p[0], piece.p[1] - 0.021, piece.p[2]);
+      detailDummy.scale.set(piece.s[0] * 1.12, 1, piece.s[2] * 1.12);
+      detailDummy.rotation.set(...piece.r);
+      detailDummy.updateMatrix();
+      haloMesh.setMatrixAt(index, detailDummy.matrix);
+    });
+    haloMesh.instanceMatrix.needsUpdate = true;
+    haloMesh.frustumCulled = false;
+
     const puddlesMesh = new InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
     puddleSpecs.forEach((piece, index) => {
       detailDummy.position.set(...piece.p);
@@ -1367,7 +1413,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.frustumCulled = false;
-    return { mesh, ground, mossMesh, rootsMesh, puddlesMesh, puddleBasePositions };
+    return { mesh, ground, mossMesh, rootsMesh, puddlesMesh, haloMesh, puddleBasePositions };
   }, [maps]);
   const rippleTime = useRef(0);
   useFrame((_, delta) => {
@@ -1393,6 +1439,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     <primitive object={scene.mesh as unknown as Object3D} dispose={null} />
     <primitive object={scene.mossMesh as unknown as Object3D} dispose={null} />
     <primitive object={scene.rootsMesh as unknown as Object3D} dispose={null} />
+    <primitive object={scene.haloMesh as unknown as Object3D} dispose={null} />
     <primitive object={scene.puddlesMesh as unknown as Object3D} dispose={null} />
   </group>;
 }
