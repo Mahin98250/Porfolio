@@ -157,10 +157,11 @@ function caveSurfacePoint(t: number, angle: number): [number, number] {
   ];
 }
 
-function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: DataTexture } {
+function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } {
   const size = 512;
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
+  const roughnessData = new Uint8Array(size * size * 4);
 
   // A tileable Voronoi fracture field creates thin, irregular cracks in the
   // limestone. Jitter is precomputed so the per-pixel texture pass stays light.
@@ -230,8 +231,20 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       // The exact same fracture field is also cut into the height map below.
       colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 - crackEdge * 10 - damp * 5, 0, 255));
       colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 - crackEdge * 8 - damp * 3, 0, 255));
-      colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5, 0, 255));
+      // Fine iron/mineral flecks add subtle warm/cool variation, not obvious speckles.
+      const mineralTint = Math.max(0, noise2(x / 21 + 17.2, y / 33 - 5.1) - 0.16) * 7;
+      colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5 - mineralTint * 0.24, 0, 255));
+      colorData[i] = Math.round(MathUtils.clamp((colorData[i] ?? 0) + mineralTint, 0, 255));
       colorData[i + 3] = 255;
+
+      // Moisture changes the response to light: damp seams are smoother, while
+      // dry exposed limestone stays chalky and highly rough.
+      const roughness = MathUtils.clamp(0.94 - damp * 0.43 + crackEdge * 0.04 + grain * 0.035, 0.38, 1);
+      const roughnessByte = Math.round(roughness * 255);
+      roughnessData[i] = roughnessByte;
+      roughnessData[i + 1] = roughnessByte;
+      roughnessData[i + 2] = roughnessByte;
+      roughnessData[i + 3] = 255;
 
       const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58 - crackEdge * 0.12 - damp * 0.02, 0, 1);
       const h = Math.round(255 * relief);
@@ -279,6 +292,15 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
   normal.anisotropy = 8;
   normal.needsUpdate = true;
 
+  const roughness = new DataTexture(roughnessData, size, size);
+  roughness.wrapS = RepeatWrapping;
+  roughness.wrapT = RepeatWrapping;
+  roughness.magFilter = LinearFilter;
+  roughness.minFilter = LinearMipmapLinearFilter;
+  roughness.generateMipmaps = true;
+  roughness.anisotropy = 8;
+  roughness.needsUpdate = true;
+
   const color = new DataTexture(colorData, size, size);
   color.colorSpace = SRGBColorSpace;
   color.wrapS = RepeatWrapping;
@@ -299,7 +321,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
   height.anisotropy = 8;
   height.needsUpdate = true;
 
-  return { color, height, normal };
+  return { color, height, normal, roughness };
 }
 
 function CaveRocks() {
@@ -448,7 +470,7 @@ function CaveFloorRubble() {
   return <primitive object={rubbleMesh as unknown as Object3D} dispose={null} />;
 }
 
-function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; normal: DataTexture } }) {
+function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } }) {
   const shell = useMemo(() => {
     // A denser, non-uniform shell. Large-scale chambers and constrictions are
     // sculpted into the cross-section before rock detail is added.
@@ -553,7 +575,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     bumpScale: 0.085,
     normalMap: maps.normal,
     normalScale: [0.62, 0.62],
-    roughnessMap: maps.height,
+    roughnessMap: maps.roughness,
     vertexColors: true,
     roughness: 0.98,
     metalness: 0,
@@ -884,7 +906,7 @@ function CaveTunnel() {
     bumpScale: 0.085,
     normalMap: branchMaps.normal,
     normalScale: [0.62, 0.62],
-    roughnessMap: branchMaps.height,
+    roughnessMap: branchMaps.roughness,
     roughness: 0.99,
     metalness: 0,
     side: DoubleSide,
