@@ -1150,7 +1150,12 @@ export function CinematicStory() {
   const sceneProgress = useRef(0);
   const branchChoice = useRef<"left" | "right" | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<"left" | "right" | null>(null);
-  const [motionAllowed, setMotionAllowed] = useState(true);
+  // Read the preference before mounting Three.js. Otherwise a reduced-motion
+  // browser briefly builds the full cave scene before the effect swaps to fallback.
+  const [motionAllowed, setMotionAllowed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
   const [visible, setVisible] = useState(true);
   const [renderDpr, setRenderDpr] = useState<[number, number]>([1, 1.35]);
 

@@ -40,7 +40,7 @@ const worlds: ProjectWorld[] = [
   },
 ];
 
-function WorldGeometry({ theme }: { theme: ProjectWorld["theme"] }) {
+function WorldGeometry({ theme, motionAllowed }: { theme: ProjectWorld["theme"]; motionAllowed: boolean }) {
   const group = useRef<Group>(null);
   const palette = theme === "learning"
     ? { ground: "#0b2b43", hill: "#164b68", glow: "#58c7ff", accent: "#9ddfff" }
@@ -49,7 +49,7 @@ function WorldGeometry({ theme }: { theme: ProjectWorld["theme"] }) {
       : { ground: "#26180f", hill: "#60432c", glow: "#ffd08a", accent: "#ffbd5a" };
 
   useFrame((state, delta) => {
-    if (!group.current) return;
+    if (!motionAllowed || !group.current) return;
     const t = state.clock.elapsedTime;
     group.current.rotation.y += delta * 0.025;
     group.current.position.y = Math.sin(t * 0.42) * 0.075;
@@ -180,6 +180,15 @@ function WorldGeometry({ theme }: { theme: ProjectWorld["theme"] }) {
 export function ProjectWorlds() {
   const [active, setActive] = useState<ProjectWorld | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [motionAllowed, setMotionAllowed] = useState(false);
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotion = () => setMotionAllowed(!preference.matches);
+    updateMotion();
+    preference.addEventListener?.("change", updateMotion);
+    return () => preference.removeEventListener?.("change", updateMotion);
+  }, []);
 
   useEffect(() => {
     const onEnterWorld = (event: Event) => {
@@ -221,7 +230,7 @@ export function ProjectWorlds() {
         <div className={`pw-transition pw-theme-${active.theme} ${leaving ? "pw-leaving" : "pw-entering"}`} role="dialog" aria-modal="true" aria-label={active.name}>
           <div className="pw-sky" aria-hidden="true" />
           <div className="pw-landscape" aria-hidden="true">
-            <Canvas className="pw-three-scene" dpr={[0.7, 1.25]} camera={{ position: [0, 1.1, 11], fov: 48, near: 0.1, far: 60 }} gl={{ alpha: true, antialias: false, powerPreference: "low-power" }}><WorldGeometry theme={active.theme} /></Canvas>
+            <Canvas className="pw-three-scene" frameloop={motionAllowed ? "always" : "demand"} dpr={[0.7, 1.25]} camera={{ position: [0, 1.1, 11], fov: 48, near: 0.1, far: 60 }} gl={{ alpha: true, antialias: false, powerPreference: "low-power" }}><WorldGeometry theme={active.theme} motionAllowed={motionAllowed} /></Canvas>
             <span className="pw-ridge pw-ridge-back" />
             <span className="pw-ridge pw-ridge-mid" />
             <span className="pw-ridge pw-ridge-front" />
@@ -249,7 +258,7 @@ export function ProjectWorlds() {
         .pw-launcher-actions button b{margin-left:auto;color:#d5bb91;font-size:15px}
         .pw-orb{flex:0 0 9px;width:9px;height:9px;border-radius:50%;box-shadow:0 0 16px currentColor}
         .pw-orb-learning{color:#75caff;background:#75caff}.pw-orb-milk{color:#d8f2d0;background:#d8f2d0}.pw-orb-optical{color:#f2c67c;background:#f2c67c}
-        .pw-transition{position:fixed;z-index:100;inset:0;overflow:hidden;color:#f6f0e8;background:#080a10;isolation:isolate;animation:pw-arrive .85s cubic-bezier(.2,.75,.2,1) both}
+        .pw-transition{position:fixed;z-index:2000;inset:0;overflow:hidden;color:#f6f0e8;background:#080a10;isolation:isolate;animation:pw-arrive .85s cubic-bezier(.2,.75,.2,1) both}
         .pw-transition.pw-leaving{animation:pw-depart .52s cubic-bezier(.7,0,.8,.2) both}
         .pw-sky,.pw-landscape,.pw-ridge,.pw-world-glow,.pw-world-particles{position:absolute;inset:0;pointer-events:none}
         .pw-sky{background:radial-gradient(ellipse at 72% 32%,var(--world-light),transparent 30%),linear-gradient(160deg,var(--world-sky),#08090d 78%)}
