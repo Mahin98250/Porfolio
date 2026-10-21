@@ -189,8 +189,14 @@ export function ProjectWorlds() {
       setLeaving(false);
       setActive(selected);
     };
+    // Expose an explicit hydration-ready signal so callers/tests never dispatch
+    // the custom event before the single global listener has been registered.
+    document.documentElement.dataset.projectWorldsReady = "true";
     window.addEventListener("portfolio:enter-world", onEnterWorld);
-    return () => window.removeEventListener("portfolio:enter-world", onEnterWorld);
+    return () => {
+      window.removeEventListener("portfolio:enter-world", onEnterWorld);
+      delete document.documentElement.dataset.projectWorldsReady;
+    };
   }, []);
 
   useEffect(() => {
