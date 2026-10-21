@@ -170,17 +170,21 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
       const grain = noise2(x / 3.2, y / 3.2);
       const bedding = Math.sin(y / 27 + noise2(x / 58, y / 43) * 2.4) * 0.07;
       const pore = noise2(x / 1.6, y / 1.6) * 0.035;
-      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore, 0, 1);
+      // Thin, wavy mineral beds break up the generic noise look and give the
+      // limestone a believable sedimentary structure without regular stripes.
+      const strataSignal = Math.sin(y / 18 + noise2(x / 88, y / 62) * 3.6 + broad * 1.2);
+      const strata = Math.sign(strataSignal) * Math.pow(Math.abs(strataSignal), 9) * 0.075;
+      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22, 0, 1);
       const i = (y * size + x) * 4;
 
-      // Muted mineral grey, umber and limestone tones; contrast is kept
-      // restrained so the lighting, not a painted pattern, defines the rock.
-      colorData[i] = Math.round(39 + value * 37);
-      colorData[i + 1] = Math.round(35 + value * 32);
-      colorData[i + 2] = Math.round(31 + value * 29);
+      // Muted mineral grey, umber and limestone tones; narrow sediment bands
+      // tint the same relief field so the colour and height maps stay coherent.
+      colorData[i] = Math.round(39 + value * 37 + strata * 34);
+      colorData[i + 1] = Math.round(35 + value * 32 + strata * 24);
+      colorData[i + 2] = Math.round(31 + value * 29 + strata * 14);
       colorData[i + 3] = 255;
 
-      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding, 0, 1);
+      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58, 0, 1);
       const h = Math.round(255 * relief);
       heightData[i] = h;
       heightData[i + 1] = h;
@@ -196,6 +200,8 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
   color.magFilter = LinearFilter;
   color.minFilter = LinearMipmapLinearFilter;
   color.generateMipmaps = true;
+  // Higher anisotropy keeps the procedural stone legible at grazing angles.
+  color.anisotropy = 8;
   color.needsUpdate = true;
 
   const height = new DataTexture(heightData, size, size);
@@ -204,6 +210,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture } {
   height.magFilter = LinearFilter;
   height.minFilter = LinearMipmapLinearFilter;
   height.generateMipmaps = true;
+  height.anisotropy = 8;
   height.needsUpdate = true;
 
   return { color, height };
@@ -263,7 +270,7 @@ function CaveRocks() {
   return <primitive object={rockMesh as unknown as Object3D} dispose={null} />;
 }
 
-function CaveShell() {
+function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture } }) {
   const shell = useMemo(() => {
     // A denser, non-uniform shell. Large-scale chambers and constrictions are
     // sculpted into the cross-section before rock detail is added.
@@ -358,7 +365,6 @@ function CaveShell() {
     return geometry;
   }, []);
 
-  const maps = useMemo(() => makeRockTextures(), []);
   const material = useMemo(() => new MeshStandardMaterial({
     color: "#d4c7b3",
     map: maps.color,
@@ -587,7 +593,7 @@ function CaveTunnel() {
   const [junctionX, junctionY] = caveCenter(31 / 63);
   return (
     <group>
-      <CaveShell />
+      <CaveShell maps={branchMaps} />
       <CaveGuideDots />
       <CaveFormations />
       <CaveRocks />
