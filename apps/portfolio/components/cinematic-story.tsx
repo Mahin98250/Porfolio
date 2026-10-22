@@ -224,13 +224,19 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       // limestone a believable sedimentary structure without regular stripes.
       const strataSignal = Math.sin(y / 18 + noise2(x / 88, y / 62) * 3.6 + broad * 1.2);
       const strata = Math.sign(strataSignal) * Math.pow(Math.abs(strataSignal), 9) * 0.075;
-      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22 - crackEdge * 0.045 - damp * 0.025, 0, 1);
+      // Fine, broken calcite seams: thin branching-looking mineral traces that
+      // follow the noise field instead of reading as straight decorative lines.
+      const calciteSignal = Math.sin(x / 31 + noise2(x / 47, y / 71) * 2.4 + broad * 1.3 + mid * 0.55);
+      const calciteVein = Math.pow(MathUtils.clamp(1 - Math.abs(calciteSignal) / 0.19, 0, 1), 2)
+        * MathUtils.clamp((mid + 0.34) * 1.35, 0, 1)
+        * (0.72 + fine * 0.28);
+      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22 + calciteVein * 0.035 - crackEdge * 0.045 - damp * 0.025, 0, 1);
       const i = (y * size + x) * 4;
 
       // Crack edges darken slightly while seepage cools and stains the stone.
       // The exact same fracture field is also cut into the height map below.
-      colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 - crackEdge * 10 - damp * 5, 0, 255));
-      colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 - crackEdge * 8 - damp * 3, 0, 255));
+      colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 + calciteVein * 10 - crackEdge * 10 - damp * 5, 0, 255));
+      colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 + calciteVein * 8 - crackEdge * 8 - damp * 3, 0, 255));
       // Fine iron/mineral flecks add subtle warm/cool variation, not obvious speckles.
       const mineralTint = Math.max(0, noise2(x / 21 + 17.2, y / 33 - 5.1) - 0.16) * 7;
       colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5 - mineralTint * 0.24, 0, 255));
@@ -246,7 +252,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       roughnessData[i + 2] = roughnessByte;
       roughnessData[i + 3] = 255;
 
-      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58 - crackEdge * 0.12 - damp * 0.02, 0, 1);
+      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58 + calciteVein * 0.045 - crackEdge * 0.12 - damp * 0.02, 0, 1);
       const h = Math.round(255 * relief);
       heightData[i] = h;
       heightData[i + 1] = h;
@@ -1142,7 +1148,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
   // Fractured cliff shoulders extend the entrance into a real landscape instead
   // of leaving a clean pipe-like mouth floating in darkness.
   const scene = useMemo(() => {
-    const geometry = new IcosahedronGeometry(1, 2);
+    const geometry = new IcosahedronGeometry(1, 3);
     const vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
       const x = vertices.getX(i), y = vertices.getY(i), z = vertices.getZ(i);
@@ -1153,7 +1159,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     }
     vertices.needsUpdate = true;
     geometry.computeVertexNormals();
-    const material = new MeshStandardMaterial({ color: "#b9a188", map: maps.color, bumpMap: maps.height, bumpScale: 0.12, normalMap: maps.normal, normalScale: new Vector2(0.8, 0.8), roughnessMap: maps.roughness, roughness: 0.99, flatShading: true });
+    const material = new MeshStandardMaterial({ color: "#b9a188", map: maps.color, bumpMap: maps.height, bumpScale: 0.12, normalMap: maps.normal, normalScale: new Vector2(0.8, 0.8), roughnessMap: maps.roughness, roughness: 0.99, flatShading: false });
     const pieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
     for (const side of [-1, 1]) for (let i = 0; i < 34; i++) {
       const seed = (side + 2) * 100 + i;
