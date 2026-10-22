@@ -139,6 +139,17 @@ function caveOverhangAt(t: number, angle: number): number {
   return mass;
 }
 
+function caveBeddingRelief(t: number, aroundX: number, aroundY: number, coarse: number, medium: number): number {
+  // Broken bedding planes add shallow shelves that follow the cave's curve.
+  // Their phase drifts with the local rock mass, avoiding clean repeating rings.
+  const phaseWarp = noise3(aroundX * 2.2 + 4.7, aroundY * 2.2 - 6.1, t * 11.5);
+  const phase = t * 28 + aroundY * 2.65 + coarse * 1.9 + medium * 0.5 + phaseWarp * 0.9;
+  const bedWave = Math.sin(phase) * 0.014;
+  const chippedEdge = Math.pow(Math.max(0, Math.cos(phase + phaseWarp * 0.45)), 8)
+    * (0.018 + Math.abs(aroundX) * 0.012);
+  return bedWave + chippedEdge;
+}
+
 function caveSurfacePoint(t: number, angle: number): [number, number] {
   const [cx, cy] = caveCenter(t);
   const radiusAt = caveRadiusAt(t);
@@ -148,8 +159,9 @@ function caveSurfacePoint(t: number, angle: number): [number, number] {
   const medium = noise3(aroundX * 5.2 - 2, aroundY * 5.2 + 6, t * 23);
   const fine = noise3(aroundX * 15.5, aroundY * 15.5, t * 48);
   const angularBreakup = noise3(aroundX * 3.1 + t * 1.2, aroundY * 3.1, t * 14);
+  const beddingRelief = caveBeddingRelief(t, aroundX, aroundY, coarse, medium);
   const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038)
-    + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle) + fine * 0.045;
+    + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle) + beddingRelief + fine * 0.045;
   const floorRidge = Math.max(0, -aroundY) * Math.sin(t * 31 + aroundX * 5.7 + coarse) * 0.105;
   return [
     cx + aroundX * radius * (0.98 + medium * 0.045),
@@ -226,6 +238,10 @@ function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture
       // limestone a believable sedimentary structure without regular stripes.
       const strataSignal = Math.sin(y / 18 + noise2(x / 88, y / 62) * 3.6 + broad * 1.2);
       const strata = Math.sign(strataSignal) * Math.pow(Math.abs(strataSignal), 9) * 0.075;
+      // Water tracks run downslope through porous bands; they are long and
+      // broken rather than circular, helping the texture read as a cave wall.
+      const flowLineSignal = Math.sin(x * 0.115 + broad * 2.7 + mid * 0.8);
+      const seepageTrail = Math.pow(Math.max(0, flowLineSignal), 12) * (0.22 + damp * 0.78);
       // Fine, broken calcite seams: thin branching-looking mineral traces that
       // follow the noise field instead of reading as straight decorative lines.
       const calciteSignal = Math.sin(x / 31 + noise2(x / 47, y / 71) * 2.4 + broad * 1.3 + mid * 0.55);
@@ -241,8 +257,8 @@ function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture
 
       // Crack edges darken slightly while seepage cools and stains the stone.
       // The exact same fracture field is also cut into the height map below.
-      colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 + calciteVein * 10 + ironOxide * 13 - crackEdge * 10 - damp * 5, 0, 255));
-      colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 + calciteVein * 8 + ironOxide * 3 - crackEdge * 8 - damp * 3, 0, 255));
+      colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 + calciteVein * 10 + ironOxide * 13 - crackEdge * 10 - damp * 5 - seepageTrail * 7, 0, 255));
+      colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 + calciteVein * 8 + ironOxide * 3 - crackEdge * 8 - damp * 3 - seepageTrail * 5, 0, 255));
       // Fine iron/mineral flecks add subtle warm/cool variation, not obvious speckles.
       const mineralTint = Math.max(0, noise2(x / 21 + 17.2, y / 33 - 5.1) - 0.16) * 7;
       colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5 - mineralTint * 0.24, 0, 255));
@@ -252,7 +268,7 @@ function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture
       // Moisture changes the response to light: damp seams are smoother, while
       // dry exposed limestone stays chalky and highly rough.
       const wetFilm = Math.pow(MathUtils.clamp((noise2(x / 24 - 7, y / 29 + 4) - 0.16) * 1.8, 0, 1), 2) * damp;
-      const roughness = MathUtils.clamp(0.94 - damp * 0.43 - wetFilm * 0.12 + crackEdge * 0.04 + grain * 0.035, 0.32, 1);
+      const roughness = MathUtils.clamp(0.94 - damp * 0.43 - wetFilm * 0.12 - seepageTrail * 0.08 + crackEdge * 0.04 + grain * 0.035, 0.32, 1);
       const roughnessByte = Math.round(roughness * 255);
       roughnessData[i] = roughnessByte;
       roughnessData[i + 1] = roughnessByte;
@@ -566,9 +582,10 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
           + noise3(aroundX * 5.8 + 1, aroundY * 5.8 - 3, 2.4) * 0.12
         );
         const entranceMicro = entranceWeight * micro * 0.045;
+        const beddingRelief = caveBeddingRelief(t, aroundX, aroundY, coarse, medium);
         const radius = radiusAt * (1 + coarse * 0.145 + medium * 0.064 + angularBreakup * 0.038)
           + caveAlcoveAt(t, angle) + caveShelfAt(t, angle) + caveOverhangAt(t, angle)
-          + entranceBulge + fine * 0.052 + micro * 0.018 + entranceMicro;
+          + entranceBulge + beddingRelief + fine * 0.052 + micro * 0.018 + entranceMicro;
 
         // The floor is lower and flatter than the roof; upper surfaces have
         // more headroom and uneven overhangs. This deliberately avoids a
@@ -824,7 +841,7 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
     const uvs: number[] = [];
     const colors: number[] = [];
     const indices: number[] = [];
-    const count = 88;
+    const count = 112;
 
     for (let i = 0; i < count; i++) {
       const t = 0.05 + hash01(i * 17.31 + 8.1) * 0.90;
@@ -842,7 +859,7 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
       const dx = surfaceX - cx;
       const dy = surfaceY - cy;
       const radialLength = Math.hypot(dx, dy) || 1;
-      const length = 0.24 + hash01(i * 23.71 + 3.3) * (hanging ? 0.56 : 0.39);
+      const length = 0.28 + hash01(i * 23.71 + 3.3) * (hanging ? 0.84 : 0.54);
       const anchorInset = 0.14 + length * 0.12;
       const position: [number, number, number] = [
         surfaceX - (dx / radialLength) * anchorInset,
