@@ -165,7 +165,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
 
   // A tileable Voronoi fracture field creates thin, irregular cracks in the
   // limestone. Jitter is precomputed so the per-pixel texture pass stays light.
-  const crackCellSize = 32;
+  const crackCellSize = 64; // larger, less repetitive limestone plates instead of tiny paver-like polygons
   const crackGridCount = size / crackCellSize;
   const crackSites = new Float32Array(crackGridCount * crackGridCount * 2);
   for (let gy = 0; gy < crackGridCount; gy++) {
@@ -215,7 +215,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
       }
       // Only take square roots once per texel, not once per candidate site.
       const distanceGap = Math.sqrt(secondNearestDistanceSq) - Math.sqrt(nearestDistanceSq);
-      const crackEdge = Math.pow(MathUtils.clamp(1 - distanceGap / 0.105, 0, 1), 1.35);
+      const crackEdge = Math.pow(MathUtils.clamp(1 - distanceGap / (1.9 / crackCellSize), 0, 1), 1.35);
 
       // Irregular damp patches read as seepage stains, not a glossy wet shader.
       const damp = Math.pow(MathUtils.clamp((noise2(x / 73 + 6.4, y / 101 - 3.2) - 0.05) * 1.55, 0, 1), 1.5);
