@@ -52,7 +52,7 @@ test("left and right passage choices confirm selection and advance toward the ch
     { name: /TAKE THE RIGHT PASSAGE/i, selected: "RIGHT" },
   ]) {
     await page.goto("/");
-    await scrubStory(page, 0.46);
+    await scrubStory(page, 0.529);
     await expect(page.locator(".cinematic-story-track")).toHaveAttribute("data-chapter", "branch");
     const initialScroll = await page.locator(".cinematic-story-scroll").evaluate((element) => (element as HTMLElement).scrollTop);
 
