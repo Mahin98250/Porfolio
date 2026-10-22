@@ -822,9 +822,9 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
       const sy = Math.sin(rotationY), cyr = Math.cos(rotationY);
       const sz = Math.sin(rotationZ), czr = Math.cos(rotationZ);
       for (let vertex = 0; vertex < sourcePositions.count; vertex++) {
-        let x = sourcePositions.getX(vertex) * scale[0];
-        let y = sourcePositions.getY(vertex) * scale[1];
-        let z = sourcePositions.getZ(vertex) * scale[2];
+        const x = sourcePositions.getX(vertex) * scale[0];
+        const y = sourcePositions.getY(vertex) * scale[1];
+        const z = sourcePositions.getZ(vertex) * scale[2];
         const y1 = y * cxr - z * sx;
         const z1 = y * sx + z * cxr;
         const x2 = x * cyr + z1 * sy;
