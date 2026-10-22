@@ -1356,10 +1356,16 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         const angle = (segment / puddleSegments) * Math.PI * 2;
         const x = Math.cos(angle);
         const y = Math.sin(angle);
+        // Natural pools have broken, mineral-defined shorelines rather than
+        // perfect ellipses. Keep the centre calm and let the edge wander.
+        const shorelineNoise = noise3(x * 2.8 + 7.4, y * 2.8 - 3.6, 5.2) * 0.105
+          + Math.sin(angle * 5.0 + 0.8) * 0.028
+          + Math.sin(angle * 9.0 - 1.3) * 0.014;
+        const shorelineRadius = radius * (1 + shorelineNoise * Math.pow(radius, 1.7));
         const ripple = Math.sin(radius * 34 + Math.sin(angle * 3.1) * 0.65) * 0.012 * (1 - radius * 0.32)
           + noise3(x * 3.5 + 2.1, y * 3.5 - 4.2, radius * 13) * 0.0035;
-        puddlePositions.push(x * radius, y * radius, ripple);
-        puddleUvs.push(0.5 + x * radius * 0.5, 0.5 + y * radius * 0.5);
+        puddlePositions.push(x * shorelineRadius, y * shorelineRadius, ripple);
+        puddleUvs.push(0.5 + x * shorelineRadius * 0.5, 0.5 + y * shorelineRadius * 0.5);
       }
     }
     const firstRing = 1;
