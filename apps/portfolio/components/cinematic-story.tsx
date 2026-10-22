@@ -234,6 +234,9 @@ function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture
         * (0.72 + fine * 0.28);
       const ironOxide = Math.pow(MathUtils.clamp((noise2(x / 79 - 11, y / 91 + 6) - 0.44) * 1.8, 0, 1), 1.6);
       const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + solutionPits + strata * 0.22 + calciteVein * 0.035 - crackEdge * 0.045 - damp * 0.025 - hairline * 0.018, 0, 1);
+      // Erosion pockets and scallops cluster along broken limestone bedding.
+      const scallop = Math.pow(MathUtils.clamp((noise2(x / 10.5 + broad * 1.6, y / 8.2 - mid * 1.4) - 0.12) * 1.6, 0, 1), 1.7) * (0.35 + Math.abs(strataSignal) * 0.65);
+      const solutionPocket = Math.pow(MathUtils.clamp((noise2(x / 5.8 + 21.3, y / 6.7 - 14.1) - 0.28) * 1.9, 0, 1), 2);
       const i = (y * size + x) * 4;
 
       // Crack edges darken slightly while seepage cools and stains the stone.
@@ -248,14 +251,15 @@ function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture
 
       // Moisture changes the response to light: damp seams are smoother, while
       // dry exposed limestone stays chalky and highly rough.
-      const roughness = MathUtils.clamp(0.94 - damp * 0.43 + crackEdge * 0.04 + grain * 0.035, 0.38, 1);
+      const wetFilm = Math.pow(MathUtils.clamp((noise2(x / 24 - 7, y / 29 + 4) - 0.16) * 1.8, 0, 1), 2) * damp;
+      const roughness = MathUtils.clamp(0.94 - damp * 0.43 - wetFilm * 0.12 + crackEdge * 0.04 + grain * 0.035, 0.32, 1);
       const roughnessByte = Math.round(roughness * 255);
       roughnessData[i] = roughnessByte;
       roughnessData[i + 1] = roughnessByte;
       roughnessData[i + 2] = roughnessByte;
       roughnessData[i + 3] = 255;
 
-      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58 + calciteVein * 0.045 - crackEdge * 0.12 - damp * 0.02, 0, 1);
+      const relief = MathUtils.clamp(0.5 + broad * 0.25 + mid * 0.2 + fine * 0.11 + grain * 0.06 + bedding + strata * 0.58 + calciteVein * 0.045 - scallop * 0.065 - solutionPocket * 0.055 - crackEdge * 0.12 - damp * 0.02, 0, 1);
       const h = Math.round(255 * relief);
       heightData[i] = h;
       heightData[i + 1] = h;
