@@ -346,6 +346,11 @@ function CaveRocks({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     }
     vertices.needsUpdate = true;
     shape.computeVertexNormals();
+    const uv = shape.getAttribute("uv");
+    for (let index = 0; index < uv.count; index++) {
+      uv.setXY(index, uv.getX(index) * 2.45, uv.getY(index) * 2.45);
+    }
+    uv.needsUpdate = true;
     return shape;
   }, []);
   const material = useMemo(() => new MeshStandardMaterial({
@@ -426,6 +431,11 @@ function CaveFloorRubble({ maps }: { maps: { color: DataTexture; height: DataTex
     }
     vertices.needsUpdate = true;
     shape.computeVertexNormals();
+    const uv = shape.getAttribute("uv");
+    for (let index = 0; index < uv.count; index++) {
+      uv.setXY(index, uv.getX(index) * 2.8, uv.getY(index) * 2.8);
+    }
+    uv.needsUpdate = true;
     return shape;
   }, []);
 
@@ -1438,8 +1448,13 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       dummy.rotation.set(...piece.r);
       dummy.updateMatrix();
       mesh.setMatrixAt(index, dummy.matrix);
+      // Individual warm/cool albedo shifts stop the cliff from reading as
+      // one repeated material stamp even when every boulder shares its maps.
+      const tint = 0.74 + hash01(index * 13.91 + 4.6) * 0.31;
+      mesh.setColorAt(index, new Color(tint, tint * (0.94 + hash01(index * 7.3) * 0.06), tint * (0.86 + hash01(index * 9.1) * 0.12)));
     });
     mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.frustumCulled = false;
     return { mesh, ground, mossMesh, rootsMesh, puddlesMesh, puddleBasePositions };
   }, [maps]);
