@@ -720,11 +720,13 @@ function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: numb
 }
 
 function makeFormationGeometry(seed: number, length: number, hanging: boolean): BufferGeometry {
-  const radialSegments = 12;
-  const axialSegments = 9;
+  // Higher radial and axial detail removes the brittle, low-poly shard look.
+  const radialSegments = 16;
+  const axialSegments = 12;
   const positions: number[] = [];
+  const uvs: number[] = [];
   const indices: number[] = [];
-  const profile = [0.29, 0.35, 0.31, 0.255, 0.205, 0.155, 0.105, 0.062, 0.028, 0.008];
+  const profile = [0.27, 0.33, 0.34, 0.31, 0.285, 0.255, 0.222, 0.19, 0.15, 0.115, 0.077, 0.045, 0.012];
 
   for (let row = 0; row <= axialSegments; row++) {
     const u = row / axialSegments;
@@ -733,17 +735,20 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
     for (let segment = 0; segment <= radialSegments; segment++) {
       const angle = (segment / radialSegments) * Math.PI * 2;
       const irregular = 1
-        + Math.sin(angle * 3.0 + seed * 1.7 + u * 3.1) * 0.19
-        + Math.sin(angle * 5.0 - seed * 0.8 + u * 7.2) * 0.10
-        + noise3(Math.cos(angle) * 2.4 + seed, Math.sin(angle) * 2.4, u * 4.2) * 0.13
-        + noise3(Math.cos(angle) * 7.8 - seed, Math.sin(angle) * 7.8 + seed * 0.4, u * 12.5) * 0.055;
-      const radius = Math.max(0.006, base * irregular * (0.9 + hash01(seed * 11 + row) * 0.2));
-      const lean = Math.sin(u * Math.PI * 0.85 + seed) * u * 0.14;
+        + Math.sin(angle * 2.4 + seed * 1.7 + u * 2.7) * 0.105
+        + Math.sin(angle * 4.8 - seed * 0.8 + u * 5.6) * 0.055
+        + noise3(Math.cos(angle) * 2.2 + seed, Math.sin(angle) * 2.2, u * 4.2) * 0.09
+        + noise3(Math.cos(angle) * 6.3 - seed, Math.sin(angle) * 6.3 + seed * 0.4, u * 10.5) * 0.035;
+      const radius = Math.max(0.006, base * irregular * (0.94 + hash01(seed * 11 + row) * 0.12));
+      const lean = Math.sin(u * Math.PI * 0.85 + seed) * u * 0.09;
       positions.push(
         Math.cos(angle) * radius + lean,
         hanging ? -taper : taper,
-        Math.sin(angle) * radius * (0.84 + Math.sin(seed) * 0.08),
+        Math.sin(angle) * radius * (0.91 + Math.sin(seed) * 0.045),
       );
+      // Repeat the rock maps across the small formation so its surface has
+      // the same limestone grain and damp response as the surrounding shell.
+      uvs.push((segment / radialSegments) * 1.6, u * 2.2);
     }
   }
 
@@ -757,54 +762,111 @@ function makeFormationGeometry(seed: number, length: number, hanging: boolean): 
 
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
   return geometry;
 }
 
-function CaveFormations() {
-  const formations = useMemo(() => Array.from({ length: 56 }, (_, i) => {
-    const t = 0.045 + hash01(i * 17.31 + 8.1) * 0.91;
-    const choice = hash01(i * 9.73 + 2.4);
-    const hanging = choice < 0.64;
-    const wall = choice >= 0.64 && choice < 0.83;
-    const side = hash01(i * 13.61 + 4.2) > 0.5 ? 1 : -1;
-    const angle = hanging
-      ? 0.38 + hash01(i * 14.3 + 7.1) * (Math.PI - 0.76)
-      : wall
-        ? (side > 0 ? 0 : Math.PI) + (hash01(i * 3.77 + 2.1) - 0.5) * 0.16
-        : Math.PI + 0.30 + hash01(i * 8.91 + 6.8) * (Math.PI - 0.60);
-    const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
-    const [cx, cy] = caveCenter(t);
-    const dx = surfaceX - cx;
-    const dy = surfaceY - cy;
-    const radialLength = Math.hypot(dx, dy) || 1;
-    const length = 0.34 + hash01(i * 23.71 + 3.3) * (hanging ? 0.82 : 0.64);
-    const z = 9 - t * 63;
-    const geometry = makeFormationGeometry(i * 1.73 + 0.4, length, hanging);
-    // Place the broad end inside the wall by a few centimetres; the formation
-    // axis then points inward, following the local roof, floor, or side wall.
-    const rotationZ = hanging ? angle - Math.PI / 2 : Math.PI / 2 + angle;
-    return {
-      position: [surfaceX - (dx / radialLength) * 0.055, surfaceY - (dy / radialLength) * 0.055, z] as [number, number, number],
-      rotation: [
-        wall ? (hash01(i * 5.7) - 0.5) * 0.22 : (hash01(i * 2.71) - 0.5) * 0.10,
-        (hash01(i * 3.9) - 0.5) * 0.18,
-        rotationZ + (hash01(i * 21.7) - 0.5) * 0.18,
-      ] as [number, number, number],
-      scale: [0.68 + hash01(i * 4.2) * 0.82, 0.7 + hash01(i * 12.5) * 0.95, 0.72 + hash01(i * 8.6) * 0.8] as [number, number, number],
-      geometry,
-      color: i % 7 === 0 ? "#5b4b40" : i % 3 === 0 ? "#403a35" : "#4b4038",
-    };
-  }), []);
-  return <group>
-    {formations.map((formation, i) => (
-      <mesh key={i} position={formation.position} rotation={formation.rotation} scale={formation.scale}>
-        <primitive object={formation.geometry} attach="geometry" />
-        <meshStandardMaterial color={formation.color} roughness={0.99} metalness={0} flatShading />
-      </mesh>
-    ))}
-  </group>;
+function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } }) {
+  const geometry = useMemo(() => {
+    // Bake individual irregular formations into one geometry. This gives each
+    // one a unique silhouette but keeps the whole formation field to one draw call.
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const colors: number[] = [];
+    const indices: number[] = [];
+    const count = 40;
+
+    for (let i = 0; i < count; i++) {
+      const t = 0.05 + hash01(i * 17.31 + 8.1) * 0.90;
+      const choice = hash01(i * 9.73 + 2.4);
+      const hanging = choice < 0.64;
+      const wall = choice >= 0.64 && choice < 0.83;
+      const side = hash01(i * 13.61 + 4.2) > 0.5 ? 1 : -1;
+      const angle = hanging
+        ? 0.38 + hash01(i * 14.3 + 7.1) * (Math.PI - 0.76)
+        : wall
+          ? (side > 0 ? 0 : Math.PI) + (hash01(i * 3.77 + 2.1) - 0.5) * 0.16
+          : Math.PI + 0.30 + hash01(i * 8.91 + 6.8) * (Math.PI - 0.60);
+      const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
+      const [cx, cy] = caveCenter(t);
+      const dx = surfaceX - cx;
+      const dy = surfaceY - cy;
+      const radialLength = Math.hypot(dx, dy) || 1;
+      const length = 0.24 + hash01(i * 23.71 + 3.3) * (hanging ? 0.56 : 0.39);
+      const anchorInset = 0.14 + length * 0.12;
+      const position: [number, number, number] = [
+        surfaceX - (dx / radialLength) * anchorInset,
+        surfaceY - (dy / radialLength) * anchorInset,
+        9 - t * 63,
+      ];
+      const rotationX = wall ? (hash01(i * 5.7) - 0.5) * 0.18 : (hash01(i * 2.71) - 0.5) * 0.07;
+      const rotationY = (hash01(i * 3.9) - 0.5) * 0.12;
+      const rotationZ = (hanging ? angle - Math.PI / 2 : Math.PI / 2 + angle)
+        + (hash01(i * 21.7) - 0.5) * 0.12;
+      const scale: [number, number, number] = [
+        0.62 + hash01(i * 4.2) * 0.43,
+        0.64 + hash01(i * 12.5) * 0.40,
+        0.62 + hash01(i * 8.6) * 0.42,
+      ];
+
+      const source = makeFormationGeometry(i * 1.73 + 0.4, length, hanging);
+      const sourcePositions = source.getAttribute("position");
+      const sourceUvs = source.getAttribute("uv");
+      const sourceIndices = source.getIndex();
+      const offset = positions.length / 3;
+      const tint = 0.78 + hash01(i * 31.7 + 6.2) * 0.28;
+
+      const sx = Math.sin(rotationX), cxr = Math.cos(rotationX);
+      const sy = Math.sin(rotationY), cyr = Math.cos(rotationY);
+      const sz = Math.sin(rotationZ), czr = Math.cos(rotationZ);
+      for (let vertex = 0; vertex < sourcePositions.count; vertex++) {
+        let x = sourcePositions.getX(vertex) * scale[0];
+        let y = sourcePositions.getY(vertex) * scale[1];
+        let z = sourcePositions.getZ(vertex) * scale[2];
+        const y1 = y * cxr - z * sx;
+        const z1 = y * sx + z * cxr;
+        const x2 = x * cyr + z1 * sy;
+        const z2 = -x * sy + z1 * cyr;
+        const x3 = x2 * czr - y1 * sz;
+        const y3 = x2 * sz + y1 * czr;
+        positions.push(position[0] + x3, position[1] + y3, position[2] + z2);
+        uvs.push(sourceUvs.getX(vertex), sourceUvs.getY(vertex));
+        colors.push(tint, tint * (0.94 + hash01(i * 8.9) * 0.06), tint * (0.86 + hash01(i * 9.7) * 0.1));
+      }
+      if (sourceIndices) {
+        for (let index = 0; index < sourceIndices.count; index++) indices.push(offset + sourceIndices.getX(index));
+      }
+      source.dispose();
+    }
+
+    const merged = new BufferGeometry();
+    merged.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    merged.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    merged.setAttribute("color", new Float32BufferAttribute(colors, 3));
+    merged.setIndex(indices);
+    merged.computeVertexNormals();
+    return merged;
+  }, []);
+
+  const material = useMemo(() => new MeshStandardMaterial({
+    color: "#e9d8bd",
+    map: maps.color,
+    bumpMap: maps.height,
+    bumpScale: 0.052,
+    normalMap: maps.normal,
+    normalScale: new Vector2(0.38, 0.38),
+    roughnessMap: maps.roughness,
+    roughness: 0.98,
+    metalness: 0,
+    vertexColors: true,
+    side: DoubleSide,
+  }), [maps]);
+  const mesh = useMemo(() => new Mesh(geometry, material), [geometry, material]);
+  mesh.frustumCulled = false;
+
+  return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
 function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
@@ -1062,7 +1124,7 @@ function CaveTunnel() {
       <CaveExterior maps={branchMaps} />
       <CaveShell maps={branchMaps} />
       <CaveGuideDots />
-      <CaveFormations />
+      <CaveFormations maps={branchMaps} />
       <CaveRocks />
       <CaveFloorRubble />
       <CaveEntranceMist />
