@@ -183,6 +183,9 @@ function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture
       const grain = noise2(x / 3.2, y / 3.2);
       const bedding = Math.sin(y / 27 + noise2(x / 58, y / 43) * 2.4) * 0.07;
       const pore = noise2(x / 1.6, y / 1.6) * 0.035;
+      // Hairline fractures and small solution pits add close-up scale cues.
+      const hairline = Math.pow(Math.max(0, Math.sin(x * 0.061 + noise2(x / 22, y / 17) * 2.8) * Math.sin(y * 0.047 + noise2(x / 19, y / 31) * 2.2)), 18);
+      const solutionPits = Math.pow(Math.max(0, noise2(x / 2.4 + 19, y / 2.4 - 7) - 0.56), 2) * 0.16;
 
       // Find the two closest fracture sites in a wrapping 3x3 cell window.
       // The difference between their distances isolates narrow, chipped seams.
@@ -229,13 +232,14 @@ function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture
       const calciteVein = Math.pow(MathUtils.clamp(1 - Math.abs(calciteSignal) / 0.19, 0, 1), 2)
         * MathUtils.clamp((mid + 0.34) * 1.35, 0, 1)
         * (0.72 + fine * 0.28);
-      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + strata * 0.22 + calciteVein * 0.035 - crackEdge * 0.045 - damp * 0.025, 0, 1);
+      const ironOxide = Math.pow(MathUtils.clamp((noise2(x / 79 - 11, y / 91 + 6) - 0.44) * 1.8, 0, 1), 1.6);
+      const value = MathUtils.clamp(0.5 + broad * 0.24 + mid * 0.15 + fine * 0.075 + grain * 0.035 + bedding + pore + solutionPits + strata * 0.22 + calciteVein * 0.035 - crackEdge * 0.045 - damp * 0.025 - hairline * 0.018, 0, 1);
       const i = (y * size + x) * 4;
 
       // Crack edges darken slightly while seepage cools and stains the stone.
       // The exact same fracture field is also cut into the height map below.
-      colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 + calciteVein * 10 - crackEdge * 10 - damp * 5, 0, 255));
-      colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 + calciteVein * 8 - crackEdge * 8 - damp * 3, 0, 255));
+      colorData[i] = Math.round(MathUtils.clamp(39 + value * 37 + strata * 34 + calciteVein * 10 + ironOxide * 13 - crackEdge * 10 - damp * 5, 0, 255));
+      colorData[i + 1] = Math.round(MathUtils.clamp(35 + value * 32 + strata * 24 + calciteVein * 8 + ironOxide * 3 - crackEdge * 8 - damp * 3, 0, 255));
       // Fine iron/mineral flecks add subtle warm/cool variation, not obvious speckles.
       const mineralTint = Math.max(0, noise2(x / 21 + 17.2, y / 33 - 5.1) - 0.16) * 7;
       colorData[i + 2] = Math.round(MathUtils.clamp(31 + value * 29 + strata * 14 - crackEdge * 7 + damp * 1.5 - mineralTint * 0.24, 0, 255));
@@ -658,8 +662,8 @@ function CaveGuideDots() {
 function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: number }) {
   const elapsed = useRef(0);
   const dust = useMemo(() => {
-    const mainCount = 720;
-    const branchCount = 112;
+    const mainCount = 960;
+    const branchCount = 144;
     const count = mainCount + branchCount * 2;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
@@ -816,7 +820,7 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
     const uvs: number[] = [];
     const colors: number[] = [];
     const indices: number[] = [];
-    const count = 64;
+    const count = 88;
 
     for (let i = 0; i < count; i++) {
       const t = 0.05 + hash01(i * 17.31 + 8.1) * 0.90;
