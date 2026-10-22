@@ -157,15 +157,14 @@ function caveSurfacePoint(t: number, angle: number): [number, number] {
   ];
 }
 
-function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } {
-  const size = 512;
+function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } {
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
   const roughnessData = new Uint8Array(size * size * 4);
 
   // A tileable Voronoi fracture field creates thin, irregular cracks in the
   // limestone. Jitter is precomputed so the per-pixel texture pass stays light.
-  const crackCellSize = 64; // larger, less repetitive limestone plates instead of tiny paver-like polygons
+  const crackCellSize = size / 8; // keep the same geological scale at every texture resolution
   const crackGridCount = size / crackCellSize;
   const crackSites = new Float32Array(crackGridCount * crackGridCount * 2);
   for (let gy = 0; gy < crackGridCount; gy++) {
@@ -330,7 +329,7 @@ function makeRockTextures(): { color: DataTexture; height: DataTexture; normal: 
   return { color, height, normal, roughness };
 }
 
-function CaveRocks() {
+function CaveRocks({ maps }: { maps: { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } }) {
   const geometry = useMemo(() => {
     const shape = new IcosahedronGeometry(1, 2);
     const vertices = shape.getAttribute("position");
@@ -350,20 +349,26 @@ function CaveRocks() {
     return shape;
   }, []);
   const material = useMemo(() => new MeshStandardMaterial({
-    color: "#625548",
+    color: "#c2aa8d",
+    map: maps.color,
+    bumpMap: maps.height,
+    bumpScale: 0.072,
+    normalMap: maps.normal,
+    normalScale: new Vector2(0.48, 0.48),
+    roughnessMap: maps.roughness,
     roughness: 0.99,
     metalness: 0,
     flatShading: false,
-  }), []);
+  }), [maps]);
   // Wall dressing should read as fractured limestone, not boulders floating
   // through the camera path. Use fewer, smaller pieces and sink them further.
-  const rocks = useMemo(() => Array.from({ length: 180 }, (_, i) => {
+  const rocks = useMemo(() => Array.from({ length: 280 }, (_, i) => {
     const t = 0.025 + hash01(i * 23.91 + 5.3) * 0.93;
     const angle = hash01(i * 61.17 + 1.7) * Math.PI * 2;
     const [cx, cy] = caveCenter(t);
     const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
     const z = 9 - t * 63;
-    const size = 0.075 + hash01(i * 14.31 + 2.1) * 0.135;
+    const size = 0.052 + Math.pow(hash01(i * 14.31 + 2.1), 1.55) * 0.158;
     // Anchor rubble to the actual noisy wall field and sink it slightly into
     // the rock so pieces do not float in the middle of the passage.
     const dx = surfaceX - cx;
@@ -392,8 +397,11 @@ function CaveRocks() {
       dummy.scale.set(...rock.scale);
       dummy.updateMatrix();
       mesh.setMatrixAt(index, dummy.matrix);
+      const tint = 0.72 + hash01(index * 17.13 + 3.6) * 0.32;
+      mesh.setColorAt(index, new Color(tint, tint * (0.93 + hash01(index * 4.3) * 0.07), tint * (0.85 + hash01(index * 8.7) * 0.13)));
     });
     mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.frustumCulled = false;
     return mesh;
   }, [geometry, material, rocks]);
@@ -401,7 +409,7 @@ function CaveRocks() {
   return <primitive object={rockMesh as unknown as Object3D} dispose={null} />;
 }
 
-function CaveFloorRubble() {
+function CaveFloorRubble({ maps }: { maps: { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } }) {
   const geometry = useMemo(() => {
     const shape = new IcosahedronGeometry(1, 1);
     const vertices = shape.getAttribute("position");
@@ -422,13 +430,19 @@ function CaveFloorRubble() {
   }, []);
 
   const material = useMemo(() => new MeshStandardMaterial({
-    color: "#5e5548",
-    roughness: 1,
+    color: "#c1a98b",
+    map: maps.color,
+    bumpMap: maps.height,
+    bumpScale: 0.065,
+    normalMap: maps.normal,
+    normalScale: new Vector2(0.42, 0.42),
+    roughnessMap: maps.roughness,
+    roughness: 0.99,
     metalness: 0,
     flatShading: true,
-  }), []);
+  }), [maps]);
 
-  const stones = useMemo(() => Array.from({ length: 168 }, (_, i) => {
+  const stones = useMemo(() => Array.from({ length: 380 }, (_, i) => {
     const t = 0.028 + hash01(i * 31.71 + 2.6) * 0.944;
     // Keep the fragments around the lower shoulders of the floor. That adds
     // scale cues without filling the camera's central path with large rocks.
@@ -438,7 +452,7 @@ function CaveFloorRubble() {
     const dx = surfaceX - cx;
     const dy = surfaceY - cy;
     const radialLength = Math.hypot(dx, dy) || 1;
-    const size = 0.035 + hash01(i * 19.17 + 4.3) * 0.085;
+    const size = 0.018 + Math.pow(hash01(i * 19.17 + 4.3), 2.15) * 0.13;
     return {
       position: [
         surfaceX - (dx / radialLength) * size * 0.82,
@@ -467,8 +481,11 @@ function CaveFloorRubble() {
       dummy.scale.set(...stone.scale);
       dummy.updateMatrix();
       mesh.setMatrixAt(index, dummy.matrix);
+      const tint = 0.66 + hash01(index * 21.17 + 5.8) * 0.34;
+      mesh.setColorAt(index, new Color(tint, tint * (0.94 + hash01(index * 3.8) * 0.06), tint * (0.87 + hash01(index * 9.1) * 0.12)));
     });
     mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.frustumCulled = false;
     return mesh;
   }, [geometry, material, stones]);
@@ -481,8 +498,9 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     // A denser, non-uniform shell. Large-scale chambers and constrictions are
     // sculpted into the cross-section before rock detail is added.
     // ~62k shell vertices preserve the large silhouette and add smoother, finer erosion ridges.
-    const radialSegments = 192;
-    const axialSegments = 320;
+    const highDetail = typeof window !== "undefined" && window.innerWidth >= 1920;
+    const radialSegments = highDetail ? 256 : 192;
+    const axialSegments = highDetail ? 448 : 320;
     const positions: number[] = [];
     const colors: number[] = [];
     const uvs: number[] = [];
@@ -624,8 +642,8 @@ function CaveGuideDots() {
 function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: number }) {
   const elapsed = useRef(0);
   const dust = useMemo(() => {
-    const mainCount = 520;
-    const branchCount = 80;
+    const mainCount = 720;
+    const branchCount = 112;
     const count = mainCount + branchCount * 2;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
@@ -782,7 +800,7 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
     const uvs: number[] = [];
     const colors: number[] = [];
     const indices: number[] = [];
-    const count = 40;
+    const count = 64;
 
     for (let i = 0; i < count; i++) {
       const t = 0.05 + hash01(i * 17.31 + 8.1) * 0.90;
@@ -921,8 +939,9 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
   const geometry = useMemo(() => {
     // Cross-sections use the same authored centreline as the cinematic camera.
     const curve = makeBranchCurve(side);
-    const tubularSegments = 176;
-    const radialSegments = 56;
+    const highDetail = typeof window !== "undefined" && window.innerWidth >= 1920;
+    const tubularSegments = highDetail ? 224 : 176;
+    const radialSegments = highDetail ? 72 : 56;
     const frames = curve.computeFrenetFrames(tubularSegments, false);
     const positions: number[] = [];
     const uvs: number[] = [];
@@ -1035,7 +1054,7 @@ function CaveLightShafts() {
 function CaveEntranceMist() {
   const elapsed = useRef(0);
   const mist = useMemo(() => {
-    const count = 132;
+    const count = 196;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const phases = new Float32Array(count);
@@ -1111,7 +1130,11 @@ function CaveEntranceMist() {
 }
 
 function CaveTunnel() {
-  const branchMaps = useMemo(() => makeRockTextures(), []);
+  const branchMaps = useMemo(() => {
+    const viewportWidth = typeof window === "undefined" ? 1280 : window.innerWidth;
+    const textureSize = viewportWidth >= 3000 ? 1024 : 512;
+    return makeRockTextures(textureSize);
+  }, []);
   const branchMaterial = useMemo(() => new MeshStandardMaterial({
     color: "#d0bea4",
     map: branchMaps.color,
@@ -1131,8 +1154,8 @@ function CaveTunnel() {
       <CaveShell maps={branchMaps} />
       <CaveGuideDots />
       <CaveFormations maps={branchMaps} />
-      <CaveRocks />
-      <CaveFloorRubble />
+      <CaveRocks maps={branchMaps} />
+      <CaveFloorRubble maps={branchMaps} />
       <CaveEntranceMist />
       <CaveLightShafts />
       <CaveDust junctionX={junctionX} junctionY={junctionY} />
@@ -1161,7 +1184,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     geometry.computeVertexNormals();
     const material = new MeshStandardMaterial({ color: "#b9a188", map: maps.color, bumpMap: maps.height, bumpScale: 0.12, normalMap: maps.normal, normalScale: new Vector2(0.8, 0.8), roughnessMap: maps.roughness, roughness: 0.99, flatShading: false });
     const pieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
-    for (const side of [-1, 1]) for (let i = 0; i < 34; i++) {
+    for (const side of [-1, 1]) for (let i = 0; i < 42; i++) {
       const seed = (side + 2) * 100 + i;
       const size = 0.8 + hash01(seed * 7.13) * 2.25;
       pieces.push({
@@ -1170,7 +1193,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         r: [hash01(seed * 11.1) * 2.8, hash01(seed * 12.3) * 2.8, hash01(seed * 13.5) * 2.8],
       });
     }
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 30; i++) {
       const seed = 500 + i;
       const size = 0.8 + hash01(seed * 4.1) * 2;
       pieces.push({
@@ -1179,7 +1202,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         r: [hash01(seed * 6.7) * 1.4, hash01(seed * 7.9) * 2.6, hash01(seed * 8.1) * 1.4],
       });
     }
-    for (let i = 0; i < 54; i++) {
+    for (let i = 0; i < 84; i++) {
       const seed = 800 + i;
       const side = hash01(seed * 2.1) > 0.5 ? 1 : -1;
       const size = 0.12 + hash01(seed * 3.3) * 0.62;
@@ -1201,9 +1224,9 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     mossGeometry.computeVertexNormals();
     const mossMaterial = new MeshStandardMaterial({ color: "#58724a", roughness: 1, metalness: 0, flatShading: true });
     const mossPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number]; tint: number }> = [];
-    for (let i = 0; i < 88; i++) {
+    for (let i = 0; i < 144; i++) {
       const seed = 1200 + i * 3.17;
-      const nearGround = i < 36;
+      const nearGround = i < 60;
       let position: [number, number, number];
       let rotation: [number, number, number];
       let scale: [number, number, number];
@@ -1222,7 +1245,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       } else {
         // Anchor the patch to the outer shoulder of an existing cliff boulder
         // instead of scattering green blobs through empty space.
-        const host = pieces[Math.floor(hash01(seed * 1.31) * 68)];
+        const host = pieces[Math.floor(hash01(seed * 1.31) * 84)];
         const side = (host?.p[0] ?? 1) >= 0 ? 1 : -1;
         const hostPosition = host?.p ?? [side * 5, 2, 12];
         const hostScale = host?.s ?? [1.5, 1.5, 1.5];
@@ -1259,9 +1282,9 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const rootGeometry = new CylinderGeometry(0.052, 0.012, 1, 5, 2, true);
     const rootMaterial = new MeshStandardMaterial({ color: "#49372a", roughness: 1, metalness: 0 });
     const rootPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 46; i++) {
       const seed = 1800 + i * 4.17;
-      const host = pieces[68 + Math.floor(hash01(seed * 1.31) * 24)];
+      const host = pieces[84 + Math.floor(hash01(seed * 1.31) * 30)];
       const hostPosition = host?.p ?? [0, 5, 12];
       const hostScale = host?.s ?? [1.5, 1.5, 1.5];
       const length = 0.48 + hash01(seed * 1.7) * 1.8;
@@ -1353,6 +1376,9 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       { p: [0.75, groundHeight(0.75, 13.7) + 0.035, 13.7], s: [1.18, 1, 0.38], r: [-Math.PI / 2, 0, 0.16] },
       { p: [-0.35, groundHeight(-0.35, 17.6) + 0.035, 17.6], s: [0.58, 1, 0.28], r: [-Math.PI / 2, 0, -0.12] },
       { p: [1.55, groundHeight(1.55, 19.2) + 0.035, 19.2], s: [0.72, 1, 0.34], r: [-Math.PI / 2, 0, 0.08] },
+      { p: [-2.2, groundHeight(-2.2, 12.4) + 0.03, 12.4], s: [0.52, 1, 0.23], r: [-Math.PI / 2, 0, -0.24] },
+      { p: [2.25, groundHeight(2.25, 16.0) + 0.03, 16.0], s: [0.62, 1, 0.25], r: [-Math.PI / 2, 0, 0.21] },
+      { p: [-1.4, groundHeight(-1.4, 21.9) + 0.03, 21.9], s: [0.9, 1, 0.29], r: [-Math.PI / 2, 0, 0.12] },
     ];
     const puddlesMesh = new InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
     puddleSpecs.forEach((piece, index) => {
@@ -1369,8 +1395,9 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const groundPositions: number[] = [];
     const groundUvs: number[] = [];
     const groundIndices: number[] = [];
-    const groundX = 48;
-    const groundZ = 38;
+    const highDetailGround = typeof window !== "undefined" && window.innerWidth >= 1920;
+    const groundX = highDetailGround ? 72 : 48;
+    const groundZ = highDetailGround ? 54 : 38;
     for (let zi = 0; zi <= groundZ; zi++) {
       for (let xi = 0; xi <= groundX; xi++) {
         const x = (xi / groundX - 0.5) * 25;
