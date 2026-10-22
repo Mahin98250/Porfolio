@@ -32,7 +32,7 @@ test("home opens in the cave and reveals the selected work at the end of the sto
 test("branch choice fully replaces the underlying chapter copy", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await scrubStory(page, 0.46);
+  await scrubStory(page, 0.529);
 
   const branch = page.locator(".cinema-branch-choice");
   await expect(branch).toHaveAttribute("aria-hidden", "false");
@@ -53,7 +53,7 @@ test("left and right passage choices confirm selection and advance toward the ch
   ]) {
     await page.goto("/");
     await scrubStory(page, 0.46);
-    await expect(page.locator(".cinematic-story-track")).toHaveAttribute("data-chapter", "code");
+    await expect(page.locator(".cinematic-story-track")).toHaveAttribute("data-chapter", "branch");
     const initialScroll = await page.locator(".cinematic-story-scroll").evaluate((element) => (element as HTMLElement).scrollTop);
 
     // Verify the panel is active and can receive input. Its opacity is
@@ -189,9 +189,9 @@ test("each cinematic project reveal enters its matching world", async ({ page })
 
   const track = page.locator(".cinematic-story-track");
   const projects = [
-    { progress: 0.55, chapter: "opticode", heading: "OPTICODE", world: /OPTICODE STUDIO/i, repository: "https://github.com/Mahin98250/OptiCode-Studio" },
-    { progress: 0.63, chapter: "learning", heading: "LEARNER", world: /LEARNER’S GUIDE/i, repository: "https://github.com/Mahin98250/Final-Learner-s-Guide" },
-    { progress: 0.70, chapter: "marketplace", heading: "DUDHWALA", world: /DUDHWALA/i, repository: "https://github.com/Mahin98250/Dudh-Wallah" },
+    { progress: 0.60, chapter: "opticode", heading: "OPTICODE", world: /OPTICODE STUDIO/i, repository: "https://github.com/Mahin98250/OptiCode-Studio" },
+    { progress: 0.69, chapter: "learning", heading: "LEARNER", world: /LEARNER’S GUIDE/i, repository: "https://github.com/Mahin98250/Final-Learner-s-Guide" },
+    { progress: 0.78, chapter: "marketplace", heading: "DUDHWALA", world: /DUDHWALA/i, repository: "https://github.com/Mahin98250/Dudh-Wallah" },
   ];
 
   for (const project of projects) {
