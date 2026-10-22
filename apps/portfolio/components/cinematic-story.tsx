@@ -1449,7 +1449,7 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     const step = Math.min(delta, 0.045);
     const progress = MathUtils.clamp(progressRef.current, 0, 1);
     const camera = state.camera;
-    const targetZ = 14 - progress * 54;
+    const targetZ = 14 - progress * 68;
     // Drive the camera from world depth, not the story-panel percentages.
     // This keeps the camera aligned with the actual shell and branch openings.
     const routeT = MathUtils.clamp((9 - targetZ) / 63, 0, 1);
@@ -1546,16 +1546,32 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
 }
 
 const scenes = [
+  // A non-overlapping timeline prevents two full-size headings from crossing
+  // through each other on small screens. Their fades meet at chapter boundaries.
   { id: "opening", from: -0.035, to: 0.15 },
-  { id: "identity", from: 0.105, to: 0.30 },
-  { id: "approach", from: 0.265, to: 0.435 },
-  { id: "code", from: 0.40, to: 0.535 },
-  { id: "opticode", from: 0.50, to: 0.60 },
-  { id: "learning", from: 0.575, to: 0.68 },
-  { id: "marketplace", from: 0.655, to: 0.755 },
-  { id: "robotics", from: 0.725, to: 0.89 },
-  { id: "ending", from: 0.855, to: 1.04 },
+  { id: "identity", from: 0.15, to: 0.27 },
+  { id: "approach", from: 0.27, to: 0.38 },
+  { id: "code", from: 0.38, to: 0.49 },
+  { id: "branch", from: 0.49, to: 0.56 },
+  { id: "opticode", from: 0.56, to: 0.65 },
+  { id: "learning", from: 0.65, to: 0.74 },
+  { id: "marketplace", from: 0.74, to: 0.82 },
+  { id: "robotics", from: 0.82, to: 0.92 },
+  { id: "ending", from: 0.92, to: 1.04 },
 ] as const;
+
+const chapterNumbers: Record<string, string> = {
+  opening: "01",
+  identity: "01",
+  approach: "02",
+  code: "03",
+  branch: "04",
+  opticode: "04",
+  learning: "05",
+  marketplace: "06",
+  robotics: "07",
+  ending: "08",
+};
 
 export function CinematicStory() {
   const scrollRootRef = useRef<HTMLDivElement>(null);
@@ -1605,8 +1621,8 @@ export function CinematicStory() {
       track.style.setProperty("--story-progress", progress.toFixed(4));
       // The passage choice is a deliberate pause, not another translucent chapter.
       const branchWindow = Math.min(
-        MathUtils.clamp((progress - 0.425) / 0.025, 0, 1),
-        1 - MathUtils.clamp((progress - 0.53) / 0.025, 0, 1),
+        MathUtils.clamp((progress - 0.49) / 0.025, 0, 1),
+        1 - MathUtils.clamp((progress - 0.535) / 0.025, 0, 1),
       );
       storyScenes.forEach((panel) => {
         const from = Number(panel.dataset.from ?? 0);
@@ -1635,7 +1651,7 @@ export function CinematicStory() {
       const activeId = scenes.find((scene) => progress >= scene.from && progress < scene.to)?.id ?? "ending";
       track.dataset.chapter = activeId;
       const chapterLabel = document.querySelector<HTMLElement>("[data-chapter-label]");
-      if (chapterLabel) chapterLabel.textContent = String(scenes.findIndex((scene) => scene.id === activeId) + 1).padStart(2, "0");
+      if (chapterLabel) chapterLabel.textContent = chapterNumbers[activeId] ?? "01";
     };
 
     let raf = 0;
@@ -1688,28 +1704,28 @@ export function CinematicStory() {
           <span className="cinema-scene-micro">SCROLL TO DESCEND <b>↓</b></span>
         </div>
 
-        <div className="cinema-scene-copy cinema-copy-identity" data-story-scene data-from="0.105" data-to="0.30" aria-hidden="true">
+        <div className="cinema-scene-copy cinema-copy-identity" data-story-scene data-from="0.15" data-to="0.27" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> THE PERSON BEHIND THE BUILDS</span>
           <h2>MAHIN<br /><span>PATEL.</span></h2>
           <p>Student programmer. Independent builder. Future robotics and automation engineer.</p>
           <div className="cinema-chips"><span>AHMEDABAD, INDIA</span><span>LEARN / BUILD / REPEAT</span></div>
         </div>
 
-        <div className="cinema-scene-copy cinema-copy-approach" data-story-scene data-from="0.265" data-to="0.435" aria-hidden="true">
+        <div className="cinema-scene-copy cinema-copy-approach" data-story-scene data-from="0.27" data-to="0.38" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> CHAPTER 02 / THE APPROACH</span>
           <h2>CURIOSITY<br />BECOMES<br /><span>SOMETHING REAL.</span></h2>
           <p>Ask better questions. Build a rough version. Test what breaks. Improve what matters. Every project is another step from an idea to a working system.</p>
           <div className="cinema-wordline">OBSERVE <b>✳</b> EXPERIMENT <b>✳</b> REFINE</div>
         </div>
 
-        <div className="cinema-scene-copy cinema-copy-code" data-story-scene data-from="0.40" data-to="0.535" aria-hidden="true">
+        <div className="cinema-scene-copy cinema-copy-code" data-story-scene data-from="0.38" data-to="0.49" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> CHAPTER 03 / THE DIGITAL FRONTIER</span>
           <h2>CODE IS<br />THE FIRST <span>DOOR.</span></h2>
           <p>Interfaces, applications and connected systems — the starting point for turning abstract ideas into something people can use.</p>
           <div className="cinema-chips"><span>HTML / CSS / JS</span><span>REACT</span><span>PYTHON / SYSTEMS</span></div>
         </div>
 
-        <div className="cinema-project-reveal" data-story-scene data-from="0.50" data-to="0.60" aria-hidden="true">
+        <div className="cinema-project-reveal" data-story-scene data-from="0.56" data-to="0.65" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> PROJECT WORLD / 001</span>
           <span className="cinema-project-counter">01 — 03</span>
           <h2>OPTICODE<br /><span>STUDIO.</span></h2>
@@ -1717,7 +1733,7 @@ export function CinematicStory() {
           <button className="cinema-world-enter" type="button" onClick={() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "optical" } }))}>ENTER WORLD <span>↗</span></button><a className="cinema-repository-link" href="https://github.com/Mahin98250/OptiCode-Studio" target="_blank" rel="noreferrer">REPOSITORY ↗</a>
         </div>
 
-        <div className="cinema-project-reveal cinema-project-reveal-right" data-story-scene data-from="0.575" data-to="0.68" aria-hidden="true">
+        <div className="cinema-project-reveal cinema-project-reveal-right" data-story-scene data-from="0.65" data-to="0.74" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> PROJECT WORLD / 002</span>
           <span className="cinema-project-counter">02 — 03</span>
           <h2>LEARNER’S<br /><span>GUIDE.</span></h2>
@@ -1725,7 +1741,7 @@ export function CinematicStory() {
           <button className="cinema-world-enter" type="button" onClick={() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "learning" } }))}>ENTER WORLD <span>↗</span></button><a className="cinema-repository-link" href="https://github.com/Mahin98250/Final-Learner-s-Guide" target="_blank" rel="noreferrer">REPOSITORY ↗</a>
         </div>
 
-        <div className="cinema-project-reveal" data-story-scene data-from="0.655" data-to="0.755" aria-hidden="true">
+        <div className="cinema-project-reveal" data-story-scene data-from="0.74" data-to="0.82" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> PROJECT WORLD / 003</span>
           <span className="cinema-project-counter">03 — 03</span>
           <h2>DUDHWALA<br /><span>MARKETPLACE.</span></h2>
@@ -1733,14 +1749,14 @@ export function CinematicStory() {
           <button className="cinema-world-enter" type="button" onClick={() => window.dispatchEvent(new CustomEvent("portfolio:enter-world", { detail: { id: "milk" } }))}>ENTER WORLD <span>↗</span></button><a className="cinema-repository-link" href="https://github.com/Mahin98250/Dudh-Wallah" target="_blank" rel="noreferrer">REPOSITORY ↗</a>
         </div>
 
-        <div className="cinema-scene-copy cinema-copy-robotics" data-story-scene data-from="0.725" data-to="0.89" aria-hidden="true">
+        <div className="cinema-scene-copy cinema-copy-robotics" data-story-scene data-from="0.82" data-to="0.92" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> CHAPTER 05 / THE PHYSICAL WORLD</span>
           <h2>FROM<br />CODE TO<br /><span>MACHINES.</span></h2>
           <p>The long game: robotics, sensors, control systems and automation — where software starts interacting with the real world.</p>
           <div className="cinema-chips"><span>ENGINEERING</span><span>CONTROL</span><span>ROBOTICS</span></div>
         </div>
 
-        <div className="cinema-scene-copy cinema-copy-ending" data-story-scene data-from="0.855" data-to="1.04" aria-hidden="true">
+        <div className="cinema-scene-copy cinema-copy-ending" data-story-scene data-from="0.92" data-to="1.04" aria-hidden="true">
           <span className="cinema-scene-kicker"><i /> THE NEXT CHAPTER IS YOURS TO EXPLORE</span>
           <h2>BUILD WHAT’S<br /><span>NEXT.</span></h2>
           <p>Still learning. Still experimenting. Working toward a future in robotics and automation, one real project at a time.</p>
