@@ -407,6 +407,8 @@ function CaveRocks({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     });
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.frustumCulled = false;
     return mesh;
   }, [geometry, material, rocks]);
@@ -496,6 +498,8 @@ function CaveFloorRubble({ maps }: { maps: { color: DataTexture; height: DataTex
     });
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.frustumCulled = false;
     return mesh;
   }, [geometry, material, stones]);
@@ -622,6 +626,8 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     side: DoubleSide,
   }), [maps]);
   const mesh = useMemo(() => new Mesh(shell, material), [shell, material]);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
@@ -898,6 +904,8 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
     side: DoubleSide,
   }), [maps]);
   const mesh = useMemo(() => new Mesh(geometry, material), [geometry, material]);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   mesh.frustumCulled = false;
 
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
@@ -997,6 +1005,8 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
     return result;
   }, [side]);
   const mesh = useMemo(() => new Mesh(geometry, material), [geometry, material]);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
@@ -1400,6 +1410,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       puddlesMesh.setMatrixAt(index, detailDummy.matrix);
     });
     puddlesMesh.instanceMatrix.needsUpdate = true;
+    puddlesMesh.receiveShadow = true;
     puddlesMesh.frustumCulled = false;
 
     // A triangulated scree apron joins the outside ground to the cave threshold.
@@ -1439,6 +1450,8 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
       roughnessMap: maps.roughness, roughness: 1, side: DoubleSide,
     });
     const ground = new Mesh(groundGeometry, groundMaterial);
+    ground.castShadow = true;
+    ground.receiveShadow = true;
     ground.frustumCulled = false;
 
     const mesh = new InstancedMesh(geometry, material, pieces.length);
@@ -1456,6 +1469,8 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     });
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.frustumCulled = false;
     return { mesh, ground, mossMesh, rootsMesh, puddlesMesh, puddleBasePositions };
   }, [maps]);
@@ -1489,6 +1504,8 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
 
 function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branchChoice: { current: "left" | "right" | null } }) {
   const world = useRef<Group>(null);
+  const enableSceneShadows = typeof window !== "undefined" && window.innerWidth >= 1280;
+  const shadowMapResolution = typeof window !== "undefined" && window.innerWidth >= 2560 ? 2048 : 1024;
   // Smooth the branch route itself, not only the lens direction. A choice
   // therefore becomes a gradual steering input rather than a one-frame jump.
   const branchBlend = useRef(0);
@@ -1571,7 +1588,22 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       <hemisphereLight args={["#f0e4d0", "#51402f", 1.05]} />
       <directionalLight position={[4, 5, 3]} intensity={1.75} color="#f4e3c6" />
       {/* Exterior skylight: cool daylight spills over the cave lip and contrasts with the warm interior. */}
-      <directionalLight position={[-8, 8, 15]} intensity={2.1} color="#b8d8ff" />
+      <directionalLight
+        position={[-8, 8, 15]}
+        intensity={2.1}
+        color="#b8d8ff"
+        castShadow={enableSceneShadows}
+        shadow-mapSize-width={shadowMapResolution}
+        shadow-mapSize-height={shadowMapResolution}
+        shadow-camera-near={0.1}
+        shadow-camera-far={90}
+        shadow-camera-left={-18}
+        shadow-camera-right={18}
+        shadow-camera-top={18}
+        shadow-camera-bottom={-18}
+        shadow-bias={-0.00018}
+        shadow-normalBias={0.025}
+      />
       <spotLight position={[-5.5, 5.2, 14]} target-position={[0, 0.1, 2]} intensity={48} distance={38} angle={0.68} penumbra={1} decay={1.35} color="#c7e3ff" />
       {/* Broad amber bounce gives the wet-looking limestone a cinematic warm/cool split. */}
       <pointLight position={[0.1, 1.1, 5.4]} intensity={13} distance={29} decay={1.25} color="#ffe0ad" />
@@ -1636,6 +1668,7 @@ export function CinematicStory() {
   });
   const [visible, setVisible] = useState(true);
   const [renderDpr, setRenderDpr] = useState<[number, number]>([1, 1.35]);
+  const [shadowQuality, setShadowQuality] = useState(false);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1650,6 +1683,9 @@ export function CinematicStory() {
       // GPU memory and keep camera motion smooth instead of allocating a full
       // 2× render buffer across an entire 3840×2160 canvas.
       setRenderDpr([1, mobile ? 1.25 : ultraWide ? 1.35 : 1.8]);
+      // Real shadow maps improve contact and depth on desktop, while phones
+      // keep the cheaper no-shadow renderer for more stable camera motion.
+      setShadowQuality(!mobile && window.matchMedia("(min-width: 1280px)").matches);
     };
     onMotion();
     onVisibility();
@@ -1736,6 +1772,7 @@ export function CinematicStory() {
       <div className="cinematic-story-stage">
         {motionAllowed ? (
           <Canvas
+            shadows={shadowQuality}
             dpr={renderDpr}
             camera={{ position: [0, 0, 14], fov: 67, near: 0.1, far: 100 }}
             gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
