@@ -452,7 +452,7 @@ function CaveFloorRubble({ maps }: { maps: { color: DataTexture; height: DataTex
     flatShading: true,
   }), [maps]);
 
-  const stones = useMemo(() => Array.from({ length: 380 }, (_, i) => {
+  const stones = useMemo(() => Array.from({ length: 520 }, (_, i) => {
     const t = 0.028 + hash01(i * 31.71 + 2.6) * 0.944;
     // Keep the fragments around the lower shoulders of the floor. That adds
     // scale cues without filling the camera's central path with large rocks.
@@ -1181,7 +1181,8 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
   // Fractured cliff shoulders extend the entrance into a real landscape instead
   // of leaving a clean pipe-like mouth floating in darkness.
   const scene = useMemo(() => {
-    const geometry = new IcosahedronGeometry(1, 3);
+    const highDetail = typeof window !== "undefined" && window.innerWidth >= 1920;
+    const geometry = new IcosahedronGeometry(1, highDetail ? 3 : 2);
     const vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
       const x = vertices.getX(i), y = vertices.getY(i), z = vertices.getZ(i);
