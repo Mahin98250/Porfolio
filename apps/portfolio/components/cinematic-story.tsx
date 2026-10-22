@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { AdditiveBlending, BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry } from "three";
+import { ACESFilmicToneMapping, AdditiveBlending, BufferGeometry, DataTexture, DoubleSide, Float32BufferAttribute, LinearFilter, LinearMipmapLinearFilter, MathUtils, RepeatWrapping, SRGBColorSpace, type Group, InstancedMesh, Mesh, Object3D, IcosahedronGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Points, PointsMaterial, Vector2, Vector3, CatmullRomCurve3, Color, CylinderGeometry } from "three";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 type ProgressRef = { current: number };
@@ -1615,8 +1615,8 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       {/* Push the visibility range deeper so distant cave features do not vanish into fog. */}
       <fog attach="fog" args={["#17130e", 18, 68]} />
       {/* Lift shadow detail substantially: cave texture must remain readable on mobile screens. */}
-      <ambientLight intensity={0.78} color="#d5c7b2" />
-      <hemisphereLight args={["#f0e4d0", "#51402f", 1.05]} />
+      <ambientLight intensity={0.62} color="#d5c7b2" />
+      <hemisphereLight args={["#f0e4d0", "#51402f", 0.92]} />
       <directionalLight position={[4, 5, 3]} intensity={1.75} color="#f4e3c6" />
       {/* Exterior skylight: cool daylight spills over the cave lip and contrasts with the warm interior. */}
       <directionalLight
@@ -1807,6 +1807,13 @@ export function CinematicStory() {
             dpr={renderDpr}
             camera={{ position: [0, 0, 14], fov: 67, near: 0.1, far: 100 }}
             gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
+            onCreated={({ gl }) => {
+              // Filmic shoulder keeps wet highlights from clipping to white,
+              // while preserving shadow texture in the darker limestone.
+              gl.toneMapping = ACESFilmicToneMapping;
+              gl.toneMappingExposure = 1.08;
+              gl.outputColorSpace = SRGBColorSpace;
+            }}
             frameloop={visible ? "always" : "never"}
             fallback={<div className="cinema-cave-fallback" aria-hidden="true" />}
           >
