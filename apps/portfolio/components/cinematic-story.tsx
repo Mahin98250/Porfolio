@@ -539,7 +539,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
         const y = cy + aroundY * radius * verticalScale + floorRidge;
         const entranceEdgeZ = entranceChip * 1.9 + entranceWeight * Math.sin(angle * 2.7 + 0.8) * 0.30 + entranceWeight * noise3(aroundX * 7.4, aroundY * 7.4, 3.1) * 0.10;
         positions.push(x, y, z + entranceEdgeZ);
-        uvs.push(u * 3.8, t * 7.5);
+        uvs.push(u * 2.7, t * 4.8); // larger, less repetitive rock strata across the shell
 
         const mineral = Math.max(0, Math.sin(angle * 2.3 + coarse * 2.2 + t * 8.7)) * 0.5;
         const mineralVein = Math.max(0, Math.sin(angle * 4.7 + coarse * 4.1 + t * 19 + medium * 2.2));
@@ -584,9 +584,9 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     color: "#e1d4c0",
     map: maps.color,
     bumpMap: maps.height,
-    bumpScale: 0.085,
+    bumpScale: 0.068,
     normalMap: maps.normal,
-    normalScale: new Vector2(0.62, 0.62),
+    normalScale: new Vector2(0.58, 0.58),
     roughnessMap: maps.roughness,
     vertexColors: true,
     roughness: 0.98,
