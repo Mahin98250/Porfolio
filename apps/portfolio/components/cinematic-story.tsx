@@ -1529,6 +1529,7 @@ export function CinematicStory() {
 
     const storyScenes = Array.from(document.querySelectorAll<HTMLElement>("[data-story-scene]"));
     const hint = document.querySelector<HTMLElement>("[data-scroll-hint]");
+    const branchPanel = document.querySelector<HTMLElement>(".cinema-branch-choice");
     const update = () => {
       const track = trackRef.current;
       if (!track) return;
@@ -1540,13 +1541,19 @@ export function CinematicStory() {
       const progress = MathUtils.clamp(scrollRoot.scrollTop / scrollable, 0, 1);
       sceneProgress.current = progress;
       track.style.setProperty("--story-progress", progress.toFixed(4));
+      // The passage choice is a deliberate pause, not another translucent chapter.
+      const branchWindow = Math.min(
+        MathUtils.clamp((progress - 0.425) / 0.025, 0, 1),
+        1 - MathUtils.clamp((progress - 0.53) / 0.025, 0, 1),
+      );
       storyScenes.forEach((panel) => {
         const from = Number(panel.dataset.from ?? 0);
         const to = Number(panel.dataset.to ?? 1);
         const fade = 0.038;
         const enter = MathUtils.clamp((progress - from) / fade, 0, 1);
         const leave = 1 - MathUtils.clamp((progress - (to - fade)) / fade, 0, 1);
-        const opacity = Math.min(enter, leave);
+        const chapterOpacity = Math.min(enter, leave);
+        const opacity = chapterOpacity * (1 - branchWindow);
         panel.style.opacity = String(opacity);
         panel.style.transform = "translate3d(0,calc(-50% + " + ((1 - opacity) * 24) + "px),0) scale(" + (0.986 + opacity * 0.014) + ")";
         panel.style.pointerEvents = opacity > 0.55 ? "auto" : "none";
@@ -1557,9 +1564,7 @@ export function CinematicStory() {
         const hintOpacity = 1 - MathUtils.clamp(progress / 0.10, 0, 1);
         hint.style.opacity = String(hintOpacity);
       }
-      const branchPanel = document.querySelector<HTMLElement>(".cinema-branch-choice");
       if (branchPanel) {
-        const branchWindow = Math.min(MathUtils.clamp((progress - 0.425) / 0.025, 0, 1), 1 - MathUtils.clamp((progress - 0.53) / 0.025, 0, 1));
         branchPanel.style.opacity = String(branchWindow);
         branchPanel.style.pointerEvents = branchWindow > 0.55 && !branchChoice.current ? "auto" : "none";
         branchPanel.setAttribute("aria-hidden", branchWindow > 0.3 ? "false" : "true");
