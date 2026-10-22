@@ -1060,3 +1060,26 @@ html:has(.cinematic-story-track),body:has(.cinematic-story-track){background:#08
 .cinema-project-reveal>.cinema-world-enter span{color:#f4cb8e}
 .cinema-project-reveal>.cinema-repository-link{border-color:#ffffff28;background:#05050945;color:#c6b7cb}
 @media(max-width:600px){.cinema-project-reveal>.cinema-world-enter,.cinema-project-reveal>.cinema-repository-link{min-height:38px;margin-top:16px;margin-right:5px;padding:10px 11px;font-size:8px}.cinema-project-reveal{width:calc(100% - 44px)!important;padding:20px 16px}}
+
+
+/* Ultra-wide / 4K displays: use the available canvas without stretching the story
+   into an oversized column. 3840×2160 is a viewport target, not a fixed page size. */
+@media (min-width: 2560px) and (min-height: 1440px) {
+  .cinematic-story-track { min-height: 100svh; }
+  .cinematic-story-stage { min-height: 100svh; }
+  .cinema-scene-copy { width: min(1500px, calc(100% - 12vw)); }
+  .cinema-scene-copy h1,
+  .cinema-scene-copy h2 { font-size: clamp(88px, 5.2vw, 176px); line-height: .86; }
+  .cinema-scene-copy > p { max-width: min(980px, 54vw); font-size: clamp(20px, 1.05vw, 34px); line-height: 1.75; }
+  .cinema-scene-kicker { font-size: clamp(12px, .48vw, 17px); letter-spacing: .2em; }
+  .cinema-chips span { font-size: clamp(11px, .42vw, 15px); padding: 12px 16px; }
+  .cinema-project-reveal { width: min(1240px, 62vw); padding: clamp(42px, 3.2vw, 100px); }
+  .cinema-project-reveal h2 { font-size: clamp(82px, 5vw, 168px); }
+  .cinema-project-reveal > p { max-width: 900px; font-size: clamp(18px, .95vw, 30px); line-height: 1.8; }
+  .cinema-branch-choice { width: min(1120px, 62vw); padding: clamp(42px, 3vw, 88px); }
+  .cinema-branch-choice h2 { font-size: clamp(70px, 4.2vw, 140px); }
+  .cinema-branch-choice > p { max-width: 760px; font-size: clamp(18px, .8vw, 28px); }
+  .cinema-branch-actions button { min-height: 76px; font-size: clamp(12px, .48vw, 17px); }
+  .cinema-ending-actions a { padding: 18px 24px; font-size: clamp(11px, .45vw, 16px); }
+  .cinema-end-note { font-size: clamp(10px, .4vw, 14px); }
+}
