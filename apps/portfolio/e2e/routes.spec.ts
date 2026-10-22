@@ -29,6 +29,23 @@ test("home opens in the cave and reveals the selected work at the end of the sto
 });
 
 
+test("branch choice fully replaces the underlying chapter copy", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await scrubStory(page, 0.46);
+
+  const branch = page.locator(".cinema-branch-choice");
+  await expect(branch).toHaveAttribute("aria-hidden", "false");
+  await expect(branch).toHaveCSS("pointer-events", "auto");
+  await expect(branch).toHaveCSS("opacity", "1");
+
+  for (const selector of [".cinema-copy-approach", ".cinema-copy-code"]) {
+    const panel = page.locator(selector);
+    await expect(panel).toHaveAttribute("aria-hidden", "true");
+    await expect(panel).toHaveCSS("opacity", "0");
+  }
+});
+
 test("left and right passage choices confirm selection and advance toward the chosen route", async ({ page }) => {
   for (const option of [
     { name: /TAKE THE LEFT PASSAGE/i, selected: "LEFT" },
