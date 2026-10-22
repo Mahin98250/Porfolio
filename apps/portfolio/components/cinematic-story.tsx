@@ -1602,7 +1602,11 @@ export function CinematicStory() {
     // devices on a restrained cap to avoid trading smooth motion for pixels.
     const onViewport = () => {
       const mobile = window.matchMedia("(max-width: 760px)").matches;
-      setRenderDpr([1, mobile ? 1.25 : 1.8]);
+      const ultraWide = window.matchMedia("(min-width: 2560px)").matches;
+      // High pixel density on large displays, but cap 4K rendering to protect
+      // GPU memory and keep camera motion smooth instead of allocating a full
+      // 2× render buffer across an entire 3840×2160 canvas.
+      setRenderDpr([1, mobile ? 1.25 : ultraWide ? 1.35 : 1.8]);
     };
     onMotion();
     onVisibility();
