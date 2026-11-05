@@ -938,7 +938,7 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
-const BRANCH_END_DEPTH = -35.5;
+const BRANCH_END_DEPTH = -46;
 
 function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
   const wallRadius = caveRadiusAt(31 / 63);
@@ -956,7 +956,9 @@ function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
     new Vector3(side * 8.68, -0.24, -20.8),
     new Vector3(side * 8.70, -0.24, -24.5),
     new Vector3(side * 8.72, -0.25, -29.5),
-    new Vector3(side * 8.74, -0.25, BRANCH_END_DEPTH),
+    new Vector3(side * 8.74, -0.25, -36),
+    new Vector3(side * 8.76, -0.26, -41),
+    new Vector3(side * 8.78, -0.26, BRANCH_END_DEPTH),
   ], false, "centripetal");
 }
 
@@ -964,8 +966,8 @@ function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
 // on every rendered frame; rebuilding a Catmull-Rom curve and evaluating 160
 // samples for every query created avoidable CPU work exactly during turns.
 const branchDepthSamples: Record<"-1" | "1", Vector3[]> = {
-  "-1": makeBranchCurve(-1).getSpacedPoints(256),
-  "1": makeBranchCurve(1).getSpacedPoints(256),
+  "-1": makeBranchCurve(-1).getSpacedPoints(320),
+  "1": makeBranchCurve(1).getSpacedPoints(320),
 };
 
 function branchPointAtDepth(side: -1 | 1, localZ: number): Vector3 {
@@ -990,7 +992,7 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
     // Cross-sections use the same authored centreline as the cinematic camera.
     const curve = makeBranchCurve(side);
     const highDetail = typeof window !== "undefined" && window.innerWidth >= 1920;
-    const tubularSegments = highDetail ? 320 : 256;
+    const tubularSegments = highDetail ? 384 : 320;
     const radialSegments = highDetail ? 72 : 56;
     const frames = curve.computeFrenetFrames(tubularSegments, false);
     const positions: number[] = [];
