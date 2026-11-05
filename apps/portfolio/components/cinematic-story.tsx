@@ -1582,8 +1582,12 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     const [farX, farY] = routePoint(routeT + 0.12);
     const bendStrength = MathUtils.clamp((aheadX - pathX) * 0.8, -0.95, 0.95);
     camera.position.z = MathUtils.damp(camera.position.z, targetZ, 4.7, step);
-    camera.position.x = MathUtils.damp(camera.position.x, pathX, 2.15, step);
-    camera.position.y = MathUtils.damp(camera.position.y, pathY, 3.0, step);
+    // A branch turn needs tighter lateral tracking than straight-ahead travel;
+    // otherwise the camera trails behind the opening and clips the rock rim.
+    const lateralDamping = selectedBranch === 0 ? 2.15 : 4.35;
+    const verticalDamping = selectedBranch === 0 ? 3.0 : 4.0;
+    camera.position.x = MathUtils.damp(camera.position.x, pathX, lateralDamping, step);
+    camera.position.y = MathUtils.damp(camera.position.y, pathY, verticalDamping, step);
     // Ease the viewing direction as well as the camera position. This is
     // especially important when a player taps LEFT/RIGHT at the fork: the
     // destination changes immediately, but the lens glides toward it over
