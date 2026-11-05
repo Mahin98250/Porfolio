@@ -611,8 +611,8 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     const portalT = 31 / 63; // the branch group is positioned at z = -22
     // The branch passage is a real side opening, not a pinhole. Its
     // axial width must cover the camera's gradual turn into the side tunnel.
-    const portalTSpread = 0.086;
-    const portalAngleSpread = 0.58;
+    const portalTSpread = 0.038;
+    const portalAngleSpread = 0.52;
     for (let row = 0; row < axialSegments; row++) {
       for (let segment = 0; segment < radialSegments; segment++) {
         const t = (row + 0.5) / axialSegments;
@@ -938,6 +938,8 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
   return <primitive object={mesh as unknown as Object3D} dispose={null} />;
 }
 
+const BRANCH_END_DEPTH = -35.5;
+
 function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
   const wallRadius = caveRadiusAt(31 / 63);
   return new CatmullRomCurve3([
@@ -952,6 +954,9 @@ function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
     new Vector3(side * 8.62, -0.19, -12.8),
     new Vector3(side * 8.65, -0.21, -16.2),
     new Vector3(side * 8.68, -0.24, -20.8),
+    new Vector3(side * 8.70, -0.24, -24.5),
+    new Vector3(side * 8.72, -0.25, -29.5),
+    new Vector3(side * 8.74, -0.25, BRANCH_END_DEPTH),
   ], false, "centripetal");
 }
 
@@ -959,13 +964,13 @@ function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
 // on every rendered frame; rebuilding a Catmull-Rom curve and evaluating 160
 // samples for every query created avoidable CPU work exactly during turns.
 const branchDepthSamples: Record<"-1" | "1", Vector3[]> = {
-  "-1": makeBranchCurve(-1).getSpacedPoints(160),
-  "1": makeBranchCurve(1).getSpacedPoints(160),
+  "-1": makeBranchCurve(-1).getSpacedPoints(256),
+  "1": makeBranchCurve(1).getSpacedPoints(256),
 };
 
 function branchPointAtDepth(side: -1 | 1, localZ: number): Vector3 {
   const samples = branchDepthSamples[String(side) as "-1" | "1"];
-  const depth = MathUtils.clamp(localZ, -20.8, 0);
+  const depth = MathUtils.clamp(localZ, BRANCH_END_DEPTH, 0);
   let best = samples[0] ?? new Vector3();
   let bestDistance = Math.abs(best.z - depth);
   for (let sample = 1; sample < samples.length; sample++) {
@@ -985,7 +990,7 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
     // Cross-sections use the same authored centreline as the cinematic camera.
     const curve = makeBranchCurve(side);
     const highDetail = typeof window !== "undefined" && window.innerWidth >= 1920;
-    const tubularSegments = highDetail ? 224 : 176;
+    const tubularSegments = highDetail ? 320 : 256;
     const radialSegments = highDetail ? 72 : 56;
     const frames = curve.computeFrenetFrames(tubularSegments, false);
     const positions: number[] = [];
@@ -1567,9 +1572,9 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
       // Stay in the main tunnel until the widened portal begins. Then move
       // through the opening on a smooth curve and join the exact branch
       // centreline. This avoids steering into intact limestone before the fork.
-      const localDepth = MathUtils.clamp(31 - 63 * t, -20.8, 0);
+      const localDepth = MathUtils.clamp(31 - 63 * t, BRANCH_END_DEPTH, 0);
       const point = branchPointAtDepth(branchOffset as -1 | 1, localDepth);
-      const entryBlend = MathUtils.smoothstep(t, junctionT - 0.082, junctionT + 0.075);
+      const entryBlend = MathUtils.smoothstep(t, junctionT - 0.045, junctionT + 0.050);
       const desiredX = MathUtils.lerp(x, junctionX + point.x, entryBlend);
       const desiredY = MathUtils.lerp(y, caveCenter(junctionT)[1] + point.y, entryBlend);
       return [
