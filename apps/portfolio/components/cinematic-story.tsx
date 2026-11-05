@@ -609,7 +609,9 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     // Omitting shell faces (rather than placing tubes against a closed wall)
     // lets the branch mouths read as openings into the surrounding rock.
     const portalT = 31 / 63; // the branch group is positioned at z = -22
-    const portalTSpread = 0.052;
+    // The branch passage is a real side opening, not a pinhole. Its
+    // axial width must cover the camera's gradual turn into the side tunnel.
+    const portalTSpread = 0.086;
     const portalAngleSpread = 0.58;
     for (let row = 0; row < axialSegments; row++) {
       for (let segment = 0; segment < radialSegments; segment++) {
@@ -1551,33 +1553,25 @@ function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branch
     // This keeps the camera aligned with the actual shell and branch openings.
     const routeT = MathUtils.clamp((9 - targetZ) / 63, 0, 1);
     const selectedBranch = branchChoice.current === "left" ? -1 : branchChoice.current === "right" ? 1 : 0;
-    branchBlend.current = MathUtils.damp(branchBlend.current, selectedBranch === 0 ? 0 : 1, 1.65, step);
+    // Settle the route choice quickly so the camera does not lag halfway
+    // through the side wall while the scroll-driven depth is already moving.
+    branchBlend.current = MathUtils.damp(branchBlend.current, selectedBranch === 0 ? 0 : 1, 5.2, step);
     const branchOffset = selectedBranch;
     const junctionT = 31 / 63;
-    const [junctionX, junctionY] = caveCenter(junctionT);
-    const junctionRadius = caveRadiusAt(junctionT);
+    const [junctionX] = caveCenter(junctionT);
     const routePoint = (atT: number): [number, number] => {
       const t = MathUtils.clamp(atT, 0, 1);
       const [x, y] = caveCenter(t);
       if (branchOffset === 0) return [x, y];
 
-      // Build the desired path, then blend into it gradually after selection.
-      // The pre-junction steering aims for the mouth; beyond it the path uses
-      // the exact centreline shared with the selected branch geometry.
-      let desiredX: number;
-      let desiredY: number;
-      if (t < junctionT) {
-        const approach = MathUtils.smoothstep(t, 0.35, junctionT);
-        desiredX = MathUtils.lerp(x, junctionX + branchOffset * (junctionRadius - 0.12), approach);
-        desiredY = MathUtils.lerp(y, junctionY, approach);
-      } else {
-        // Each look-ahead sample uses its own depth, so heading follows the
-        // curve rather than pointing at a single cross-section.
-        const localDepth = MathUtils.clamp(31 - 63 * t, -20.8, 0);
-        const point = branchPointAtDepth(branchOffset as -1 | 1, localDepth);
-        desiredX = junctionX + point.x;
-        desiredY = junctionY + point.y;
-      }
+      // Stay in the main tunnel until the widened portal begins. Then move
+      // through the opening on a smooth curve and join the exact branch
+      // centreline. This avoids steering into intact limestone before the fork.
+      const localDepth = MathUtils.clamp(31 - 63 * t, -20.8, 0);
+      const point = branchPointAtDepth(branchOffset as -1 | 1, localDepth);
+      const entryBlend = MathUtils.smoothstep(t, junctionT - 0.082, junctionT + 0.075);
+      const desiredX = MathUtils.lerp(x, junctionX + point.x, entryBlend);
+      const desiredY = MathUtils.lerp(y, caveCenter(junctionT)[1] + point.y, entryBlend);
       return [
         MathUtils.lerp(x, desiredX, branchBlend.current),
         MathUtils.lerp(y, desiredY, branchBlend.current),
