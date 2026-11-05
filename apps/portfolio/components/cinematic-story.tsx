@@ -397,6 +397,11 @@ function CaveRocks({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     const [cx, cy] = caveCenter(t);
     const [surfaceX, surfaceY] = caveSurfacePoint(t, angle);
     const z = 9 - t * 63;
+    const portalT = 31 / 63;
+    const angleToPortal = (value: number, center: number) => Math.atan2(Math.sin(value - center), Math.cos(value - center));
+    const nearBranchMouth = Math.abs(t - portalT) < 0.055
+      && (Math.abs(angleToPortal(angle, 0)) < 0.72 || Math.abs(angleToPortal(angle, Math.PI)) < 0.72);
+    if (nearBranchMouth) return null;
     const size = 0.052 + Math.pow(hash01(i * 14.31 + 2.1), 1.55) * 0.158;
     // Anchor rubble to the actual noisy wall field and sink it slightly into
     // the rock so pieces do not float in the middle of the passage.
@@ -416,7 +421,7 @@ function CaveRocks({ maps }: { maps: { color: DataTexture; height: DataTexture; 
         hash01(i * 9.13) * Math.PI,
       ] as [number, number, number],
     };
-  }), []);
+  }).filter((rock): rock is NonNullable<typeof rock> => rock !== null), []);
   const rockMesh = useMemo(() => {
     const mesh = new InstancedMesh(geometry, material, rocks.length);
     const dummy = new Object3D();
@@ -611,7 +616,7 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     const portalT = 31 / 63; // the branch group is positioned at z = -22
     // The branch passage is a real side opening, not a pinhole. Its
     // axial width must cover the camera's gradual turn into the side tunnel.
-    const portalTSpread = 0.038;
+    const portalTSpread = 0.030;
     const portalAngleSpread = 0.52;
     for (let row = 0; row < axialSegments; row++) {
       for (let segment = 0; segment < radialSegments; segment++) {
@@ -941,9 +946,15 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
 const BRANCH_END_DEPTH = -46;
 
 function makeBranchCurve(side: -1 | 1): CatmullRomCurve3 {
-  const wallRadius = caveRadiusAt(31 / 63);
+  const junctionT = 31 / 63;
+  const [junctionX] = caveCenter(junctionT);
+  // Match the branch mouth to the same noisy surface used by CaveShell.
+  // Using the smooth base radius here displaced the tunnel mouth from the
+  // actual wall by several decimetres, leaving a visible daylight gap.
+  const wallSurfaceX = caveSurfacePoint(junctionT, side < 0 ? Math.PI : 0)[0];
+  const wallRadius = Math.abs(wallSurfaceX - junctionX);
   return new CatmullRomCurve3([
-    new Vector3(side * (wallRadius - 0.04), 0, 0),
+    new Vector3(side * (wallRadius - 0.015), 0, 0),
     new Vector3(side * (wallRadius + 0.28), 0.03, -0.32),
     new Vector3(side * (wallRadius + 0.82), 0.08, -0.9),
     new Vector3(side * 5.05, 0.12, -1.9),
