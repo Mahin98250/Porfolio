@@ -169,7 +169,7 @@ function caveSurfacePoint(t: number, angle: number): [number, number] {
   ];
 }
 
-function makeRockTextures(size = 512): { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } {
+function makeRockTextures(size = 1024): { color: DataTexture; height: DataTexture; normal: DataTexture; roughness: DataTexture } {
   const colorData = new Uint8Array(size * size * 4);
   const heightData = new Uint8Array(size * size * 4);
   const roughnessData = new Uint8Array(size * size * 4);
@@ -391,7 +391,7 @@ function CaveRocks({ maps }: { maps: { color: DataTexture; height: DataTexture; 
   }), [maps]);
   // Wall dressing should read as fractured limestone, not boulders floating
   // through the camera path. Use fewer, smaller pieces and sink them further.
-  const rocks = useMemo(() => Array.from({ length: 280 }, (_, i) => {
+  const rocks = useMemo(() => Array.from({ length: 400 }, (_, i) => {
     const t = 0.025 + hash01(i * 23.91 + 5.3) * 0.93;
     const angle = hash01(i * 61.17 + 1.7) * Math.PI * 2;
     const [cx, cy] = caveCenter(t);
@@ -483,7 +483,7 @@ function CaveFloorRubble({ maps }: { maps: { color: DataTexture; height: DataTex
     flatShading: true,
   }), [maps]);
 
-  const stones = useMemo(() => Array.from({ length: 520 }, (_, i) => {
+  const stones = useMemo(() => Array.from({ length: 700 }, (_, i) => {
     const t = 0.028 + hash01(i * 31.71 + 2.6) * 0.944;
     // Keep the fragments around the lower shoulders of the floor. That adds
     // scale cues without filling the camera's central path with large rocks.
@@ -542,8 +542,8 @@ function CaveShell({ maps }: { maps: { color: DataTexture; height: DataTexture; 
     // sculpted into the cross-section before rock detail is added.
     // ~62k shell vertices preserve the large silhouette and add smoother, finer erosion ridges.
     const highDetail = typeof window !== "undefined" && window.innerWidth >= 1920;
-    const radialSegments = highDetail ? 256 : 192;
-    const axialSegments = highDetail ? 448 : 320;
+    const radialSegments = highDetail ? 384 : 256;
+    const axialSegments = highDetail ? 512 : 320;
     const positions: number[] = [];
     const colors: number[] = [];
     const uvs: number[] = [];
@@ -690,8 +690,8 @@ function CaveGuideDots() {
 function CaveDust({ junctionX, junctionY }: { junctionX: number; junctionY: number }) {
   const elapsed = useRef(0);
   const dust = useMemo(() => {
-    const mainCount = 960;
-    const branchCount = 144;
+    const mainCount = 1280;
+    const branchCount = 192;
     const count = mainCount + branchCount * 2;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
@@ -848,7 +848,7 @@ function CaveFormations({ maps }: { maps: { color: DataTexture; height: DataText
     const uvs: number[] = [];
     const colors: number[] = [];
     const indices: number[] = [];
-    const count = 112;
+    const count = 160;
 
     for (let i = 0; i < count; i++) {
       const t = 0.05 + hash01(i * 17.31 + 8.1) * 0.90;
@@ -1003,8 +1003,8 @@ function CaveBranch({ side, material }: { side: -1 | 1; material: MeshStandardMa
     // Cross-sections use the same authored centreline as the cinematic camera.
     const curve = makeBranchCurve(side);
     const highDetail = typeof window !== "undefined" && window.innerWidth >= 1920;
-    const tubularSegments = highDetail ? 384 : 320;
-    const radialSegments = highDetail ? 72 : 56;
+    const tubularSegments = highDetail ? 512 : 384;
+    const radialSegments = highDetail ? 96 : 72;
     const frames = curve.computeFrenetFrames(tubularSegments, false);
     const positions: number[] = [];
     const uvs: number[] = [];
@@ -1119,7 +1119,7 @@ function CaveLightShafts() {
 function CaveEntranceMist() {
   const elapsed = useRef(0);
   const mist = useMemo(() => {
-    const count = 196;
+    const count = 280;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const phases = new Float32Array(count);
@@ -1197,7 +1197,7 @@ function CaveEntranceMist() {
 function CaveTunnel() {
   const branchMaps = useMemo(() => {
     const viewportWidth = typeof window === "undefined" ? 1280 : window.innerWidth;
-    const textureSize = viewportWidth >= 3000 ? 1024 : 512;
+    const textureSize = viewportWidth >= 2560 ? 2048 : viewportWidth >= 1920 ? 1024 : 512;
     return makeRockTextures(textureSize);
   }, []);
   const branchMaterial = useMemo(() => new MeshStandardMaterial({
@@ -1250,7 +1250,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     geometry.computeVertexNormals();
     const material = new MeshStandardMaterial({ color: "#b9a188", map: maps.color, bumpMap: maps.height, bumpScale: 0.12, normalMap: maps.normal, normalScale: new Vector2(0.8, 0.8), roughnessMap: maps.roughness, roughness: 0.99, flatShading: false });
     const pieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
-    for (const side of [-1, 1]) for (let i = 0; i < 42; i++) {
+    for (const side of [-1, 1]) for (let i = 0; i < 56; i++) {
       const seed = (side + 2) * 100 + i;
       const size = 0.8 + hash01(seed * 7.13) * 2.25;
       pieces.push({
@@ -1259,7 +1259,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         r: [hash01(seed * 11.1) * 2.8, hash01(seed * 12.3) * 2.8, hash01(seed * 13.5) * 2.8],
       });
     }
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 48; i++) {
       const seed = 500 + i;
       const size = 0.8 + hash01(seed * 4.1) * 2;
       pieces.push({
@@ -1268,7 +1268,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
         r: [hash01(seed * 6.7) * 1.4, hash01(seed * 7.9) * 2.6, hash01(seed * 8.1) * 1.4],
       });
     }
-    for (let i = 0; i < 84; i++) {
+    for (let i = 0; i < 120; i++) {
       const seed = 800 + i;
       const side = hash01(seed * 2.1) > 0.5 ? 1 : -1;
       const size = 0.12 + hash01(seed * 3.3) * 0.62;
@@ -1290,7 +1290,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     mossGeometry.computeVertexNormals();
     const mossMaterial = new MeshStandardMaterial({ color: "#58724a", roughness: 1, metalness: 0, flatShading: true });
     const mossPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number]; tint: number }> = [];
-    for (let i = 0; i < 144; i++) {
+    for (let i = 0; i < 192; i++) {
       const seed = 1200 + i * 3.17;
       const nearGround = i < 60;
       let position: [number, number, number];
@@ -1348,7 +1348,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const rootGeometry = new CylinderGeometry(0.052, 0.012, 1, 5, 2, true);
     const rootMaterial = new MeshStandardMaterial({ color: "#49372a", roughness: 1, metalness: 0 });
     const rootPieces: Array<{ p: [number,number,number]; s: [number,number,number]; r: [number,number,number] }> = [];
-    for (let i = 0; i < 46; i++) {
+    for (let i = 0; i < 64; i++) {
       const seed = 1800 + i * 4.17;
       const host = pieces[84 + Math.floor(hash01(seed * 1.31) * 30)];
       const hostPosition = host?.p ?? [0, 5, 12];
@@ -1385,8 +1385,8 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const puddlePositions: number[] = [0, 0, 0];
     const puddleUvs: number[] = [0.5, 0.5];
     const puddleIndices: number[] = [];
-    const puddleRings = 9;
-    const puddleSegments = 56;
+    const puddleRings = 16;
+    const puddleSegments = 80;
     for (let ring = 1; ring <= puddleRings; ring++) {
       const radius = ring / puddleRings;
       for (let segment = 0; segment < puddleSegments; segment++) {
@@ -1469,8 +1469,8 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
     const groundUvs: number[] = [];
     const groundIndices: number[] = [];
     const highDetailGround = typeof window !== "undefined" && window.innerWidth >= 1920;
-    const groundX = highDetailGround ? 72 : 48;
-    const groundZ = highDetailGround ? 54 : 38;
+    const groundX = highDetailGround ? 96 : 64;
+    const groundZ = highDetailGround ? 72 : 52;
     for (let zi = 0; zi <= groundZ; zi++) {
       for (let xi = 0; xi <= groundX; xi++) {
         const x = (xi / groundX - 0.5) * 25;
@@ -1556,7 +1556,7 @@ function CaveExterior({ maps }: { maps: { color: DataTexture; height: DataTextur
 function World({ progressRef, branchChoice }: { progressRef: ProgressRef; branchChoice: { current: "left" | "right" | null } }) {
   const world = useRef<Group>(null);
   const enableSceneShadows = typeof window !== "undefined" && window.innerWidth >= 1280;
-  const shadowMapResolution = typeof window !== "undefined" && window.innerWidth >= 2560 ? 2048 : 1024;
+  const shadowMapResolution = typeof window !== "undefined" && window.innerWidth >= 2560 ? 4096 : window.innerWidth >= 1920 ? 2048 : 1024;
   // Smooth the branch route itself, not only the lens direction. A choice
   // therefore becomes a gradual steering input rather than a one-frame jump.
   const branchBlend = useRef(0);
@@ -1729,7 +1729,7 @@ export function CinematicStory() {
       // High pixel density on large displays, but cap 4K rendering to protect
       // GPU memory and keep camera motion smooth instead of allocating a full
       // 2× render buffer across an entire 3840×2160 canvas.
-      setRenderDpr([1, mobile ? 1.25 : ultraWide ? 1.35 : 1.8]);
+      setRenderDpr([1, mobile ? 1.25 : ultraWide ? 2.0 : 1.8]);
       // Real shadow maps improve contact and depth on desktop, while phones
       // keep the cheaper no-shadow renderer for more stable camera motion.
       setShadowQuality(!mobile && window.matchMedia("(min-width: 1280px)").matches);
